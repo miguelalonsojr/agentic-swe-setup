@@ -1,0 +1,52 @@
+{
+  "provider": {
+    "openai": {
+      "options": {
+        "store": false
+      }
+    }
+  },
+  "agent": {
+    "general": {
+      "model": "openai/gpt-5.6-terra",
+      "variant": "medium"
+    },
+    "explore": {
+      "model": "openai/gpt-5.6-luna",
+      "variant": "medium"
+    },
+    "implementer-light": {
+      "mode": "subagent",
+      "description": "Implements a single mechanical, fully-specified plan task: isolated functions, clear spec, 1-2 files. Do NOT use for multi-file work, debugging, or judgment.",
+      "model": "openai/gpt-5.6-luna",
+      "variant": "low"
+    },
+    "implementer": {
+      "mode": "subagent",
+      "description": "Default implementer: multi-file coordination, integration, debugging, prose-specified tasks. Writes tests per TDD.",
+      "model": "openai/gpt-5.6-terra",
+      "variant": "medium"
+    },
+    "implementer-strong": {
+      "mode": "subagent",
+      "description": "Escalation implementer for BLOCKED tasks, fix rounds 4+, or tasks needing design judgment or broad codebase understanding.",
+      "model": "openai/gpt-5.6-sol",
+      "variant": "high"
+    },
+    "reviewer": {
+      "mode": "subagent",
+      "description": "Spec-compliance and code-quality review of diffs, plus final whole-branch review. Read-only.",
+      "model": "openai/gpt-5.6-sol",
+      "variant": "high",
+      "permission": { "edit": "deny", "bash": "ask" }
+    },
+    "reviewer-lite": {
+      "mode": "subagent",
+      "description": "Scoped re-review of small fix diffs only, after a full review passed. Read-only.",
+      "model": "openai/gpt-5.6-terra",
+      "variant": "medium",
+      "permission": { "edit": "deny", "bash": "ask" }
+    }
+  },
+  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]
+}
