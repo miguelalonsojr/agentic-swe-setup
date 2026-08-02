@@ -12,6 +12,10 @@ SWE_SKILLS_REPO="https://github.com/mhihasan/swe-skills"
 
 MANAGED_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-lite)
 CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewer-lite)
+# Filenames this project shipped under before, which must be retired on install.
+# reviewer-light.md declared `name: reviewer-lite`, so leaving it next to the
+# current reviewer-lite.md would mean two files claiming one agent name.
+LEGACY_CLAUDE_AGENTS=(reviewer-light)
 SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
              de-slop generating-design-doc pragmatic-engineer system-designing)
 
@@ -47,6 +51,22 @@ links_into_repo() {
         "$REPO_ROOT"/*) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+# retire_legacy_agent NAME — clear out an agent file this project used to
+# install under an older filename. A symlink into this repo is ours, so it goes
+# outright; anything else is a file the user may care about and is moved aside.
+retire_legacy_agent() {
+    local name=$1 p backup
+    p="$(claude_dir)/agents/$name.md"
+    if links_into_repo "$p"; then
+        rm -f "$p"
+        log "removed stale agent link $p"
+    elif [ -e "$p" ] || [ -L "$p" ]; then
+        backup="$p.bak.$(date +%s)"
+        mv "$p" "$backup"
+        warn "retired legacy agent $p to $backup"
+    fi
 }
 
 # ensure_swe_skills — clone or fast-forward the shared skills checkout.

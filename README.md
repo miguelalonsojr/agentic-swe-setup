@@ -57,6 +57,12 @@ Everything is user-scoped. Nothing is written per-project.
 Claude Code gets five subagents. `general` and `explore` are built in there, so
 only OpenCode receives all seven.
 
+Install also retires agent filenames this project shipped under previously. The
+one case today is `~/.claude/agents/reviewer-light.md`, which declared
+`name: reviewer-lite` and would otherwise sit alongside the current
+`reviewer-lite.md` with both claiming that name. A real file is moved to
+`reviewer-light.md.bak.<timestamp>` rather than deleted.
+
 ## The model ladder
 
 ### Anthropic (default), `opencode/anthropic.json`

@@ -32,7 +32,24 @@ rm -f "$SANDBOX/bin/claude"
 stub_cmd claude
 stub_cmd git
 stub_swe_skills
+
+# A hand-rolled setup left reviewer-light.md behind, declaring name:
+# reviewer-lite. Install must retire it, or two files claim that agent name.
+mkdir -p "$(claude_dir)/agents"
+printf -- '---\nname: reviewer-lite\n---\nstale\n' \
+    > "$(claude_dir)/agents/reviewer-light.md"
+
 "$IC" >/dev/null 2>&1 || fail "install-claude failed"
+
+[ -e "$(claude_dir)/agents/reviewer-light.md" ] \
+    && fail "install left the legacy reviewer-light.md in place"
+n=$(find "$(claude_dir)/agents" -name 'reviewer-light.md.bak.*' | wc -l)
+assert_eq "$n" 1 "install backed the legacy file up instead of deleting it"
+# Exactly one file may declare the reviewer-lite agent name. -R, not -r:
+# the installed agents are symlinks, which -r skips while recursing.
+n=$(grep -Rl '^name: reviewer-lite$' "$(claude_dir)/agents" 2>/dev/null \
+    --include='*.md' | wc -l)
+assert_eq "$n" 1 "exactly one live file declares name: reviewer-lite"
 
 for a in "${CLAUDE_AGENTS[@]}"; do
     assert_symlink_to "$(claude_dir)/agents/$a.md" \

@@ -57,4 +57,38 @@ run_swe_skills_install opencode
 assert_symlink_to "$XDG_CONFIG_HOME/opencode/skills/clean-coding" \
     "$SWE_SKILLS_DIR/book-skills/clean-coding" "swe-skills opencode link"
 
+# --- legacy agent filenames are declared, and none collides with a current one ---
+assert_eq "${#LEGACY_CLAUDE_AGENTS[@]}" 1 "legacy agent count"
+case " ${LEGACY_CLAUDE_AGENTS[*]} " in
+    *" reviewer-light "*) ;;
+    *) fail "reviewer-light must be listed as a legacy agent filename" ;;
+esac
+for l in "${LEGACY_CLAUDE_AGENTS[@]}"; do
+    case " ${CLAUDE_AGENTS[*]} " in
+        *" $l "*) fail "$l is both a current and a legacy agent name" ;;
+    esac
+    [ -e "$REPO_ROOT/agents/$l.md" ] && fail "$REPO_ROOT/agents/$l.md should not exist"
+done
+
+# --- retire_legacy_agent backs up a real file rather than destroying it ---
+mkdir -p "$(claude_dir)/agents"
+legacy="$(claude_dir)/agents/reviewer-light.md"
+printf 'name: reviewer-lite\n' > "$legacy"
+retire_legacy_agent reviewer-light 2>/dev/null
+[ -e "$legacy" ] && fail "retire_legacy_agent left the legacy file in place"
+n=$(find "$(claude_dir)/agents" -name 'reviewer-light.md.bak.*' | wc -l)
+assert_eq "$n" 1 "retire_legacy_agent wrote exactly one backup"
+assert_eq "$(cat "$(claude_dir)"/agents/reviewer-light.md.bak.*)" \
+    "name: reviewer-lite" "backup kept the legacy contents"
+
+# --- a legacy symlink into this repo is just removed, with no backup ---
+ln -sfn "$REPO_ROOT/agents/reviewer-lite.md" "$legacy"
+retire_legacy_agent reviewer-light 2>/dev/null
+[ -e "$legacy" ] || [ -L "$legacy" ] && fail "legacy symlink survived"
+n=$(find "$(claude_dir)/agents" -name 'reviewer-light.md.bak.*' | wc -l)
+assert_eq "$n" 1 "no second backup for a symlink into this repo"
+
+# --- retiring an absent file is a no-op, not an error ---
+assert_status 0 retire_legacy_agent reviewer-light
+
 exit "$ASSERT_FAILURES"

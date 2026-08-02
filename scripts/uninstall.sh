@@ -22,6 +22,11 @@ log "removing Claude Code links"
 for a in "${CLAUDE_AGENTS[@]}"; do
     unlink_ours "$(claude_dir)/agents/$a.md"
 done
+# Only removes them if they are symlinks into this repo; a real file the user
+# owns is reported and left alone, same as any other path here.
+for a in "${LEGACY_CLAUDE_AGENTS[@]}"; do
+    unlink_ours "$(claude_dir)/agents/$a.md"
+done
 unlink_ours "$(claude_dir)/CLAUDE.md"
 
 log "removing OpenCode links"

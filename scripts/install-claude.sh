@@ -21,6 +21,10 @@ claude plugin install "$SUPERPOWERS_CLAUDE_PLUGIN" \
 ensure_swe_skills
 run_swe_skills_install claude
 
+for a in "${LEGACY_CLAUDE_AGENTS[@]}"; do
+    retire_legacy_agent "$a"
+done
+
 log "linking subagents into $(claude_dir)/agents"
 for a in "${CLAUDE_AGENTS[@]}"; do
     link_into "$REPO_ROOT/agents/$a.md" "$(claude_dir)/agents/$a.md"
