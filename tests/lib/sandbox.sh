@@ -79,7 +79,12 @@ EOF
 # /usr/bin and /bin except CMD. Lets tests exercise "this tool is missing"
 # without breaking the coreutils the scripts themselves need.
 path_without() {
-    local skip=$1 dir="$SANDBOX/without-$skip/bin" p base
+    # Declare separately: `local` expands every argument before it performs
+    # any assignment, so a `dir=...$skip...` on the same line would expand
+    # $skip while it is still unbound, which aborts the function under set -u.
+    local skip=$1
+    local dir="$SANDBOX/without-$skip/bin"
+    local p base
     mkdir -p "$dir"
     for p in /usr/bin/* /bin/*; do
         [ -x "$p" ] || continue
