@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -uo pipefail
+# shellcheck source=/dev/null
+. "$REPO_ROOT/tests/lib/sandbox.sh"
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/lib.sh"
+
+DOCTOR="$REPO_ROOT/scripts/doctor.sh"
+
+# --- with neither harness present it still exits 0 and says so ---
+out=$("$DOCTOR" 2>&1); status=$?
+assert_eq "$status" 0 "doctor exits 0 with nothing installed"
+assert_contains "$out" "[skip] claude not installed" "skips absent claude"
+assert_contains "$out" "[skip] opencode not installed" "skips absent opencode"
+assert_contains "$out" "[warn]" "warns about something"
+
+# --- doctor never writes ---
+before=$(find "$HOME" | sort | cksum)
+"$DOCTOR" >/dev/null 2>&1
+assert_eq "$(find "$HOME" | sort | cksum)" "$before" "doctor changed nothing"
+
+# --- a fully installed sandbox reports green ---
+stub_cmd_output claude "superpowers@claude-plugins-official  6.2.0  enabled"
+stub_cmd opencode
+stub_cmd git
+stub_swe_skills
+
+bash "$REPO_ROOT/scripts/install-claude.sh"   >/dev/null 2>&1
+bash "$REPO_ROOT/scripts/install-opencode.sh" anthropic >/dev/null 2>&1
+
+out=$("$DOCTOR" 2>&1)
+assert_contains "$out" "[ok]   superpowers plugin installed" "claude plugin ok"
+assert_contains "$out" "[ok]   agent reviewer-lite" "claude agent ok"
+assert_contains "$out" "[ok]   global CLAUDE.md linked" "claude memory ok"
+assert_contains "$out" "[ok]   provider: anthropic" "opencode provider ok"
+assert_contains "$out" "[ok]   global AGENTS.md linked" "opencode instructions ok"
+assert_not_contains "$out" "[warn] agent reviewer" "no agent warnings"
+
+# --- a link that points somewhere else is reported, not silently accepted ---
+ln -sfn /etc/hostname "$(claude_dir)/CLAUDE.md"
+out=$("$DOCTOR" 2>&1)
+assert_contains "$out" "[warn] global CLAUDE.md not linked from this repo" \
+    "foreign symlink flagged"
+
+exit "$ASSERT_FAILURES"
