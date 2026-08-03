@@ -34,6 +34,7 @@ just doctor                       # what is and is not installed
 | `just install` | Runs both installs, then prints the doctor report. |
 | `just install-claude` | Superpowers, swe-skills, subagents, and instructions for Claude Code. |
 | `just install-opencode` | Superpowers, swe-skills, agents, and instructions for OpenCode. |
+| `just install-skills` | Relinks only this repo's own skills, into whichever harnesses are present. |
 | `just doctor` | Reports what is and is not installed. Writes nothing, always exits 0. |
 | `just update` | Refreshes the plugin, skills, and links in place. |
 | `just uninstall` | Removes this repo's symlinks and managed config keys. |
@@ -50,12 +51,30 @@ applies to the OpenCode ladder only; Claude Code tiers live in `agents/*.md`.
 | swe-skills | `~/.swe-skills/install.sh --scope=user --tool=claude` | `~/.swe-skills/install.sh --scope=user --tool=opencode` |
 | Global instructions | symlink `AGENTS.md` to `~/.claude/CLAUDE.md` | symlink `AGENTS.md` to `~/.config/opencode/AGENTS.md` |
 | Subagents | symlink `agents/*.md` into `~/.claude/agents/` | jq-merge `agent.*` into `~/.config/opencode/opencode.jsonc` |
+| Local skills | symlink `skills/*` into `~/.claude/skills/` | symlink `skills/*` into `~/.config/opencode/skills/` |
 
 `~/.swe-skills` is a single shared checkout that both harnesses symlink into.
 Everything is user-scoped. Nothing is written per-project.
 
 Claude Code gets five subagents. `general` and `explore` are built in there, so
 only OpenCode receives all seven.
+
+## Skills this repo ships
+
+Most skills come from the shared `~/.swe-skills` checkout. A few live here,
+under `skills/`, and are symlinked into both harnesses:
+
+| Skill | Use it when |
+|---|---|
+| `jira-fu` | Filing a Jira epic with stories and sub-tasks from a written backlog, or creating more issues than is sane to click through by hand. |
+
+Each has a `SKILL.md` for agents and a `README.md` for running it by hand. Add
+one by dropping a directory into `skills/` and adding its name to
+`LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the tests
+all read from that array.
+
+`just install-skills` relinks them without touching plugins or re-cloning
+swe-skills, which is the fast path while editing one.
 
 Install also retires agent filenames this project shipped under previously. The
 one case today is `~/.claude/agents/reviewer-light.md`, which declared

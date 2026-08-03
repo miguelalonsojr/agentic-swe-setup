@@ -22,6 +22,10 @@ install-claude:
 install-opencode:
     @{{ _scripts }}/install-opencode.sh {{ provider }}
 
+# Link this repo's own skills into whichever harnesses are present
+install-skills:
+    @{{ _scripts }}/install-skills.sh
+
 # Report what is and is not installed; changes nothing
 doctor:
     @{{ _scripts }}/doctor.sh

@@ -29,6 +29,11 @@ for a in "${LEGACY_CLAUDE_AGENTS[@]}"; do
 done
 unlink_ours "$(claude_dir)/CLAUDE.md"
 
+for s in "${LOCAL_SKILLS[@]}"; do
+    unlink_ours "$(claude_dir)/skills/$s"
+    unlink_ours "$(opencode_dir)/skills/$s"
+done
+
 log "removing OpenCode links"
 unlink_ours "$(opencode_dir)/AGENTS.md"
 

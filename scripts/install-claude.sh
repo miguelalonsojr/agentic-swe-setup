@@ -25,6 +25,9 @@ for a in "${LEGACY_CLAUDE_AGENTS[@]}"; do
     retire_legacy_agent "$a"
 done
 
+log "linking local skills into $(claude_dir)/skills"
+link_local_skills "$(claude_dir)/skills"
+
 log "linking subagents into $(claude_dir)/agents"
 for a in "${CLAUDE_AGENTS[@]}"; do
     link_into "$REPO_ROOT/agents/$a.md" "$(claude_dir)/agents/$a.md"

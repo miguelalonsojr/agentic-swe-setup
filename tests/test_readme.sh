@@ -8,7 +8,7 @@ assert_file "$R" "README exists"
 body=$(cat "$R")
 
 # Every recipe in the justfile must be documented.
-for r in install install-claude install-opencode doctor update uninstall test; do
+for r in install install-claude install-opencode install-skills doctor update uninstall test; do
     assert_contains "$body" "just $r" "README documents 'just $r'"
 done
 
@@ -22,5 +22,11 @@ assert_contains "$body" "OpenCode" "README names OpenCode"
 
 # What uninstall leaves behind, so nobody is surprised.
 assert_contains "$body" "swe-skills" "README mentions the shared skills checkout"
+
+# Skills this repo ships itself must be listed by name.
+. "$REPO_ROOT/scripts/lib.sh"
+for s in "${LOCAL_SKILLS[@]}"; do
+    assert_contains "$body" "$s" "README names the local skill $s"
+done
 
 exit "$ASSERT_FAILURES"

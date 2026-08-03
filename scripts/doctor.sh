@@ -33,6 +33,10 @@ if have claude; then
         if [ -e "$(claude_dir)/skills/$s" ]; then ok "skill $s"
         else bad "skill $s missing"; fi
     done
+    for s in "${LOCAL_SKILLS[@]}"; do
+        if links_into_repo "$(claude_dir)/skills/$s"; then ok "local skill $s"
+        else bad "local skill $s not linked from this repo"; fi
+    done
     for a in "${CLAUDE_AGENTS[@]}"; do
         if links_into_repo "$(claude_dir)/agents/$a.md"; then ok "agent $a"
         else bad "agent $a not linked from this repo"; fi
@@ -73,6 +77,10 @@ if have opencode; then
     for s in "${SKILL_NAMES[@]}"; do
         if [ -e "$(opencode_dir)/skills/$s" ]; then ok "skill $s"
         else bad "skill $s missing"; fi
+    done
+    for s in "${LOCAL_SKILLS[@]}"; do
+        if links_into_repo "$(opencode_dir)/skills/$s"; then ok "local skill $s"
+        else bad "local skill $s not linked from this repo"; fi
     done
     if links_into_repo "$(opencode_dir)/AGENTS.md"; then
         ok "global AGENTS.md linked"

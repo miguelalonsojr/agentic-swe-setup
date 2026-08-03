@@ -18,6 +18,8 @@ CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewe
 LEGACY_CLAUDE_AGENTS=(reviewer-light)
 SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
              de-slop generating-design-doc pragmatic-engineer system-designing)
+# Skills that live in this repo rather than the shared swe-skills checkout.
+LOCAL_SKILLS=(jira-fu)
 
 log()  { printf '==> %s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
@@ -83,6 +85,15 @@ ensure_swe_skills() {
         log "cloning swe-skills to $dir"
         git clone --depth 1 "$SWE_SKILLS_REPO" "$dir"
     fi
+}
+
+# link_local_skills DIR — symlink this repo's own skills into a harness's
+# skills directory. Separate from swe-skills, which install.sh there manages.
+link_local_skills() {
+    local dest_root=$1 s
+    for s in "${LOCAL_SKILLS[@]}"; do
+        link_into "$REPO_ROOT/skills/$s" "$dest_root/$s"
+    done
 }
 
 # run_swe_skills_install TOOL — TOOL is claude or opencode.
