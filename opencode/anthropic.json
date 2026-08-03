@@ -1,23 +1,24 @@
 {
   "agent": {
     "general": {
-      "model": "anthropic/claude-sonnet-5",
-      "variant": "medium"
+      "model": "anthropic/claude-opus-5",
+      "variant": "high"
     },
     "explore": {
-      "model": "anthropic/claude-haiku-4-5",
+      "model": "anthropic/claude-sonnet-5",
       "variant": "high"
     },
     "implementer-light": {
       "mode": "subagent",
       "description": "Implements a single mechanical, fully-specified plan task: isolated functions, clear spec, 1-2 files. Do NOT use for multi-file work, debugging, or judgment.",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "anthropic/claude-sonnet-5",
+      "variant": "high"
     },
     "implementer": {
       "mode": "subagent",
       "description": "Default implementer: multi-file coordination, integration, debugging, prose-specified tasks. Writes tests per TDD.",
-      "model": "anthropic/claude-sonnet-5",
-      "variant": "medium"
+      "model": "anthropic/claude-opus-5",
+      "variant": "high"
     },
     "implementer-strong": {
       "mode": "subagent",
@@ -30,15 +31,23 @@
       "description": "Spec-compliance and code-quality review of diffs, plus final whole-branch review. Read-only.",
       "model": "anthropic/claude-fable-5",
       "variant": "high",
-      "permission": { "edit": "deny", "bash": "ask" }
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
     },
     "reviewer-lite": {
       "mode": "subagent",
       "description": "Scoped re-review of small fix diffs only, after a full review passed. Read-only.",
       "model": "anthropic/claude-sonnet-5",
-      "variant": "medium",
-      "permission": { "edit": "deny", "bash": "ask" }
+      "variant": "high",
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
     }
   },
-  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]
+  "plugin": [
+    "superpowers@git+https://github.com/obra/superpowers.git"
+  ]
 }

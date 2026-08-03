@@ -67,20 +67,28 @@ one case today is `~/.claude/agents/reviewer-light.md`, which declared
 
 ### Anthropic (default), `opencode/anthropic.json`
 
-| Agent | Model | Variant |
-|---|---|---|
-| `general` | `anthropic/claude-sonnet-5` | `medium` |
-| `explore` | `anthropic/claude-haiku-4-5` | `high` |
-| `implementer-light` | `anthropic/claude-haiku-4-5` | *(none)* |
-| `implementer` | `anthropic/claude-sonnet-5` | `medium` |
-| `implementer-strong` | `anthropic/claude-fable-5` | `high` |
-| `reviewer` | `anthropic/claude-fable-5` | `high` |
-| `reviewer-lite` | `anthropic/claude-sonnet-5` | `medium` |
+Three tiers, distinguished by model. Every tier reasons at `high`, so the cheap
+tier is still a careful one and escalating means a stronger model rather than
+more thinking on the same one.
 
-Haiku exposes only two variants, `high` and `max`, because OpenCode builds its
-variants from a thinking-token budget rather than an effort scale. That is why
-`implementer-light` carries no variant and `explore` uses `high`. Sonnet and
-Fable expose `low` through `max`. The evidence is recorded in
+| Tier | Agent | Model | Variant |
+|---|---|---|---|
+| light | `explore` | `anthropic/claude-sonnet-5` | `high` |
+| light | `implementer-light` | `anthropic/claude-sonnet-5` | `high` |
+| light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `high` |
+| default | `general` | `anthropic/claude-opus-5` | `high` |
+| default | `implementer` | `anthropic/claude-opus-5` | `high` |
+| strong | `implementer-strong` | `anthropic/claude-fable-5` | `high` |
+| strong | `reviewer` | `anthropic/claude-fable-5` | `high` |
+
+All three models also accept `xhigh` and `max` if you want to raise the strong
+tier later.
+
+All three models expose the full `low` through `max` variant range. Haiku, which
+earlier versions used for the light tier, exposed only `high` and `max` because
+OpenCode builds its variants from a thinking-token budget rather than an effort
+scale, so `implementer-light` could not carry a variant at all. Dropping it
+removes that special case. The variant tables are recorded in
 `docs/verification/opencode-variant.md`.
 
 No `provider` block is needed for Anthropic.
@@ -105,11 +113,11 @@ Tiers live in the frontmatter of each `agents/*.md`.
 
 | Agent | Model | Effort |
 |---|---|---|
-| `implementer-light` | `haiku` | `low` |
-| `implementer` | `sonnet` | `medium` |
+| `implementer-light` | `sonnet` | `high` |
+| `implementer` | `opus` | `high` |
 | `implementer-strong` | `fable` | `high` |
 | `reviewer` | `fable` | `high` |
-| `reviewer-lite` | `sonnet` | `medium` |
+| `reviewer-lite` | `sonnet` | `high` |
 
 Both reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review
 dispatch cannot write files.
