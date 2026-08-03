@@ -24,13 +24,13 @@
       "mode": "subagent",
       "description": "Escalation implementer for BLOCKED tasks, fix rounds 4+, or tasks needing design judgment or broad codebase understanding.",
       "model": "anthropic/claude-fable-5",
-      "variant": "xhigh"
+      "variant": "high"
     },
     "reviewer": {
       "mode": "subagent",
       "description": "Spec-compliance and code-quality review of diffs, plus final whole-branch review. Read-only.",
       "model": "anthropic/claude-fable-5",
-      "variant": "xhigh",
+      "variant": "high",
       "permission": {
         "edit": "deny",
         "bash": "ask"

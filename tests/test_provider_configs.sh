@@ -69,18 +69,12 @@ assert_eq "$(jq -r '[.agent[].model] | map(select(test("haiku"))) | length' "$a"
 assert_eq "$(jq -r '[.agent[] | select(has("variant") | not)] | length' "$a")" \
     0 "every anthropic agent declares a variant"
 
-# Variants come only from high/xhigh, with xhigh reserved for the strong tier.
+# Every agent runs at high. The tiers differ by model, not by rung.
 assert_eq "$(jq -r '[.agent[].variant] | unique | join(",")' "$a")" \
-    "high,xhigh" "anthropic variants are high and xhigh only"
+    "high" "every anthropic agent runs at high"
 for ag in implementer-strong reviewer; do
-    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" \
-        "xhigh" "anthropic $ag runs at xhigh"
     assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
         "anthropic/claude-fable-5" "anthropic $ag runs on fable"
-done
-for ag in general explore implementer implementer-light reviewer-lite; do
-    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" \
-        "high" "anthropic $ag runs at high"
 done
 # No provider block is needed for Anthropic.
 assert_eq "$(jq -r 'has("provider")' "$a")" "false" "anthropic config has no provider block"

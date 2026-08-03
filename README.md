@@ -67,7 +67,9 @@ one case today is `~/.claude/agents/reviewer-light.md`, which declared
 
 ### Anthropic (default), `opencode/anthropic.json`
 
-Three tiers, distinguished by model first and rung second.
+Three tiers, distinguished by model. Every tier reasons at `high`, so the cheap
+tier is still a careful one and escalating means a stronger model rather than
+more thinking on the same one.
 
 | Tier | Agent | Model | Variant |
 |---|---|---|---|
@@ -76,13 +78,11 @@ Three tiers, distinguished by model first and rung second.
 | light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `high` |
 | default | `general` | `anthropic/claude-opus-5` | `high` |
 | default | `implementer` | `anthropic/claude-opus-5` | `high` |
-| strong | `implementer-strong` | `anthropic/claude-fable-5` | `xhigh` |
-| strong | `reviewer` | `anthropic/claude-fable-5` | `xhigh` |
+| strong | `implementer-strong` | `anthropic/claude-fable-5` | `high` |
+| strong | `reviewer` | `anthropic/claude-fable-5` | `high` |
 
-Every tier reasons at `high` or above, so the cheap tier is still a careful one.
-`xhigh` belongs to the strong tier alone, which keeps an escalation to
-`implementer-strong` a real step up rather than the same work at a different
-price.
+All three models also accept `xhigh` and `max` if you want to raise the strong
+tier later.
 
 All three models expose the full `low` through `max` variant range. Haiku, which
 earlier versions used for the light tier, exposed only `high` and `max` because
@@ -115,8 +115,8 @@ Tiers live in the frontmatter of each `agents/*.md`.
 |---|---|---|
 | `implementer-light` | `sonnet` | `high` |
 | `implementer` | `opus` | `high` |
-| `implementer-strong` | `fable` | `xhigh` |
-| `reviewer` | `fable` | `xhigh` |
+| `implementer-strong` | `fable` | `high` |
+| `reviewer` | `fable` | `high` |
 | `reviewer-lite` | `sonnet` | `high` |
 
 Both reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review

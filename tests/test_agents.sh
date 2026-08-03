@@ -62,12 +62,8 @@ assert_eq "$(frontmatter_field "$REPO_ROOT/agents/implementer.md" model)" \
 assert_eq "$(frontmatter_field "$REPO_ROOT/agents/implementer-strong.md" model)" \
     fable "implementer-strong uses fable"
 
-# xhigh is reserved for the strong tier, so an escalation is a real step up.
-for a in implementer-strong reviewer; do
-    assert_eq "$(frontmatter_field "$REPO_ROOT/agents/$a.md" effort)" \
-        xhigh "$a reasons at xhigh"
-done
-for a in implementer-light implementer reviewer-lite; do
+# Every tier reasons at high. The tiers differ by model, not by rung.
+for a in "${CLAUDE_AGENTS[@]}"; do
     assert_eq "$(frontmatter_field "$REPO_ROOT/agents/$a.md" effort)" \
         high "$a reasons at high"
 done

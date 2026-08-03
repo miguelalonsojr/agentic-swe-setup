@@ -125,7 +125,7 @@ only in values.
 
 > **Superseded.** The Anthropic ladder below, and the Haiku constraint it rests
 > on, describe the original design. Haiku was later dropped for a three-model
-> ladder of Sonnet, Opus, and Fable at `high`/`xhigh`, which removes the
+> ladder of Sonnet, Opus, and Fable, every tier at `high`, which removes the
 > two-rung special case entirely. See `README.md` for the current ladder. The
 > rest of this document still holds.
 
