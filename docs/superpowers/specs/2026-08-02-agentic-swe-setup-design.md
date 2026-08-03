@@ -123,6 +123,12 @@ Anthropic model. If it does not hold, fall back to per-provider raw `options`
 blocks, which requires the two provider files to diverge in shape rather than
 only in values.
 
+> **Superseded.** The Anthropic ladder below, and the Haiku constraint it rests
+> on, describe the original design. Haiku was later dropped for a three-model
+> ladder of Sonnet, Opus, and Fable at `high`/`xhigh`, which removes the
+> two-rung special case entirely. See `README.md` for the current ladder. The
+> rest of this document still holds.
+
 ### Haiku constraint
 
 `claude-haiku-4-5` declares `reasoning_options: [{ type: "budget_tokens", min: 1024 }]`

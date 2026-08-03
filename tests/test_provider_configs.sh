@@ -56,12 +56,32 @@ assert_eq "$(jq -r '.agent["implementer-strong"].model' "$a")" \
 assert_eq "$(jq -r '.agent.reviewer.model' "$a")" \
     "anthropic/claude-fable-5" "anthropic reviewer tier"
 assert_eq "$(jq -r '.agent["implementer-light"].model' "$a")" \
-    "anthropic/claude-haiku-4-5" "anthropic light tier"
-# Haiku exposes only high/max, so implementer-light carries no variant at all.
-assert_eq "$(jq -r '.agent["implementer-light"] | has("variant")' "$a")" \
-    "false" "haiku implementer-light has no variant"
-assert_eq "$(jq -r '.agent.explore.variant' "$a")" \
-    "high" "haiku explore uses the nearest available rung"
+    "anthropic/claude-sonnet-5" "anthropic light tier"
+assert_eq "$(jq -r '.agent.implementer.model' "$a")" \
+    "anthropic/claude-opus-5" "anthropic default tier"
+
+# Three models, no more. Haiku is gone, so nothing is stuck on a two-rung
+# variant table and every agent can carry an explicit variant.
+assert_eq "$(jq -r '[.agent[].model] | unique | length' "$a")" \
+    3 "anthropic ladder uses exactly three models"
+assert_eq "$(jq -r '[.agent[].model] | map(select(test("haiku"))) | length' "$a")" \
+    0 "no haiku left in the anthropic ladder"
+assert_eq "$(jq -r '[.agent[] | select(has("variant") | not)] | length' "$a")" \
+    0 "every anthropic agent declares a variant"
+
+# Variants come only from high/xhigh, with xhigh reserved for the strong tier.
+assert_eq "$(jq -r '[.agent[].variant] | unique | join(",")' "$a")" \
+    "high,xhigh" "anthropic variants are high and xhigh only"
+for ag in implementer-strong reviewer; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" \
+        "xhigh" "anthropic $ag runs at xhigh"
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
+        "anthropic/claude-fable-5" "anthropic $ag runs on fable"
+done
+for ag in general explore implementer implementer-light reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" \
+        "high" "anthropic $ag runs at high"
+done
 # No provider block is needed for Anthropic.
 assert_eq "$(jq -r 'has("provider")' "$a")" "false" "anthropic config has no provider block"
 
