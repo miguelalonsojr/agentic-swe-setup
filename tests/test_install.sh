@@ -82,7 +82,7 @@ stub_cmd opencode
 "$IO" >/dev/null 2>&1 || fail "install-opencode failed"
 CFG="$(opencode_dir)/opencode.jsonc"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "anthropic/claude-fable-5" "default provider is anthropic"
+    "anthropic/claude-opus-5" "default provider is anthropic"
 assert_symlink_to "$(opencode_dir)/AGENTS.md" \
     "$REPO_ROOT/AGENTS.md" "global AGENTS.md linked"
 assert_symlink_to "$(opencode_dir)/skills/clean-coding" \
@@ -91,7 +91,7 @@ assert_symlink_to "$(opencode_dir)/skills/clean-coding" \
 # --- opencode install, explicit provider ---
 "$IO" openai >/dev/null 2>&1 || fail "install-opencode openai failed"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "openai/gpt-5.6-sol" "explicit provider honoured"
+    "openai/gpt-5.6-terra" "explicit provider honoured"
 
 # --- comment guard aborts the whole opencode install ---
 rm -f "$(opencode_dir)/AGENTS.md"

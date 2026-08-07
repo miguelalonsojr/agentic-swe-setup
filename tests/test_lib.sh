@@ -13,8 +13,8 @@ assert_eq "$(swe_skills_dir)" "$SWE_SKILLS_DIR" "swe_skills_dir"
 # --- constants ---
 assert_eq "$SUPERPOWERS_PLUGIN" \
     "superpowers@git+https://github.com/obra/superpowers.git" "plugin string"
-assert_eq "${#MANAGED_AGENTS[@]}" 7 "managed agent count"
-assert_eq "${#CLAUDE_AGENTS[@]}" 5 "claude agent count"
+assert_eq "${#MANAGED_AGENTS[@]}" 8 "managed agent count"
+assert_eq "${#CLAUDE_AGENTS[@]}" 6 "claude agent count"
 assert_eq "${#SKILL_NAMES[@]}" 8 "skill count"
 
 # --- have ---

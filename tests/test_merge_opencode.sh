@@ -16,7 +16,9 @@ assert_file "$CFG" "merge created the config"
 assert_eq "$(jq -r '."$schema"' "$CFG")" \
     "https://opencode.ai/config.json" "schema key present"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "anthropic/claude-fable-5" "anthropic reviewer merged"
+    "anthropic/claude-opus-5" "anthropic reviewer merged"
+assert_eq "$(jq -r '.agent["reviewer-final"].model' "$CFG")" \
+    "anthropic/claude-fable-5" "anthropic final reviewer merged"
 assert_eq "$(jq -r --arg p "$SUPERPOWERS_PLUGIN" \
     '(.plugin // []) | index($p) != null' "$CFG")" "true" "plugin merged"
 assert_file "$MAN" "manifest written"
@@ -39,7 +41,7 @@ assert_eq "$(jq -r '.agent["my-own-agent"].model' "$CFG")" \
 assert_eq "$(jq -r '.mcp.fetch.type' "$CFG")" "local" "mcp block kept"
 assert_eq "$(jq -r '.plugin | index("some-other-plugin@1.0.0") != null' "$CFG")" \
     "true" "other plugin kept"
-assert_eq "$(jq -r '.agent | length' "$CFG")" "8" "7 managed + 1 unmanaged agent"
+assert_eq "$(jq -r '.agent | length' "$CFG")" "9" "8 managed + 1 unmanaged agent"
 
 # --- plugin is appended, not duplicated ---
 "$MERGE" anthropic >/dev/null 2>&1
@@ -55,7 +57,7 @@ before=$(find "$(opencode_dir)" -maxdepth 1 -name 'opencode.jsonc.bak.*' | wc -l
 assert_eq "$(jq -r '.provider.openai.options.store' "$CFG")" \
     "false" "openai provider block added"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "openai/gpt-5.6-sol" "openai reviewer merged"
+    "openai/gpt-5.6-terra" "openai reviewer merged"
 
 # --- provider switch back: the openai block is removed, others survive ---
 jq '.provider.anthropic = {"options": {"timeout": 60000}}' "$CFG" > "$CFG.tmp" \
@@ -66,7 +68,7 @@ assert_eq "$(jq -r '.provider | has("openai")' "$CFG")" \
 assert_eq "$(jq -r '.provider.anthropic.options.timeout' "$CFG")" \
     "60000" "unmanaged provider entry survived"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "anthropic/claude-fable-5" "agents switched back"
+    "anthropic/claude-opus-5" "agents switched back"
 # No stale OpenAI model strings anywhere in the managed agents.
 for a in "${MANAGED_AGENTS[@]}"; do
     m=$(jq -r --arg a "$a" '.agent[$a].model' "$CFG")

@@ -33,7 +33,7 @@ for p in anthropic openai; do
         0 "$p config uses variant, not options.reasoningEffort"
 
     # Subagents declare mode and description; primaries do not need to.
-    for a in implementer-light implementer implementer-strong reviewer reviewer-lite; do
+    for a in implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].mode' "$f")" \
             "subagent" "$p agent $a is a subagent"
         desc=$(jq -r --arg a "$a" '.agent[$a].description // ""' "$f")
@@ -41,7 +41,7 @@ for p in anthropic openai; do
     done
 
     # Reviewers are read-only.
-    for a in reviewer reviewer-lite; do
+    for a in reviewer reviewer-final reviewer-lite; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].permission.edit' "$f")" \
             "deny" "$p agent $a denies edit"
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].permission.bash' "$f")" \
@@ -54,7 +54,9 @@ a="$REPO_ROOT/opencode/anthropic.json"
 assert_eq "$(jq -r '.agent["implementer-strong"].model' "$a")" \
     "anthropic/claude-fable-5" "anthropic strong tier"
 assert_eq "$(jq -r '.agent.reviewer.model' "$a")" \
-    "anthropic/claude-fable-5" "anthropic reviewer tier"
+    "anthropic/claude-opus-5" "anthropic reviewer tier"
+assert_eq "$(jq -r '.agent["reviewer-final"].model' "$a")" \
+    "anthropic/claude-fable-5" "anthropic final-reviewer tier"
 assert_eq "$(jq -r '.agent["implementer-light"].model' "$a")" \
     "anthropic/claude-sonnet-5" "anthropic light tier"
 assert_eq "$(jq -r '.agent.implementer.model' "$a")" \
@@ -72,7 +74,7 @@ assert_eq "$(jq -r '[.agent[] | select(has("variant") | not)] | length' "$a")" \
 # Every agent runs at high. The tiers differ by model, not by rung.
 assert_eq "$(jq -r '[.agent[].variant] | unique | join(",")' "$a")" \
     "high" "every anthropic agent runs at high"
-for ag in implementer-strong reviewer; do
+for ag in implementer-strong reviewer-final; do
     assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
         "anthropic/claude-fable-5" "anthropic $ag runs on fable"
 done

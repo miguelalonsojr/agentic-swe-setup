@@ -97,8 +97,15 @@ more thinking on the same one.
 | light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `high` |
 | default | `general` | `anthropic/claude-opus-5` | `high` |
 | default | `implementer` | `anthropic/claude-opus-5` | `high` |
+| default | `reviewer` | `anthropic/claude-opus-5` | `high` |
 | strong | `implementer-strong` | `anthropic/claude-fable-5` | `high` |
-| strong | `reviewer` | `anthropic/claude-fable-5` | `high` |
+| strong | `reviewer-final` | `anthropic/claude-fable-5` | `high` |
+
+The per-task reviewer sits on the default tier: reviews run twice per task
+(spec compliance plus code quality), so they dominate strong-tier spend if
+routed there. The strong model is reserved for the two places its judgment
+gates an outcome: escalated implementations and the final whole-branch
+review before merge.
 
 All three models also accept `xhigh` and `max` if you want to raise the strong
 tier later.
@@ -121,7 +128,8 @@ No `provider` block is needed for Anthropic.
 | `implementer-light` | `openai/gpt-5.6-luna` | `low` |
 | `implementer` | `openai/gpt-5.6-terra` | `medium` |
 | `implementer-strong` | `openai/gpt-5.6-sol` | `high` |
-| `reviewer` | `openai/gpt-5.6-sol` | `high` |
+| `reviewer` | `openai/gpt-5.6-terra` | `high` |
+| `reviewer-final` | `openai/gpt-5.6-sol` | `high` |
 | `reviewer-lite` | `openai/gpt-5.6-terra` | `medium` |
 
 This file also sets `provider.openai.options.store` to `false`.
@@ -135,11 +143,12 @@ Tiers live in the frontmatter of each `agents/*.md`.
 | `implementer-light` | `sonnet` | `high` |
 | `implementer` | `opus` | `high` |
 | `implementer-strong` | `fable` | `high` |
-| `reviewer` | `fable` | `high` |
+| `reviewer` | `opus` | `high` |
+| `reviewer-final` | `fable` | `high` |
 | `reviewer-lite` | `sonnet` | `high` |
 
-Both reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review
-dispatch cannot write files.
+All three reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a
+review dispatch cannot write files.
 
 ## Changing models
 

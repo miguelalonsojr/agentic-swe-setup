@@ -10,8 +10,8 @@ SUPERPOWERS_MARKETPLACE="anthropics/claude-plugins-official"
 SUPERPOWERS_CLAUDE_PLUGIN="superpowers@claude-plugins-official"
 SWE_SKILLS_REPO="https://github.com/mhihasan/swe-skills"
 
-MANAGED_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-lite)
-CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewer-lite)
+MANAGED_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite)
+CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite)
 # Filenames this project shipped under before, which must be retired on install.
 # reviewer-light.md declared `name: reviewer-lite`, so leaving it next to the
 # current reviewer-lite.md would mean two files claiming one agent name.

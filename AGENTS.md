@@ -58,14 +58,17 @@ for humans):
 
 ### Subagent-driven development routing
 
-Five role agents are defined in both harnesses under the same names:
+Six role agents are defined in both harnesses under the same names:
 implementer-light, implementer, implementer-strong, reviewer,
-reviewer-lite. When executing superpowers subagent-driven-development:
+reviewer-final, reviewer-lite. When executing superpowers
+subagent-driven-development:
 
 - Implementation dispatches go to `implementer` (or `implementer-light`
   for mechanical 1-2 file tasks with complete specs).
-- Spec-compliance and code-quality review dispatches go to `reviewer`.
-  The final whole-branch review also goes to `reviewer`.
+- Per-task spec-compliance and code-quality review dispatches go to
+  `reviewer`.
+- The final whole-branch review goes to `reviewer-final` (the strong
+  model - reserved for this one merge-gating pass).
 - Scoped re-reviews of small fix diffs go to `reviewer-lite`.
 - Never retry the same agent unchanged after BLOCKED.
 
@@ -86,8 +89,8 @@ reviewer-lite. When executing superpowers subagent-driven-development:
   per dispatch and escalate per the skill's status protocol. The
   agent frontmatter models are fallbacks, not mandates.
 - Exception: all review dispatches MUST go to the `reviewer` /
-  `reviewer-lite` agents regardless of model choice, so the
-  read-only tool restriction applies.
+  `reviewer-final` / `reviewer-lite` agents regardless of model
+  choice, so the read-only tool restriction applies.
 
 ### Precedence
 

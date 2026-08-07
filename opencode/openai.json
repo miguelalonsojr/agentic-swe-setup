@@ -35,7 +35,14 @@
     },
     "reviewer": {
       "mode": "subagent",
-      "description": "Spec-compliance and code-quality review of diffs, plus final whole-branch review. Read-only.",
+      "description": "Per-task spec-compliance and code-quality review of diffs. Read-only. Not for the final whole-branch review.",
+      "model": "openai/gpt-5.6-terra",
+      "variant": "high",
+      "permission": { "edit": "deny", "bash": "ask" }
+    },
+    "reviewer-final": {
+      "mode": "subagent",
+      "description": "Final whole-branch review before merge, after all per-task reviews have passed. Read-only.",
       "model": "openai/gpt-5.6-sol",
       "variant": "high",
       "permission": { "edit": "deny", "bash": "ask" }

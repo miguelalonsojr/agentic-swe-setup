@@ -28,7 +28,17 @@
     },
     "reviewer": {
       "mode": "subagent",
-      "description": "Spec-compliance and code-quality review of diffs, plus final whole-branch review. Read-only.",
+      "description": "Per-task spec-compliance and code-quality review of diffs. Read-only. Not for the final whole-branch review.",
+      "model": "anthropic/claude-opus-5",
+      "variant": "high",
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "reviewer-final": {
+      "mode": "subagent",
+      "description": "Final whole-branch review before merge, after all per-task reviews have passed. Read-only.",
       "model": "anthropic/claude-fable-5",
       "variant": "high",
       "permission": {

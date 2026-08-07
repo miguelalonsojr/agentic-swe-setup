@@ -48,8 +48,8 @@ for a in "${CLAUDE_AGENTS[@]}"; do
         || fail "$a has an empty body prompt"
 done
 
-# The two reviewers must be read-only.
-for a in reviewer reviewer-lite; do
+# All three reviewers must be read-only.
+for a in reviewer reviewer-final reviewer-lite; do
     tools=$(frontmatter_field "$REPO_ROOT/agents/$a.md" tools)
     assert_eq "$tools" "Read, Grep, Glob, Bash" "$a is read-only"
 done
@@ -61,6 +61,13 @@ assert_eq "$(frontmatter_field "$REPO_ROOT/agents/implementer.md" model)" \
     opus "implementer uses opus"
 assert_eq "$(frontmatter_field "$REPO_ROOT/agents/implementer-strong.md" model)" \
     fable "implementer-strong uses fable"
+
+# Per-task reviews run on the default tier; only the final whole-branch
+# review is worth the strong model.
+assert_eq "$(frontmatter_field "$REPO_ROOT/agents/reviewer.md" model)" \
+    opus "reviewer uses opus"
+assert_eq "$(frontmatter_field "$REPO_ROOT/agents/reviewer-final.md" model)" \
+    fable "reviewer-final uses fable"
 
 # Every tier reasons at high. The tiers differ by model, not by rung.
 for a in "${CLAUDE_AGENTS[@]}"; do

@@ -33,7 +33,7 @@ bash "$REPO_ROOT/scripts/install-opencode.sh" openai >/dev/null 2>&1
 bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail "update failed"
 assert_eq "$(jq -r .provider "$MAN")" "openai" "update kept the provider"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
-    "openai/gpt-5.6-sol" "update re-merged the same provider"
+    "openai/gpt-5.6-terra" "update re-merged the same provider"
 assert_symlink_to "$(claude_dir)/agents/reviewer.md" \
     "$REPO_ROOT/agents/reviewer.md" "update relinked agents"
 
