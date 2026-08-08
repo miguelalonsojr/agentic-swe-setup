@@ -126,6 +126,11 @@ if have prime-agent; then
             bad "subagent spec $a missing from $pharness"
         fi
     done
+    # Prime Agent renders at most six subagent specs per kind into the system
+    # prompt (refinement.js DEFAULT_OVERVIEW_ENTRY_LIMIT), so a ladder larger
+    # than six is partly invisible there. Report the shortfall rather than
+    # leaving it to be discovered.
+    ok "${#PRIME_AGENTS[@]} managed subagent specs (Prime Agent renders 6; AGENTS.md table is authoritative)"
     # Superpowers reaches Prime Agent as skills, so check a representative one.
     for s in brainstorming writing-plans subagent-driven-development; do
         if [ -e "$pdir/skills/$s" ]; then ok "superpowers skill $s"

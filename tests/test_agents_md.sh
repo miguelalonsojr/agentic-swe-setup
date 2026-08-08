@@ -42,4 +42,14 @@ assert_contains "$body" "180 characters and shows only six" \
 # session reading the wrong subsection does not copy it into a Task dispatch.
 assert_contains "$body" 'rlm(model=' "AGENTS.md names the selector format"
 
+# AGENTS.md used to open this section with a hard-coded role count that
+# nothing checked. A list can be verified against the array; a numeral in
+# prose cannot, so the numeral is gone and the list is what gets asserted.
+roles=$(awk '/defined in all three harnesses:/,/subagent-driven-development:/' "$A")
+for a in "${CLAUDE_AGENTS[@]}"; do
+    assert_contains "$roles" "$a" "AGENTS.md role list names $a"
+done
+assert_not_contains "$body" "Six role agents" "the stale role count is gone"
+assert_not_contains "$body" "The same six roles" "the stale Prime role count is gone"
+
 exit "$ASSERT_FAILURES"

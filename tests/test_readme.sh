@@ -36,4 +36,27 @@ for s in "${LOCAL_SKILLS[@]}"; do
     assert_contains "$body" "$s" "README names the local skill $s"
 done
 
+# The Prime Agent render ceiling is the reason the AGENTS.md table exists.
+# A reader who does not know about it will think the table is duplication.
+assert_contains "$body" "180" "README states the content render cap"
+assert_contains "$body" "cross-checker" "README documents the cross-checker role"
+
+# Role counts in prose drift silently: five of them were already wrong
+# before cross-checker was added. Derive every count from the arrays that
+# define it, so the next role added breaks a test instead of a sentence.
+assert_contains "$body" "Claude Code gets ${#CLAUDE_AGENTS[@]} subagents" \
+    "README states the Claude Code subagent count"
+assert_contains "$body" "receive all ${#MANAGED_AGENTS[@]}" \
+    "README states the OpenCode and Prime subagent count"
+assert_contains "$body" "for the ${#MANAGED_AGENTS[@]} managed agent names" \
+    "README states the managed agent count for the OpenCode merge"
+assert_contains "$body" "for the ${#PRIME_AGENTS[@]} managed roles" \
+    "README states the managed role count for the Prime merge"
+assert_contains "$body" "removes the ${#CLAUDE_AGENTS[@]} agent symlinks" \
+    "README states how many agent symlinks uninstall removes"
+assert_contains "$body" "${#SKILL_NAMES[@]} book-grounded" \
+    "README states the book-skill count"
+assert_contains "$body" "${#PRIME_AGENTS[@]} roles are installed" \
+    "README states the installed role count"
+
 exit "$ASSERT_FAILURES"

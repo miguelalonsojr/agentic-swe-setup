@@ -58,9 +58,9 @@ for humans):
 
 ### Subagent-driven development routing
 
-Six role agents are defined in all three harnesses under the same
-names: implementer-light, implementer, implementer-strong, reviewer,
-reviewer-final, reviewer-lite. When executing superpowers
+The same role agents are defined in all three harnesses:
+implementer-light, implementer, implementer-strong, reviewer,
+reviewer-final, reviewer-lite, cross-checker. When executing superpowers
 subagent-driven-development:
 
 - Implementation dispatches go to `implementer` (or `implementer-light`
@@ -70,7 +70,15 @@ subagent-driven-development:
 - The final whole-branch review goes to `reviewer-final` (the strong
   model - reserved for this one merge-gating pass).
 - Scoped re-reviews of small fix diffs go to `reviewer-lite`.
+- A load-bearing claim that needs an independent check goes to
+  `cross-checker`, on a different model family from whatever produced it.
 - Never retry the same agent unchanged after BLOCKED.
+- Before dispatching a batch of subagents, load the `routing-model-tiers`
+  skill and pick a tier per task. Enumeration and lookup go to the light
+  tier; synthesis and judgement go to the default or strong tier.
+- Before a subagent's finding goes into a design doc, plan, or decision
+  log, load the `cross-checking-claims` skill. It applies only to claims
+  that would change the work if they were wrong.
 
 #### When running under OpenCode
 
@@ -94,7 +102,7 @@ subagent-driven-development:
 
 #### When running under Prime Agent
 
-Prime Agent has no agent-definition files. The same six roles are
+Prime Agent has no agent-definition files. The same roles are
 installed as continual-harness subagent specs, and every dispatch is
 an `rlm(...)` call that names its model explicitly.
 

@@ -42,6 +42,10 @@ assert_not_contains "$out" "[warn] agent reviewer" "no agent warnings"
 # Prime Agent: model tier, every role spec, and superpowers-as-skills.
 assert_contains "$out" "[ok]   default model: claude-opus-5" "prime model tier ok"
 assert_contains "$out" "[ok]   subagent spec reviewer-final" "prime role spec ok"
+# Nine specs against a six-entry render limit: doctor must say so rather
+# than let the overflow stay invisible, which is how it went unnoticed.
+assert_contains "$out" "Prime Agent renders 6" \
+    "doctor reports the subagent render limit"
 assert_contains "$out" "[ok]   superpowers skill brainstorming" "prime superpowers ok"
 assert_not_contains "$out" "[warn] subagent spec" "no prime spec warnings"
 

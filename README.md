@@ -1,10 +1,10 @@
 # agentic-swe-setup
 
 A `just`-driven installer that reproduces one agentic SWE environment across
-three harnesses. It sets up the Superpowers workflow skills, the eight
-book-grounded swe-skills, model-tiered subagent roles, and a single global
-`AGENTS.md`, into Claude Code, OpenCode, Prime Agent, or any combination. The
-repo configures harnesses; it does not install them.
+three harnesses. It sets up the Superpowers workflow skills, the 8 book-grounded
+swe-skills, model-tiered subagent roles, and a single global `AGENTS.md`, into
+Claude Code, OpenCode, Prime Agent, or any combination. The repo configures
+harnesses; it does not install them.
 
 ## Prerequisites
 
@@ -59,13 +59,13 @@ applies to the OpenCode and Prime Agent ladders; Claude Code tiers live in
 `~/.swe-skills` is a single shared checkout that every harness symlinks into.
 Everything is user-scoped. Nothing is written per-project.
 
-Claude Code gets five subagents. `general` and `explore` are built in there, so
-only OpenCode and Prime Agent receive all seven.
+Claude Code gets 7 subagents. `general` and `explore` are built in there, so
+only OpenCode and Prime Agent receive all 9.
 
 ### Why Prime Agent is different
 
-Prime Agent has no plugin system and no agent-definition files, so two things
-are installed differently rather than skipped:
+Prime Agent has no plugin system and no agent-definition files, which changes
+what gets installed and how much of it the agent can see:
 
 - **Superpowers** is cloned to `~/.superpowers` and its `skills/*` are
   symlinked in. They are ordinary `SKILL.md` directories, so Prime Agent loads
@@ -74,6 +74,11 @@ are installed differently rather than skipped:
   `harness/harness_state.json`, keyed with underscores (`reviewer_final`). Each
   spec records the model and thinking level for its tier, and the agent passes
   that model to `rlm(..., model=...)` when it dispatches.
+- **Role specs are summarised.** Prime Agent renders each harness entry to
+  180 characters and shows six per kind, and neither limit is settable.
+  9 roles are installed, so the roster is incomplete by construction. Each
+  spec leads with its dispatch form so truncation costs only the description,
+  and the full role-to-model map lives in `AGENTS.md`.
 
 Prime Agent also cannot restrict a child's tools, so read-only reviewers are
 enforced by instruction in the spec text rather than by permission. This is a
@@ -91,10 +96,12 @@ under `skills/`, and are symlinked into every harness:
 | `routing-model-tiers` | Dispatching subagents, especially a batch, and choosing which model each one runs on. |
 | `cross-checking-claims` | A subagent's finding is about to change a decision and needs an independent check and a primary source. |
 
-Each has a `SKILL.md` for agents and a `README.md` for running it by hand. Add
-one by dropping a directory into `skills/` and adding its name to
-`LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the tests
-all read from that array.
+Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. Only
+`jira-fu` ships a script, and its `README.md` covers running that script by
+hand. The rest are prose, so their `README.md` records where the skill came
+from instead. Add one by dropping a directory into `skills/` and adding its
+name to `LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the
+tests all read from that array.
 
 `just install-skills` relinks them without touching plugins or re-cloning
 swe-skills, which is the fast path while editing one.
@@ -123,12 +130,19 @@ more thinking on the same one.
 | default | `reviewer` | `anthropic/claude-opus-5` | `high` |
 | strong | `implementer-strong` | `anthropic/claude-fable-5` | `high` |
 | strong | `reviewer-final` | `anthropic/claude-fable-5` | `high` |
+| strong | `cross-checker` | `anthropic/claude-fable-5` | `high` |
 
 The per-task reviewer sits on the default tier: reviews run twice per task
 (spec compliance plus code quality), so they dominate strong-tier spend if
-routed there. The strong model is reserved for the two places its judgment
+routed there. The strong model is reserved for the places where its judgment
 gates an outcome: escalated implementations and the final whole-branch
 review before merge.
+
+`cross-checker` is on the strong tier for a different reason. Its job is to
+disagree with whatever the default tier produced, and a model that shares that
+tier's blind spots will confirm them instead. The work is not harder; the
+errors have to be uncorrelated, which means a different model family from the
+one that made the claim.
 
 All three models also accept `xhigh` and `max` if you want to raise the strong
 tier later.
@@ -154,6 +168,7 @@ No `provider` block is needed for Anthropic.
 | `reviewer` | `openai/gpt-5.6-terra` | `high` |
 | `reviewer-final` | `openai/gpt-5.6-sol` | `high` |
 | `reviewer-lite` | `openai/gpt-5.6-terra` | `medium` |
+| `cross-checker` | `openai/gpt-5.6-sol` | `high` |
 
 This file also sets `provider.openai.options.store` to `false`.
 
@@ -185,9 +200,11 @@ Tiers live in the frontmatter of each `agents/*.md`.
 | `reviewer` | `opus` | `high` |
 | `reviewer-final` | `fable` | `high` |
 | `reviewer-lite` | `sonnet` | `high` |
+| `cross-checker` | `fable` | `high` |
 
-All three reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a
-review dispatch cannot write files.
+The reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review
+dispatch cannot write files. `cross-checker` is read-only the same way, plus
+`WebFetch` and `WebSearch`, because it has to reach primary sources.
 
 ## Changing models
 
@@ -207,7 +224,7 @@ raising an error, so check spelling against the tables above.
 
 The merge owns a fixed key set and rewrites only that:
 
-- `agent.*` for the seven managed agent names.
+- `agent.*` for the 9 managed agent names.
 - `plugin`, appended and de-duplicated. Other plugins keep their order.
 - `provider.openai`, added for the OpenAI ladder and removed when switching away.
 - `$schema`, set only when absent.
@@ -229,8 +246,8 @@ Two files, each with a fixed key set:
   `defaultThinkingLevel`. Every other setting, including `theme` and `skills`,
   is preserved, and the manifest records which keys were written so
   `uninstall` removes exactly those.
-- `harness/harness_state.json` — only `entries.subagent.*` for the eight
-  managed roles. Each carries `metadata.managed_by: agentic-swe-setup`, so
+- `harness/harness_state.json` — `entries.subagent.*` for the 9 managed roles
+  and nothing else. Each carries `metadata.managed_by: agentic-swe-setup`, so
   specs the agent refined for itself are never touched. Re-running preserves
   each spec's original `created_at`.
 
@@ -244,7 +261,7 @@ with exit 2 rather than rewritten.
 just uninstall
 ```
 
-It removes the five agent symlinks, all three global instruction symlinks, the
+It removes the 7 agent symlinks, all three global instruction symlinks, the
 skill symlinks, the managed keys from `opencode.jsonc`, and the managed
 settings keys and subagent specs from Prime Agent. A symlink that does not
 resolve into this repo is left alone and reported.
