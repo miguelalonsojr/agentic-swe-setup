@@ -170,7 +170,8 @@ false.
 
 The budget holds. The longest case is `reviewer-final` on the anthropic ladder: a 72-character
 dispatch form, 12 characters for the read-only flag and 3 for the separator, totalling 87 and
-leaving 93 characters for the hint.
+leaving 93 characters for the hint. Checked against the hints written for all nine roles on
+both providers, the longest rendered spec is `cross-checker` on anthropic at 174 characters.
 
 `prime/anthropic.json` and `prime/openai.json` therefore gain a `hint` field per role, at most
 93 characters, written by hand. One limit applies to both providers: the OpenAI selectors are
@@ -225,10 +226,10 @@ recurrence loud.
 | Check | Test |
 |---|---|
 | every generated spec `content` is at most 180 characters, all nine roles, both providers | `test_install_prime.sh` |
-| generated content ends in `")`, proving the dispatch form survived | `test_install_prime.sh` |
+| generated content starts with the complete dispatch form, closing `")` included | `test_install_prime.sh` |
 | generated content contains no `Thinking:` | `test_install_prime.sh` |
 | every role has a `hint` of at most 93 characters | `test_prime_configs.sh` |
-| the `AGENTS.md` Prime table matches `prime/anthropic.json` row for row | new `tests/test_agents_md.sh` |
+| the `AGENTS.md` Prime table matches `prime/anthropic.json` row for row, with no stale rows | new `tests/test_agents_md.sh`, auto-discovered by `run.sh` |
 | `cross-checker` is present in all four ladder files and the ladders stay in lockstep | `test_prime_configs.sh`, `test_provider_configs.sh` |
 | the anthropic ladder still uses exactly three models | `test_prime_configs.sh` |
 | `cross-checker` has no write tools | `test_agents.sh` |
@@ -263,7 +264,6 @@ tests/test_install_prime.sh            content length, dispatch form, no Thinkin
 tests/test_prime_configs.sh            hint length, cross-checker, lockstep
 tests/test_provider_configs.sh         cross-checker
 tests/test_readme.sh                   new skills and role documented
-tests/run.sh                           register test_agents_md.sh
 ```
 
 ## Non-goals
