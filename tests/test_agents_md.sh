@@ -31,10 +31,10 @@ assert_not_contains "$body" "Look the role up in" \
     "the old rlm.harness roster lookup is gone"
 
 # The render limits must be stated, or the table looks like duplication.
-# Anchored on the actual render-cap sentence, not a bare "180" or "six" —
-# "The same six roles are" elsewhere in the file is a stale, unrelated
-# sentence that would satisfy a bare "six" match without saying anything
-# about the render cap.
+# Anchored on the whole render-cap clause, not a bare "180" or "six". Either
+# alone would be satisfied by any unrelated number or word elsewhere in the
+# file — including a role count written back into this section, which is
+# exactly the drift the assertions below exist to catch.
 assert_contains "$body" "180 characters and shows only six" \
     "AGENTS.md states the render caps (180 chars, six entries)"
 
@@ -45,9 +45,25 @@ assert_contains "$body" 'rlm(model=' "AGENTS.md names the selector format"
 # AGENTS.md used to open this section with a hard-coded role count that
 # nothing checked. A list can be verified against the array; a numeral in
 # prose cannot, so the numeral is gone and the list is what gets asserted.
-roles=$(awk '/defined in all three harnesses:/,/subagent-driven-development:/' "$A")
+#
+# The extract stops at the first blank line rather than at a second prose
+# phrase. A range bounded by prose runs to EOF the moment its closing phrase
+# is reworded, and $roles would then swallow the routing table below, where
+# every role name appears — so the check would pass with the role list
+# deleted. Verify the slice is a slice before trusting anything in it.
+roles=$(awk '/defined in all three harnesses:/{found = 1} found && /^$/{exit} found' "$A")
+[ -n "$roles" ] || fail "AGENTS.md role list is missing"
+assert_not_contains "$roles" '| `' \
+    "the role list extract stops short of the routing table"
+
+# Needles carry the list's own delimiter. assert_contains is a substring
+# match, so a bare `implementer` is satisfied by `implementer-light` and a
+# bare `reviewer` by `reviewer-final`: two of these names would be unguarded
+# without the trailing comma, and deleting them from AGENTS.md would not fail.
+last_role=${CLAUDE_AGENTS[${#CLAUDE_AGENTS[@]}-1]}
 for a in "${CLAUDE_AGENTS[@]}"; do
-    assert_contains "$roles" "$a" "AGENTS.md role list names $a"
+    if [ "$a" = "$last_role" ]; then delim="."; else delim=","; fi
+    assert_contains "$roles" "$a$delim" "AGENTS.md role list names $a"
 done
 assert_not_contains "$body" "Six role agents" "the stale role count is gone"
 assert_not_contains "$body" "The same six roles" "the stale Prime role count is gone"

@@ -116,21 +116,28 @@ if have prime-agent; then
     else
         bad "no defaultModel in $pcfg"
     fi
+    specs_found=0
     for a in "${PRIME_AGENTS[@]}"; do
         key=${a//-/_}
         if have jq && [ -f "$pharness" ] \
             && jq -e --arg k "$key" '.entries.subagent[$k]' "$pharness" \
                 >/dev/null 2>&1; then
             ok "subagent spec $a"
+            specs_found=$((specs_found + 1))
         else
             bad "subagent spec $a missing from $pharness"
         fi
     done
     # Prime Agent renders at most six subagent specs per kind into the system
     # prompt (refinement.js DEFAULT_OVERVIEW_ENTRY_LIMIT), so a ladder larger
-    # than six is partly invisible there. Report the shortfall rather than
-    # leaving it to be discovered.
-    ok "${#PRIME_AGENTS[@]} managed subagent specs (Prime Agent renders 6; AGENTS.md table is authoritative)"
+    # than six is partly invisible there. Report that shortfall against what
+    # the loop above actually found, not against the size of the array: a
+    # count nothing counted is the kind of claim this repo keeps getting wrong.
+    if [ "$specs_found" -eq "${#PRIME_AGENTS[@]}" ]; then
+        ok "$specs_found managed subagent specs (Prime Agent renders 6; AGENTS.md table is authoritative)"
+    else
+        bad "$specs_found of ${#PRIME_AGENTS[@]} managed subagent specs installed"
+    fi
     # Superpowers reaches Prime Agent as skills, so check a representative one.
     for s in brainstorming writing-plans subagent-driven-development; do
         if [ -e "$pdir/skills/$s" ]; then ok "superpowers skill $s"

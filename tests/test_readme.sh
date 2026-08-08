@@ -38,7 +38,8 @@ done
 
 # The Prime Agent render ceiling is the reason the AGENTS.md table exists.
 # A reader who does not know about it will think the table is duplication.
-assert_contains "$body" "180" "README states the content render cap"
+assert_contains "$body" "180 characters and shows six per kind" \
+    "README states the content render cap"
 assert_contains "$body" "cross-checker" "README documents the cross-checker role"
 
 # Role counts in prose drift silently: five of them were already wrong
@@ -54,9 +55,12 @@ assert_contains "$body" "for the ${#PRIME_AGENTS[@]} managed roles" \
     "README states the managed role count for the Prime merge"
 assert_contains "$body" "removes the ${#CLAUDE_AGENTS[@]} agent symlinks" \
     "README states how many agent symlinks uninstall removes"
-assert_contains "$body" "${#SKILL_NAMES[@]} book-grounded" \
+# Needles are left-anchored: a bare "8 book-grounded" is satisfied by
+# "18 book-grounded", so array drift would be caught but a prose typo that
+# prefixes a digit would not.
+assert_contains "$body" "the ${#SKILL_NAMES[@]} book-grounded" \
     "README states the book-skill count"
-assert_contains "$body" "${#PRIME_AGENTS[@]} roles are installed" \
+assert_contains "$body" " ${#PRIME_AGENTS[@]} roles are installed" \
     "README states the installed role count"
 
 exit "$ASSERT_FAILURES"

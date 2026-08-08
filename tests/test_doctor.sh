@@ -46,6 +46,10 @@ assert_contains "$out" "[ok]   subagent spec reviewer-final" "prime role spec ok
 # than let the overflow stay invisible, which is how it went unnoticed.
 assert_contains "$out" "Prime Agent renders 6" \
     "doctor reports the subagent render limit"
+# The count comes from the loop above, so this fails if install-prime.sh
+# stops writing a spec, which is what makes the line worth printing.
+assert_contains "$out" " ${#PRIME_AGENTS[@]} managed subagent specs" \
+    "doctor reports how many specs it actually found"
 assert_contains "$out" "[ok]   superpowers skill brainstorming" "prime superpowers ok"
 assert_not_contains "$out" "[warn] subagent spec" "no prime spec warnings"
 

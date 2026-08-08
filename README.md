@@ -134,7 +134,7 @@ more thinking on the same one.
 
 The per-task reviewer sits on the default tier: reviews run twice per task
 (spec compliance plus code quality), so they dominate strong-tier spend if
-routed there. The strong model is reserved for the places where its judgment
+routed there. The strong model is spent on the two places where its judgment
 gates an outcome: escalated implementations and the final whole-branch
 review before merge.
 
