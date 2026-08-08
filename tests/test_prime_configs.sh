@@ -32,6 +32,14 @@ for p in anthropic openai; do
 
         desc=$(jq -r --arg a "$a" '.agent[$a].description // ""' "$f")
         [ -n "$desc" ] || fail "$p prime agent $a has no description"
+
+        # Prime Agent truncates a spec's content at 180 chars, so the spec
+        # text cannot reuse the long OpenCode description. `hint` is the
+        # short form written for that budget.
+        hint=$(jq -r --arg a "$a" '.agent[$a].hint // ""' "$f")
+        [ -n "$hint" ] || fail "$p prime agent $a has no hint"
+        [ "${#hint}" -le 93 ] || \
+            fail "$p prime agent $a hint is ${#hint} chars; the budget is 93"
     done
 
     # No extra agents beyond the managed set.

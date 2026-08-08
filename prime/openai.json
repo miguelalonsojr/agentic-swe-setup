@@ -7,35 +7,41 @@
   "agent": {
     "general": {
       "description": "Primary agent for general coding and research work.",
+      "hint": "primary agent for general coding and research work",
       "model": "openai/gpt-5.6-terra",
       "thinking": "medium"
     },
     "explore": {
       "description": "Fast read-only codebase exploration and question answering.",
+      "hint": "fast read-only exploration, enumeration, and lookups; the cheap tier for list-shaped work",
       "model": "openai/gpt-5.6-luna",
       "thinking": "medium"
     },
     "implementer-light": {
       "mode": "subagent",
       "description": "Implements a single mechanical, fully-specified plan task: isolated functions, clear spec, 1-2 files. Do NOT use for multi-file work, debugging, or judgment.",
+      "hint": "one mechanical fully-specified task, 1-2 files; not for multi-file work or judgment",
       "model": "openai/gpt-5.6-luna",
       "thinking": "low"
     },
     "implementer": {
       "mode": "subagent",
       "description": "Default implementer: multi-file coordination, integration, debugging, prose-specified tasks. Writes tests per TDD.",
+      "hint": "default implementer: multi-file, integration, debugging; writes tests per TDD",
       "model": "openai/gpt-5.6-terra",
       "thinking": "medium"
     },
     "implementer-strong": {
       "mode": "subagent",
       "description": "Escalation implementer for BLOCKED tasks, fix rounds 4+, or tasks needing design judgment or broad codebase understanding.",
+      "hint": "escalation for BLOCKED tasks, fix round 4+, or tasks needing design judgment",
       "model": "openai/gpt-5.6-sol",
       "thinking": "high"
     },
     "reviewer": {
       "mode": "subagent",
       "description": "Per-task spec-compliance and code-quality review of diffs. Read-only. Not for the final whole-branch review.",
+      "hint": "per-task spec + code-quality review of diffs; not the final review",
       "model": "openai/gpt-5.6-terra",
       "thinking": "high",
       "readOnly": true
@@ -43,6 +49,7 @@
     "reviewer-final": {
       "mode": "subagent",
       "description": "Final whole-branch review before merge, after all per-task reviews have passed. Read-only.",
+      "hint": "final whole-branch review before merge, after every per-task review has passed",
       "model": "openai/gpt-5.6-sol",
       "thinking": "high",
       "readOnly": true
@@ -50,6 +57,7 @@
     "reviewer-lite": {
       "mode": "subagent",
       "description": "Scoped re-review of small fix diffs only, after a full review passed. Read-only.",
+      "hint": "scoped re-review of a small fix diff, after a full review passed",
       "model": "openai/gpt-5.6-terra",
       "thinking": "medium",
       "readOnly": true

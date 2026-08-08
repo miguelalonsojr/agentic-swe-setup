@@ -49,11 +49,35 @@ for a in "${PRIME_AGENTS[@]}"; do
         "$HARNESS")" "$model" "spec $a content names its model"
 done
 
+# Prime Agent renders a spec's content through compactText() at 180 chars
+# (refinement.js:14). Before this was fixed, all eight specs overran and the
+# truncated tail was always the dispatch form, so the roster named roles
+# without showing a usable dispatch for any of them.
+for a in "${PRIME_AGENTS[@]}"; do
+    key=${a//-/_}
+    content=$(jq -r --arg k "$key" '.entries.subagent[$k].content' "$HARNESS")
+    [ "${#content}" -le 180 ] || \
+        fail "spec $a content is ${#content} chars; the render cap is 180"
+
+    # The dispatch form leads, so truncation can only ever cost the hint.
+    model=$(jq -r --arg a "$a" '.agent[$a].model' "$REPO_ROOT/prime/anthropic.json")
+    want="await rlm(task, name=\"$a\", model=\"$model\")"
+    case "$content" in
+        "$want"*) ;;
+        *) fail "spec $a does not lead with its dispatch form: [$content]" ;;
+    esac
+
+    # rlm() takes only name and model (agent-session.js:7768); a child's
+    # thinking level is inherited from the parent session and clamped.
+    assert_not_contains "$content" "Thinking:" \
+        "spec $a claims a thinking level no dispatch can set"
+done
+
 # Read-only intent survives into the spec text.
 assert_contains "$(jq -r '.entries.subagent.reviewer_final.content' "$HARNESS")" \
-    "Read-only" "reviewer-final spec is read-only"
+    "read-only" "reviewer-final spec is read-only"
 assert_not_contains "$(jq -r '.entries.subagent.implementer.content' "$HARNESS")" \
-    "Read-only" "implementer spec is not read-only"
+    "read-only" "implementer spec is not read-only"
 
 # Skills: superpowers, swe-skills, and this repo's own, all in one directory.
 assert_symlink_to "$PDIR/skills/brainstorming" \

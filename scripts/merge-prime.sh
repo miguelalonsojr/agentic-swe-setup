@@ -77,14 +77,17 @@ jq -n \
         { id: ($name | gsub("-"; "_")),
           kind: "subagent",
           title: $name,
+          # Prime Agent truncates this at 180 chars and shows only six specs
+          # per kind (refinement.js:12,14), neither of which an installer can
+          # raise. So the dispatch form leads: truncation can then only cost
+          # the hint, never the call an agent needs to make. The role name is
+          # already printed from `title`, the selector is already in the
+          # dispatch form, and rlm() cannot be passed a thinking level, so
+          # none of those are repeated here.
           content: (
-            "Role: " + $name + "\n"
-            + "Model: " + $cfg.model + "\n"
-            + "Thinking: " + $cfg.thinking + "\n"
-            + (if $cfg.readOnly then "Read-only: never edit files; report findings only.\n" else "" end)
-            + "\n" + $cfg.description + "\n\n"
-            + "Dispatch with:\n"
-            + "    handle = await rlm(task, name=\"" + $name + "\", model=\"" + $cfg.model + "\")\n"
+            "await rlm(task, name=\"" + $name + "\", model=\"" + $cfg.model + "\")"
+            + (if $cfg.readOnly then " | read-only" else "" end)
+            + " | " + $cfg.hint
           ),
           path: "swe/roles",
           scope: "global",
