@@ -33,6 +33,11 @@ assert_contains "$routing" 'accepts `name` and `model` and nothing else' \
     "routing skill names the rlm keywords and excludes the rest"
 assert_contains "$routing" "clamped to the child model" \
     "routing skill states how thinking level is set"
+# The list-vs-verdict table is what the skill exists to install. Deleting the
+# whole `## The Routing Test` section left every needle above green, so this
+# one is the light-tier row's own wording: one matching site, inside the table.
+assert_contains "$routing" "A list. Cataloguing licences" \
+    "routing skill keeps the list-vs-verdict routing table"
 
 # The needles here are whole clauses for the reason stated above, and this
 # skill makes the point sharply: a bare "primary source" matches the mandated
@@ -56,6 +61,12 @@ assert_contains "$crosscheck" "dual-licensed" \
     "cross-check skill keeps the licence error that primary sources caught"
 assert_contains "$crosscheck" "flagged as unconfirmed" \
     "cross-check skill says what happens to a claim that survives neither step"
+# Deleting the whole `## Disagreement Is The Signal` section left every needle
+# above green, and that section is the other half of the skill's point: the
+# two-verdicts case is the outcome the second dispatch was paid for. This
+# needle is the rule that section owns, with one matching site.
+assert_contains "$crosscheck" "Do not average the two answers" \
+    "cross-check skill says how to settle two verdicts that differ"
 
 # --- install-skills alone, with no harness present ---
 out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)

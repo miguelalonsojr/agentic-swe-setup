@@ -21,8 +21,10 @@ for a in "${PRIME_AGENTS[@]}"; do
         "AGENTS.md routing table has the row for $a"
 done
 
-# No stale rows for roles that no longer exist.
-rows=$(grep -c '^| `[a-z-]\+` | `anthropic/' "$A")
+# No stale rows for roles that no longer exist. The selector pattern is
+# provider-agnostic: an `anthropic/` prefix here would let a stale row naming
+# any other provider sit in the table with the count still matching.
+rows=$(grep -c '^| `[a-z-]\+` | `[a-z][a-z0-9-]*/' "$A")
 assert_eq "$rows" "${#PRIME_AGENTS[@]}" \
     "AGENTS.md routing table has exactly one row per managed role"
 

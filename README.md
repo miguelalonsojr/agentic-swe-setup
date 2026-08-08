@@ -77,7 +77,7 @@ what gets installed and how much of it the agent can see:
 - **Role specs are summarised.** Prime Agent renders each harness entry to
   180 characters and shows six per kind, and neither limit is settable.
   9 roles are installed, so the roster is incomplete by construction. Each
-  spec leads with its dispatch form so truncation costs only the description,
+  spec leads with its dispatch form so truncation costs only the hint,
   and the full role-to-model map lives in `AGENTS.md`.
 
 Prime Agent also cannot restrict a child's tools, so read-only reviewers are
@@ -141,8 +141,9 @@ review before merge.
 `cross-checker` is on the strong tier for a different reason. Its job is to
 disagree with whatever the default tier produced, and a model that shares that
 tier's blind spots will confirm them instead. The work is not harder; the
-errors have to be uncorrelated, which means a different model family from the
-one that made the claim.
+errors have to be less correlated, which means a different model from the one
+that made the claim. Both ladders decorrelate within one vendor, which is the
+weaker form of it; `cross-checking-claims` covers what that is worth.
 
 All three models also accept `xhigh` and `max` if you want to raise the strong
 tier later.

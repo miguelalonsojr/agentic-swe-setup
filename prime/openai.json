@@ -64,7 +64,7 @@
     },
     "cross-checker": {
       "mode": "subagent",
-      "description": "Independent second opinion on a load-bearing claim: prior art, licensing, feasibility. Runs on a different model family from the default tier so its errors are uncorrelated. Read-only.",
+      "description": "Independent second opinion on a load-bearing claim: prior art, licensing, feasibility. Runs on a different model from the default tier, within the same vendor, so its errors are less correlated. Read-only.",
       "hint": "independent second opinion on a load-bearing claim; give it the question, not the answer",
       "model": "openai/gpt-5.6-sol",
       "thinking": "high",

@@ -72,7 +72,7 @@ session and clamped to the child model's capability, so it cannot be set per dis
 The role-to-model map is the table under `#### When running under Prime Agent` in
 `AGENTS.md`. The harness roster shown in the system prompt is not that map, because
 Prime Agent summarises each subagent spec to 180 characters and shows only six of
-them. Roles are missing from it, and no entry it does show carries a complete dispatch.
+them, so some roles do not appear in it at all.
 
 ### Claude Code
 

@@ -71,11 +71,14 @@ subagent-driven-development:
   model - reserved for this one merge-gating pass).
 - Scoped re-reviews of small fix diffs go to `reviewer-lite`.
 - A load-bearing claim that needs an independent check goes to
-  `cross-checker`, on a different model family from whatever produced it.
+  `cross-checker`, which runs on a different model from the tier that
+  produced the claim. Both installed ladders stay inside one vendor;
+  `cross-checking-claims` covers what that decorrelation is worth.
 - Never retry the same agent unchanged after BLOCKED.
-- Before dispatching a batch of subagents, load the `routing-model-tiers`
-  skill and pick a tier per task. Enumeration and lookup go to the light
-  tier; synthesis and judgement go to the default or strong tier.
+- Before dispatching a subagent, and especially before a batch, load the
+  `routing-model-tiers` skill and pick a tier per task. Enumeration and
+  lookup go to the light tier; synthesis and judgement go to the default
+  or strong tier.
 - Before a subagent's finding goes into a design doc, plan, or decision
   log, load the `cross-checking-claims` skill. It applies only to claims
   that would change the work if they were wrong.
@@ -108,9 +111,8 @@ an `rlm(...)` call that names its model explicitly.
 
 The harness roster is a hint, not a lookup. Prime Agent summarises each
 subagent spec to 180 characters and shows only six of them, so some roles
-are missing from it and none of the entries shows a complete dispatch. This
-table is authoritative. The model strings are Prime Agent `rlm(model=...)`
-selectors and are not valid anywhere else.
+are missing from it. This table is authoritative. The model strings are
+Prime Agent `rlm(model=...)` selectors and are not valid anywhere else.
 
 | Role | Model |
 |---|---|

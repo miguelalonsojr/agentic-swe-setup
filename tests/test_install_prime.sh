@@ -59,7 +59,7 @@ done
 assert_render_cap_and_read_only() {
     local provider=$1
     local cfg="$REPO_ROOT/prime/$provider.json"
-    local a key content model want read_only
+    local a key content model want read_only hint
     for a in "${PRIME_AGENTS[@]}"; do
         key=${a//-/_}
         content=$(jq -r --arg k "$key" '.entries.subagent[$k].content' "$HARNESS")
@@ -92,6 +92,15 @@ assert_render_cap_and_read_only() {
             assert_not_contains "$content" " | read-only" \
                 "$provider spec $a content does not falsely claim read-only"
         fi
+
+        # The hint is the only part of the spec the ladder file supplies; the
+        # dispatch form and the read-only marker are both derived from fields
+        # the assertions above already read. Without this, dropping the hint
+        # from the generator satisfies every other check here, and the 93-char
+        # hint budget in test_prime_configs.sh guards data nothing consumes.
+        hint=$(jq -r --arg a "$a" '.agent[$a].hint' "$cfg")
+        assert_contains "$content" "$hint" \
+            "$provider spec $a content carries its hint from $provider.json"
     done
 }
 assert_render_cap_and_read_only anthropic
