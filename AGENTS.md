@@ -100,8 +100,8 @@ an `rlm(...)` call that names its model explicitly.
 
 The harness roster is a hint, not a lookup. Prime Agent summarises each
 subagent spec to 180 characters and shows only six of them, so some roles
-are missing from it and none of them show a complete dispatch. This table
-is authoritative. The model strings are Prime Agent `rlm(model=...)`
+are missing from it and none of the entries shows a complete dispatch. This
+table is authoritative. The model strings are Prime Agent `rlm(model=...)`
 selectors and are not valid anywhere else.
 
 | Role | Model |
@@ -116,7 +116,7 @@ selectors and are not valid anywhere else.
 | `explore` | `anthropic/claude-sonnet-5` |
 | `general` | `anthropic/claude-opus-5` |
 
-Installed with `provider=openai` instead, the selectors are the ones in
+If you installed with `provider=openai`, the selectors are the ones in
 `prime/openai.json`.
 
 - Dispatch with the model from the table, never the one you are running on:

@@ -31,8 +31,12 @@ assert_not_contains "$body" "Look the role up in" \
     "the old rlm.harness roster lookup is gone"
 
 # The render limits must be stated, or the table looks like duplication.
-assert_contains "$body" "180" "AGENTS.md states the content render cap"
-assert_contains "$body" "six" "AGENTS.md states the entry render cap"
+# Anchored on the actual render-cap sentence, not a bare "180" or "six" —
+# "The same six roles are" elsewhere in the file is a stale, unrelated
+# sentence that would satisfy a bare "six" match without saying anything
+# about the render cap.
+assert_contains "$body" "180 characters and shows only six" \
+    "AGENTS.md states the render caps (180 chars, six entries)"
 
 # Prime Agent's selector format must be named as Prime's, so a Claude Code
 # session reading the wrong subsection does not copy it into a Task dispatch.

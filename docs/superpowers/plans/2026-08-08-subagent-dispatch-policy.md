@@ -444,17 +444,17 @@ In `AGENTS.md`, inside `#### When running under Prime Agent`, delete this bullet
   ```
 ```
 
-Replace it with:
+The table rows must sit at column 0: `tests/test_agents_md.sh` anchors its
+row match with `^|`, and a column-0 table also ends the lead-in paragraph
+cleanly instead of orphaning the note that follows it. Replace the deleted
+bullet with the following, copied byte-for-byte into `AGENTS.md`:
 
 ```markdown
 The harness roster is a hint, not a lookup. Prime Agent summarises each
 subagent spec to 180 characters and shows only six of them, so some roles
-are missing from it and none of them show a complete dispatch. This table
-is authoritative. The model strings are Prime Agent `rlm(model=...)`
-selectors and are not valid anywhere else. The table rows must sit at
-column 0: `tests/test_agents_md.sh` anchors its row match with `^|`, and a
-column-0 table also ends the paragraph cleanly instead of orphaning the
-note that follows it.
+are missing from it and none of the entries shows a complete dispatch. This
+table is authoritative. The model strings are Prime Agent `rlm(model=...)`
+selectors and are not valid anywhere else.
 
 | Role | Model |
 |---|---|
@@ -468,7 +468,7 @@ note that follows it.
 | `explore` | `anthropic/claude-sonnet-5` |
 | `general` | `anthropic/claude-opus-5` |
 
-Installed with `provider=openai` instead, the selectors are the ones in
+If you installed with `provider=openai`, the selectors are the ones in
 `prime/openai.json`.
 
 - Dispatch with the model from the table, never the one you are running on:
