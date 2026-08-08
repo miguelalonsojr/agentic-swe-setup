@@ -747,7 +747,13 @@ assert_contains "$body" "removes the ${#CLAUDE_AGENTS[@]} agent symlinks" \
     "README states how many agent symlinks uninstall removes"
 assert_contains "$body" "${#SKILL_NAMES[@]} book-grounded" \
     "README states the book-skill count"
+assert_contains "$body" "${#PRIME_AGENTS[@]} roles are installed" \
+    "README states the installed role count"
 ```
+
+The last of those guards a count inside the "Why Prime Agent is different" bullet in Step 7. An
+earlier draft of this plan wrote that one as the word "Nine", which contradicted this task's own
+constraint that every surviving count be derived from an array. Use the digit.
 
 - [ ] **Step 3: Write the failing doctor test**
 
@@ -872,7 +878,7 @@ Extend "Why Prime Agent is different" with a third bullet:
 
 ```markdown
 - **Role specs are summarised.** Prime Agent renders each harness entry to
-  180 characters and shows six per kind, and neither limit is settable. Nine
+  180 characters and shows six per kind, and neither limit is settable. 9
   roles are installed, so the roster is incomplete by construction. Each spec
   leads with its dispatch form so truncation costs only the description, and
   the full role-to-model map lives in `AGENTS.md`.
