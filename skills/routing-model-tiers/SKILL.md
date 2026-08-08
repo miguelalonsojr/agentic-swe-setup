@@ -8,10 +8,14 @@ description: Use when about to dispatch one or more subagents, especially a batc
 ## Overview
 
 The model is a per-task decision, not a session default. Choose it while you write
-each task, not once for the batch and not once for the session.
+each task; a model chosen once for a whole batch is a default every later dispatch
+inherits.
 
 `dispatching-parallel-agents` decides whether to fan out into several agents; this
-skill decides which model each of those agents gets.
+skill decides which model each of those agents gets. `subagent-driven-development`
+`## Model Selection` is the overlapping authority: it ranks the roles of a plan by
+tier and it is where the cost reasoning lives. Read it for role tiers, read this for
+the per-dispatch decision, and follow it where the two ever disagree.
 
 The failure this prevents, from the session recorded in `subagents-2026-08-08.md`:
 seven children were dispatched, the model was read off one role spec and reused for
@@ -32,19 +36,26 @@ tier to enumerate, then hand the enumeration to the default or strong tier to ru
 on. Fused into one dispatch, the judgement gains nothing and you pay frontier rates
 for the lookup.
 
+**The light tier has a floor: one pass.** Turn count beats token price. The cheapest
+models routinely take two to three times the turns on multi-step work and cost more
+in the end, so a task that loops (search, then read, then follow what it found)
+takes mid-tier however list-shaped its output is. Light tier is for work that is one
+pass over a known target.
+
 ## The Menu Is Bigger Than The Roster
 
-The role roster is not the model menu. Read the menu:
+The role roster is not the model menu. Ask the harness what it can address:
 
-```python
-models = await rlm.find_models("", limit=20)
-```
+| Harness | Ask it |
+|---|---|
+| Prime Agent | `await rlm.find_models("", limit=20)`. `limit` is capped at 20 by the runtime; ask for more and the call raises. |
+| Claude Code | `/model` in-session. `--model` and agent frontmatter take either an alias or a full name. |
+| OpenCode | `opencode models`, or `opencode models <provider>` for one provider's list. |
 
-In the environment this skill was written for that returned 13 selectors, against the
-three the installed ladder names. Which 13 depends on the providers authenticated at
-the time, so call it at the start of a batch rather than working from the selectors
-you happen to remember. `limit` is capped at 20 by the runtime; ask for more and the
-call raises.
+In the Prime Agent environment this skill was written for, that call returned 13
+selectors against the three the installed ladder names. What comes back depends on
+which providers are authenticated, so make the call at the start of a batch instead
+of working from the selectors you happen to remember.
 
 ## Dispatch Mechanics By Harness
 
@@ -56,8 +67,7 @@ handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5")
 
 `rlm()` accepts `name` and `model` and nothing else. Any other keyword raises
 `Unsupported rlm.run kwargs`. The child's thinking level is inherited from the parent
-session and clamped to the child model's capability, so it cannot be set per dispatch:
-the model is the whole of the decision.
+session and clamped to the child model's capability, so it cannot be set per dispatch.
 
 The role-to-model map is the table under `#### When running under Prime Agent` in
 `AGENTS.md`. The harness roster shown in the system prompt is not that map, because
@@ -66,8 +76,9 @@ them. Roles are missing from it, and no entry it does show carries a complete di
 
 ### Claude Code
 
-Pass a model per dispatch, following the dispatching skill's own model-selection
-guidance. Models in agent frontmatter are fallbacks for when you do not choose.
+Pass a model per dispatch, following `subagent-driven-development` `## Model
+Selection`, which ranks the roles by tier. Models in agent frontmatter are fallbacks
+for when you do not choose.
 
 ### OpenCode
 
@@ -82,5 +93,5 @@ by choosing the agent whose tier fits the task.
 | "It's all one research batch" | A batch is many tasks, and they are not the same shape. |
 | "The strong model is the safe choice" | For enumeration it buys nothing, and it costs the budget you need for the judgement calls later. |
 | "The spec names a model, so that's the model" | The spec names the tier's model for that role, not for the task you are dispatching now. |
-| "I know which models exist" | You know which ones the specs mention. Call `rlm.find_models` and count. |
+| "I know which models exist" | You know which ones the specs mention. Ask the harness for its list and count. |
 | "All the children agreed, so the answer is solid" | Children on one model share one model's blind spots. Agreement between them is not corroboration. See `cross-checking-claims`. |

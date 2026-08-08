@@ -20,10 +20,19 @@ done
 # The dispatch-policy skills are only correct if they carry the specific
 # facts that make them correct. A skill that says "pick a good model" is
 # the advice that already failed.
-r=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
-assert_contains "$r" "rlm.find_models" "routing skill names the model-menu call"
-assert_contains "$r" 'accepts `name` and `model`' "routing skill names the rlm keywords"
-assert_contains "$r" "clamped" "routing skill states how thinking level is set"
+#
+# Each needle is anchored on the whole claim, not on a distinctive token.
+# A bare "clamped" would stay green if the thinking-level sentence were
+# deleted and "capped at 20" reworded to "clamped to 20"; a bare
+# "rlm.find_models" would stay green on a passing mention with the call
+# itself gone.
+routing=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
+assert_contains "$routing" 'rlm.find_models("", limit=20)' \
+    "routing skill gives the model-menu call, with its capped limit"
+assert_contains "$routing" 'accepts `name` and `model` and nothing else' \
+    "routing skill names the rlm keywords and excludes the rest"
+assert_contains "$routing" "clamped to the child model" \
+    "routing skill states how thinking level is set"
 
 # --- install-skills alone, with no harness present ---
 out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)
