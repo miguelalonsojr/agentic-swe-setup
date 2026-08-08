@@ -90,7 +90,7 @@ under `skills/`, and are symlinked into every harness:
 | `jira-fu` | Filing a Jira epic with stories and sub-tasks from a written backlog, or creating more issues than is sane to click through by hand. |
 | `routing-model-tiers` | Dispatching subagents, especially a batch, and choosing which model each one runs on. |
 
-Each has a `SKILL.md` for agents and a `README.md` for humans. Add
+Each has a `SKILL.md` for agents and a `README.md` for running it by hand. Add
 one by dropping a directory into `skills/` and adding its name to
 `LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the tests
 all read from that array.
