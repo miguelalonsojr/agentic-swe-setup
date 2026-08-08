@@ -53,6 +53,30 @@ assert_contains "$out" " ${#PRIME_AGENTS[@]} managed subagent specs" \
 assert_contains "$out" "[ok]   superpowers skill brainstorming" "prime superpowers ok"
 assert_not_contains "$out" "[warn] subagent spec" "no prime spec warnings"
 
+# --- a missing spec is counted, not papered over ---
+# The [ok] line above is only worth printing if it cannot appear when a spec
+# is absent. The fully-installed sandbox alone cannot show that: there the
+# text is identical whether the report is conditional or unconditional, so
+# reverting it to an unconditional ok leaves this file green. Delete one spec
+# and assert doctor reports what it found and warns about it.
+victim=${PRIME_AGENTS[${#PRIME_AGENTS[@]}-1]}
+victim_key=${victim//-/_}
+harness="$(prime_dir)/harness/harness_state.json"
+cp "$harness" "$SANDBOX/harness_state.json.bak"
+jq --arg k "$victim_key" 'del(.entries.subagent[$k])' "$harness" \
+    > "$harness.tmp" && mv "$harness.tmp" "$harness"
+
+short=$(( ${#PRIME_AGENTS[@]} - 1 ))
+out=$("$DOCTOR" 2>&1)
+assert_contains "$out" "[warn] $short of ${#PRIME_AGENTS[@]} managed subagent specs" \
+    "doctor counts the specs it found when one is missing"
+assert_not_contains "$out" "[ok]   $short managed subagent specs" \
+    "a short count is never reported as ok"
+assert_eq "$("$DOCTOR" >/dev/null 2>&1; echo $?)" 0 \
+    "doctor still exits 0 with a spec missing"
+
+cp "$SANDBOX/harness_state.json.bak" "$harness"
+
 # --- a link that points somewhere else is reported, not silently accepted ---
 ln -sfn /etc/hostname "$(claude_dir)/CLAUDE.md"
 out=$("$DOCTOR" 2>&1)
