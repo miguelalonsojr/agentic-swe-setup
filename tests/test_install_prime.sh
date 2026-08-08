@@ -52,32 +52,49 @@ done
 # Prime Agent renders a spec's content through compactText() at 180 chars
 # (refinement.js:14). Before this was fixed, all eight specs overran and the
 # truncated tail was always the dispatch form, so the roster named roles
-# without showing a usable dispatch for any of them.
-for a in "${PRIME_AGENTS[@]}"; do
-    key=${a//-/_}
-    content=$(jq -r --arg k "$key" '.entries.subagent[$k].content' "$HARNESS")
-    [ "${#content}" -le 180 ] || \
-        fail "spec $a content is ${#content} chars; the render cap is 180"
+# without showing a usable dispatch for any of them. Both ladders install
+# through the same generator, so this is asserted for whichever provider is
+# currently installed — the anthropic and openai selectors differ in length,
+# and only checking one leaves the other's cap unguarded.
+assert_render_cap_and_read_only() {
+    local provider=$1
+    local cfg="$REPO_ROOT/prime/$provider.json"
+    local a key content model want read_only
+    for a in "${PRIME_AGENTS[@]}"; do
+        key=${a//-/_}
+        content=$(jq -r --arg k "$key" '.entries.subagent[$k].content' "$HARNESS")
+        [ "${#content}" -le 180 ] || \
+            fail "$provider spec $a content is ${#content} chars; the render cap is 180"
 
-    # The dispatch form leads, so truncation can only ever cost the hint.
-    model=$(jq -r --arg a "$a" '.agent[$a].model' "$REPO_ROOT/prime/anthropic.json")
-    want="await rlm(task, name=\"$a\", model=\"$model\")"
-    case "$content" in
-        "$want"*) ;;
-        *) fail "spec $a does not lead with its dispatch form: [$content]" ;;
-    esac
+        # The dispatch form leads, so truncation can only ever cost the hint.
+        model=$(jq -r --arg a "$a" '.agent[$a].model' "$cfg")
+        want="await rlm(task, name=\"$a\", model=\"$model\")"
+        case "$content" in
+            "$want"*) ;;
+            *) fail "$provider spec $a does not lead with its dispatch form: [$content]" ;;
+        esac
 
-    # rlm() takes only name and model (agent-session.js:7768); a child's
-    # thinking level is inherited from the parent session and clamped.
-    assert_not_contains "$content" "Thinking:" \
-        "spec $a claims a thinking level no dispatch can set"
-done
+        # rlm() takes only name and model (agent-session.js:7768); a child's
+        # thinking level is inherited from the parent session and clamped.
+        assert_not_contains "$content" "Thinking:" \
+            "$provider spec $a claims a thinking level no dispatch can set"
 
-# Read-only intent survives into the spec text.
-assert_contains "$(jq -r '.entries.subagent.reviewer_final.content' "$HARNESS")" \
-    "read-only" "reviewer-final spec is read-only"
-assert_not_contains "$(jq -r '.entries.subagent.implementer.content' "$HARNESS")" \
-    "read-only" "implementer spec is not read-only"
+        # Read-only intent must show up as the " | read-only" marker that
+        # merge-prime.sh emits, not merely as prose — `explore`'s hint says
+        # "read-only exploration" without `explore` itself being read-only,
+        # so a bare substring match on "read-only" can pass for the wrong
+        # reason.
+        read_only=$(jq -r --arg a "$a" '.agent[$a].readOnly // false' "$cfg")
+        if [ "$read_only" = "true" ]; then
+            assert_contains "$content" " | read-only" \
+                "$provider spec $a content marks read-only"
+        else
+            assert_not_contains "$content" " | read-only" \
+                "$provider spec $a content does not falsely claim read-only"
+        fi
+    done
+}
+assert_render_cap_and_read_only anthropic
 
 # Skills: superpowers, swe-skills, and this repo's own, all in one directory.
 assert_symlink_to "$PDIR/skills/brainstorming" \
@@ -107,6 +124,7 @@ assert_eq "$n" 0 "no spurious backup on re-run"
 assert_eq "$(jq -r '.defaultProvider' "$SETTINGS")" "openai" "explicit provider honoured"
 assert_eq "$(jq -r '.entries.subagent.reviewer.metadata.model' "$HARNESS")" \
     "openai/gpt-5.6-terra" "specs re-pointed at the openai ladder"
+assert_render_cap_and_read_only openai
 
 # --- unmanaged state survives a merge ---
 tmp=$(mktemp)

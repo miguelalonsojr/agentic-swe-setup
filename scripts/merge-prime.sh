@@ -87,7 +87,11 @@ jq -n \
           content: (
             "await rlm(task, name=\"" + $name + "\", model=\"" + $cfg.model + "\")"
             + (if $cfg.readOnly then " | read-only" else "" end)
-            + " | " + $cfg.hint
+            # A missing hint would otherwise silently degrade to a dangling
+            # " | " separator (jq treats null as the identity for +), so
+            # fail loud at generation time instead of emitting a malformed
+            # spec.
+            + " | " + ($cfg.hint // error("no hint for " + $name))
           ),
           path: "swe/roles",
           scope: "global",
