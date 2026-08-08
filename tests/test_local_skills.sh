@@ -17,6 +17,14 @@ for s in "${LOCAL_SKILLS[@]}"; do
     assert_contains "$body" "description:" "skills/$s has a description"
 done
 
+# The dispatch-policy skills are only correct if they carry the specific
+# facts that make them correct. A skill that says "pick a good model" is
+# the advice that already failed.
+r=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
+assert_contains "$r" "rlm.find_models" "routing skill names the model-menu call"
+assert_contains "$r" 'accepts `name` and `model`' "routing skill names the rlm keywords"
+assert_contains "$r" "clamped" "routing skill states how thinking level is set"
+
 # --- install-skills alone, with no harness present ---
 out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)
 assert_eq "$?" 0 "install-skills exits 0 with no harness"
