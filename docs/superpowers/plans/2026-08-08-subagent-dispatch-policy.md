@@ -855,11 +855,16 @@ Line 4 says "the eight book-grounded swe-skills", which is correct; change it to
 
 Then two content edits.
 
-The two skill-table rows and the correction to the sentence below that table ("a `README.md`
-for running it by hand", false once a script-less skill is listed) already landed in Tasks 4
-and 5, because `tests/test_readme.sh:34-36` forces a skill's README row into the same task that
-registers it. Verify both rows and the corrected sentence are present, and move on. Do not add
-them again.
+The two skill-table rows already landed in Tasks 4 and 5, because `tests/test_readme.sh:34-36`
+forces a skill's README row into the same task that registers it. Verify both rows are present
+and do not add them again.
+
+The sentence below that table is still Task 6's to fix. `README.md:93` reads "Each has a
+`SKILL.md` for agents and a `README.md` for running it by hand." That is false as soon as a
+script-less skill is listed, which is now: only `jira-fu` ships a script, while
+`routing-model-tiers` and `cross-checking-claims` ship a `README.md` explaining where the skill
+came from. Correct it, keep the fact that `jira-fu` documents a runnable script, and re-wrap the
+paragraph so no line is left short.
 
 Add `cross-checker` to the three model-ladder tables (`opencode/anthropic.json`, `opencode/openai.json`, Claude Code frontmatter) with the strong-tier model, and note that it sits on the strong tier to stay decorrelated from the default tier rather than because the work is hard.
 
