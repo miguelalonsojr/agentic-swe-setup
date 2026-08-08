@@ -34,6 +34,29 @@ assert_contains "$routing" 'accepts `name` and `model` and nothing else' \
 assert_contains "$routing" "clamped to the child model" \
     "routing skill states how thinking level is set"
 
+# The needles here are whole clauses for the reason stated above, and this
+# skill makes the point sharply: a bare "primary source" matches the mandated
+# frontmatter, a bare "verification-before-completion" matches the section
+# heading, and a bare "cross-checker" matches a later aside. Gutting Step 2,
+# replacing the boundary section's body and deleting the dispatch sentence left
+# all three green. Each needle below has exactly one matching site, inside the
+# section that owns the rule.
+crosscheck=$(cat "$REPO_ROOT/skills/cross-checking-claims/SKILL.md")
+assert_contains "$crosscheck" 'to the `cross-checker`' \
+    "cross-check skill names its dispatch target"
+assert_contains "$crosscheck" "check it against a primary source" \
+    "cross-check skill requires a primary source"
+assert_contains "$crosscheck" "your own claims about your own work" \
+    "cross-check skill draws its boundary with the verification skill"
+assert_contains "$crosscheck" "change what gets built, bought or skipped" \
+    "cross-check skill gives the load-bearing gate routing-model-tiers leans on"
+assert_contains "$crosscheck" "the question, not the" \
+    "cross-check skill states the anchoring rule"
+assert_contains "$crosscheck" "dual-licensed" \
+    "cross-check skill keeps the licence error that primary sources caught"
+assert_contains "$crosscheck" "flagged as unconfirmed" \
+    "cross-check skill says what happens to a claim that survives neither step"
+
 # --- install-skills alone, with no harness present ---
 out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)
 assert_eq "$?" 0 "install-skills exits 0 with no harness"

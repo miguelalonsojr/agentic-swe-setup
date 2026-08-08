@@ -23,7 +23,7 @@ LEGACY_CLAUDE_AGENTS=(reviewer-light)
 SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
              de-slop generating-design-doc pragmatic-engineer system-designing)
 # Skills that live in this repo rather than the shared swe-skills checkout.
-LOCAL_SKILLS=(jira-fu routing-model-tiers)
+LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims)
 
 log()  { printf '==> %s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }

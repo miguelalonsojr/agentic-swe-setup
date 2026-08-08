@@ -29,7 +29,7 @@ Ask one question before every dispatch: what does this task produce?
 | The task produces | Tier |
 |---|---|
 | A list. Cataloguing licences, pulling version pins, listing a repository's contents, extracting an interface, reading files to answer a factual question. | Light |
-| A verdict. Synthesis across sources, feasibility calls, trade-off judgements, design decisions, anything whose answer changes the plan. | Default, or strong when the verdict is load-bearing |
+| A verdict. Synthesis across sources, feasibility calls, trade-off judgements, design decisions, anything whose answer changes the plan. | Default, or strong when the verdict is load-bearing. See `cross-checking-claims` for what load-bearing means. |
 
 A task that produces a list it then has to judge is two tasks. Dispatch the light
 tier to enumerate, then hand the enumeration to the default or strong tier to rule
