@@ -524,7 +524,7 @@ Add to `tests/test_local_skills.sh`, after the existing per-skill loop:
 # the advice that already failed.
 r=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
 assert_contains "$r" "rlm.find_models" "routing skill names the model-menu call"
-assert_contains "$r" "name" "routing skill names the rlm keywords"
+assert_contains "$r" 'accepts `name` and `model`' "routing skill names the rlm keywords"
 assert_contains "$r" "clamped" "routing skill states how thinking level is set"
 ```
 
@@ -695,7 +695,8 @@ git commit -m "feat: add the cross-checking-claims skill"
 - Modify: `scripts/doctor.sh` (the Prime Agent section, after the `PRIME_AGENTS` loop)
 - Modify: `AGENTS.md` (the `### Subagent-driven development routing` section)
 - Modify: `README.md`
-- Test: `tests/test_readme.sh`, `tests/test_doctor.sh`
+- Modify: `tests/test_agents_md.sh` (created in Task 3)
+- Test: `tests/test_readme.sh`, `tests/test_doctor.sh`, `tests/test_agents_md.sh`
 
 **Interfaces:**
 - Consumes: everything from Tasks 1 through 5.
@@ -714,6 +715,23 @@ Add to `tests/test_readme.sh`, before the final `exit`:
 # A reader who does not know about it will think the table is duplication.
 assert_contains "$body" "180" "README states the content render cap"
 assert_contains "$body" "cross-checker" "README documents the cross-checker role"
+
+# Role counts in prose drift silently: five of them were already wrong
+# before cross-checker was added. Derive every count from the arrays that
+# define it, so the next role added breaks a test instead of a sentence.
+. "$REPO_ROOT/scripts/lib.sh"
+assert_contains "$body" "Claude Code gets ${#CLAUDE_AGENTS[@]} subagents" \
+    "README states the Claude Code subagent count"
+assert_contains "$body" "receive all ${#MANAGED_AGENTS[@]}" \
+    "README states the OpenCode and Prime subagent count"
+assert_contains "$body" "for the ${#MANAGED_AGENTS[@]} managed agent names" \
+    "README states the managed agent count for the OpenCode merge"
+assert_contains "$body" "for the ${#PRIME_AGENTS[@]} managed roles" \
+    "README states the managed role count for the Prime merge"
+assert_contains "$body" "removes the ${#CLAUDE_AGENTS[@]} agent symlinks" \
+    "README states how many agent symlinks uninstall removes"
+assert_contains "$body" "${#SKILL_NAMES[@]} book-grounded" \
+    "README states the book-skill count"
 ```
 
 - [ ] **Step 3: Write the failing doctor test**
@@ -727,10 +745,26 @@ assert_contains "$out" "Prime Agent renders 6" \
     "doctor reports the subagent render limit"
 ```
 
-- [ ] **Step 4: Run both to make sure they fail**
+- [ ] **Step 3b: Write the failing AGENTS.md role-list test**
 
-Run: `bash tests/run.sh 2>&1 | grep -B1 -A4 'test_readme\|test_doctor'`
-Expected: FAILED in both, with `[180] not found` from `test_readme.sh` and `[Prime Agent renders 6] not found` from `test_doctor.sh`.
+Add to `tests/test_agents_md.sh`, before the final `exit`:
+
+```bash
+# AGENTS.md used to open this section with a hard-coded role count that
+# nothing checked. A list can be verified against the array; a numeral in
+# prose cannot, so the numeral is gone and the list is what gets asserted.
+roles=$(awk '/defined in all three harnesses:/,/subagent-driven-development:/' "$A")
+for a in "${CLAUDE_AGENTS[@]}"; do
+    assert_contains "$roles" "$a" "AGENTS.md role list names $a"
+done
+assert_not_contains "$body" "Six role agents" "the stale role count is gone"
+assert_not_contains "$body" "The same six roles" "the stale Prime role count is gone"
+```
+
+- [ ] **Step 4: Run all three to make sure they fail**
+
+Run: `bash tests/run.sh 2>&1 | grep -B1 -A12 'test_readme\|test_doctor\|test_agents_md'`
+Expected: FAILED in all three. `test_readme.sh` reports `[180] not found` plus six count failures; `test_doctor.sh` reports `[Prime Agent renders 6] not found`; `test_agents_md.sh` reports seven `role list names` failures and two stale-count failures.
 
 - [ ] **Step 5: Add the doctor line**
 
@@ -744,7 +778,38 @@ In `scripts/doctor.sh`, immediately after the `for a in "${PRIME_AGENTS[@]}"` lo
     ok "${#PRIME_AGENTS[@]} managed subagent specs (Prime Agent renders 6; AGENTS.md table is authoritative)"
 ```
 
-- [ ] **Step 6: Name the skills in AGENTS.md**
+- [ ] **Step 6: Fix the role counts in AGENTS.md**
+
+Two statements name a role count that nothing checks, and both are wrong. Delete the numerals rather than maintain them.
+
+`AGENTS.md:61`, currently:
+
+```markdown
+Six role agents are defined in all three harnesses under the same
+names: implementer-light, implementer, implementer-strong, reviewer,
+reviewer-final, reviewer-lite. When executing superpowers
+subagent-driven-development:
+```
+
+becomes:
+
+```markdown
+The same role agents are defined in all three harnesses:
+implementer-light, implementer, implementer-strong, reviewer,
+reviewer-final, reviewer-lite, cross-checker. When executing superpowers
+subagent-driven-development:
+```
+
+`AGENTS.md:97`, currently "Prime Agent has no agent-definition files. The same six roles are installed as continual-harness subagent specs", becomes "Prime Agent has no agent-definition files. The same roles are installed as continual-harness subagent specs". `PRIME_AGENTS` has held eight roles since Prime Agent was added, so "six" was already wrong.
+
+While in that section, add `cross-checker` to the routing bullet list:
+
+```markdown
+- A load-bearing claim that needs an independent check goes to
+  `cross-checker`, on a different model family from whatever produced it.
+```
+
+- [ ] **Step 6b: Name the skills in AGENTS.md**
 
 In `AGENTS.md`, in `### Subagent-driven development routing`, add these two bullets to the harness-neutral list before the per-harness subsections:
 
@@ -759,7 +824,21 @@ In `AGENTS.md`, in `### Subagent-driven development routing`, add these two bull
 
 - [ ] **Step 7: Update the README**
 
-Three edits.
+Five edits.
+
+First, correct every role count. All five statements below are wrong today, before `cross-checker`; use digits so the test can derive them from the arrays.
+
+| Line | Currently | Becomes |
+|---|---|---|
+| 62 | `Claude Code gets five subagents.` | `Claude Code gets 7 subagents.` |
+| 63 | `only OpenCode and Prime Agent receive all seven.` | `only OpenCode and Prime Agent receive all 9.` |
+| 208 | ``- `agent.*` for the seven managed agent names.`` | ``- `agent.*` for the 9 managed agent names.`` |
+| 230 | `only `entries.subagent.*` for the eight managed roles` | `only `entries.subagent.*` for the 9 managed roles` |
+| 245 | `It removes the five agent symlinks` | `It removes the 7 agent symlinks` |
+
+Line 4 says "the eight book-grounded swe-skills", which is correct; change it to "the 8 book-grounded swe-skills" so the same test can hold it in place.
+
+Then four content edits.
 
 Add two rows to the "Skills this repo ships" table:
 
@@ -821,3 +900,10 @@ jq -r '.entries.subagent | to_entries[] | "\(.value.content | length)\t\(.key)"'
    | sort -rn
 ```
 Expected: every length at or below 180, with `cross_checker` the longest at 174.
+
+Finally, confirm no prose role count has drifted back:
+
+```bash
+grep -n -iE '\b(five|six|seven|eight|nine)\b' README.md AGENTS.md
+```
+Expected: no line that states a role or skill count. Word-form numerals are allowed only where they do not count managed roles.
