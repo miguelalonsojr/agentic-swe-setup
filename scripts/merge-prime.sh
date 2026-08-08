@@ -2,8 +2,8 @@
 # Merge this repo's managed keys into Prime Agent's settings and harness state.
 #
 # Prime Agent has no agent-definition files and no plugin system. Model tiers
-# live in settings.json, and the eight roles are installed as continual-harness
-# subagent specs so `rlm(...)` dispatches can look up a model per role.
+# live in settings.json, and every role is installed as a continual-harness
+# subagent spec so `rlm(...)` dispatches can look up a model per role.
 #
 # Usage: merge-prime.sh <provider>
 # Exit:  0 merged

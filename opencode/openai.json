@@ -53,6 +53,13 @@
       "model": "openai/gpt-5.6-terra",
       "variant": "medium",
       "permission": { "edit": "deny", "bash": "ask" }
+    },
+    "cross-checker": {
+      "mode": "subagent",
+      "description": "Independent second opinion on a load-bearing claim: prior art, licensing, feasibility. Runs on a different model family from the default tier so its errors are uncorrelated. Read-only.",
+      "model": "openai/gpt-5.6-sol",
+      "variant": "high",
+      "permission": { "edit": "deny", "bash": "ask" }
     }
   },
   "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]

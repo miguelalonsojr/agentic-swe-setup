@@ -11,10 +11,10 @@ SUPERPOWERS_CLAUDE_PLUGIN="superpowers@claude-plugins-official"
 SUPERPOWERS_REPO="https://github.com/obra/superpowers"
 SWE_SKILLS_REPO="https://github.com/mhihasan/swe-skills"
 
-MANAGED_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite)
-CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite)
-# Prime Agent has no agent-definition files. The same eight roles are installed
-# as continual-harness subagent specs, so PRIME_AGENTS mirrors MANAGED_AGENTS.
+MANAGED_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite cross-checker)
+CLAUDE_AGENTS=(implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite cross-checker)
+# Prime Agent has no agent-definition files. The same roles are installed as
+# continual-harness subagent specs, so PRIME_AGENTS mirrors MANAGED_AGENTS.
 PRIME_AGENTS=("${MANAGED_AGENTS[@]}")
 # Filenames this project shipped under before, which must be retired on install.
 # reviewer-light.md declared `name: reviewer-lite`, so leaving it next to the

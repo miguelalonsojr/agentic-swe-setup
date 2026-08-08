@@ -48,7 +48,7 @@ for p in anthropic openai; do
 
     # Prime Agent has no per-agent permission system, so read-only intent is
     # carried by a flag the installer turns into spec text.
-    for a in reviewer reviewer-final reviewer-lite; do
+    for a in reviewer reviewer-final reviewer-lite cross-checker; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].readOnly' "$f")" "true" \
             "$p prime agent $a is read-only"
     done
@@ -57,9 +57,9 @@ for p in anthropic openai; do
             "false" "$p prime agent $a is not marked read-only"
     done
 
-    # The six dispatch targets are subagents; general and explore are not.
+    # Every dispatch target is a subagent; general and explore are not.
     for a in implementer-light implementer implementer-strong \
-             reviewer reviewer-final reviewer-lite; do
+             reviewer reviewer-final reviewer-lite cross-checker; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].mode' "$f")" "subagent" \
             "$p prime agent $a is a subagent"
     done

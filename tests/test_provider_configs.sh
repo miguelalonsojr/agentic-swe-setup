@@ -33,15 +33,16 @@ for p in anthropic openai; do
         0 "$p config uses variant, not options.reasoningEffort"
 
     # Subagents declare mode and description; primaries do not need to.
-    for a in implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite; do
+    for a in implementer-light implementer implementer-strong \
+             reviewer reviewer-final reviewer-lite cross-checker; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].mode' "$f")" \
             "subagent" "$p agent $a is a subagent"
         desc=$(jq -r --arg a "$a" '.agent[$a].description // ""' "$f")
         [ -n "$desc" ] || fail "$p agent $a has no description"
     done
 
-    # Reviewers are read-only.
-    for a in reviewer reviewer-final reviewer-lite; do
+    # Reviewers and the cross-checker are read-only.
+    for a in reviewer reviewer-final reviewer-lite cross-checker; do
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].permission.edit' "$f")" \
             "deny" "$p agent $a denies edit"
         assert_eq "$(jq -r --arg a "$a" '.agent[$a].permission.bash' "$f")" \

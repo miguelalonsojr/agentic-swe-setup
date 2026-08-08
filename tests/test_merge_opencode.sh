@@ -41,7 +41,8 @@ assert_eq "$(jq -r '.agent["my-own-agent"].model' "$CFG")" \
 assert_eq "$(jq -r '.mcp.fetch.type' "$CFG")" "local" "mcp block kept"
 assert_eq "$(jq -r '.plugin | index("some-other-plugin@1.0.0") != null' "$CFG")" \
     "true" "other plugin kept"
-assert_eq "$(jq -r '.agent | length' "$CFG")" "9" "8 managed + 1 unmanaged agent"
+assert_eq "$(jq -r '.agent | length' "$CFG")" "$(( ${#MANAGED_AGENTS[@]} + 1 ))" \
+    "every managed agent plus the one unmanaged agent"
 
 # --- plugin is appended, not duplicated ---
 "$MERGE" anthropic >/dev/null 2>&1

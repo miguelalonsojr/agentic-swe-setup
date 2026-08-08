@@ -61,6 +61,14 @@
       "model": "anthropic/claude-sonnet-5",
       "thinking": "high",
       "readOnly": true
+    },
+    "cross-checker": {
+      "mode": "subagent",
+      "description": "Independent second opinion on a load-bearing claim: prior art, licensing, feasibility. Runs on a different model family from the default tier so its errors are uncorrelated. Read-only.",
+      "hint": "independent second opinion on a load-bearing claim; give it the question, not the answer",
+      "model": "anthropic/claude-fable-5",
+      "thinking": "high",
+      "readOnly": true
     }
   }
 }

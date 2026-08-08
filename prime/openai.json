@@ -61,6 +61,14 @@
       "model": "openai/gpt-5.6-terra",
       "thinking": "medium",
       "readOnly": true
+    },
+    "cross-checker": {
+      "mode": "subagent",
+      "description": "Independent second opinion on a load-bearing claim: prior art, licensing, feasibility. Runs on a different model family from the default tier so its errors are uncorrelated. Read-only.",
+      "hint": "independent second opinion on a load-bearing claim; give it the question, not the answer",
+      "model": "openai/gpt-5.6-sol",
+      "thinking": "high",
+      "readOnly": true
     }
   }
 }

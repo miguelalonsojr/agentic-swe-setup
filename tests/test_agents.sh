@@ -54,6 +54,17 @@ for a in reviewer reviewer-final reviewer-lite; do
     assert_eq "$tools" "Read, Grep, Glob, Bash" "$a is read-only"
 done
 
+# cross-checker is read-only like the reviewers, but unlike them it has to
+# reach primary sources over the network, so it carries the two web tools.
+cc_tools=$(frontmatter_field "$REPO_ROOT/agents/cross-checker.md" tools)
+for t in Write Edit MultiEdit NotebookEdit; do
+    assert_not_contains "$cc_tools" "$t" "cross-checker must not have $t"
+done
+assert_contains "$cc_tools" "WebFetch" "cross-checker can fetch a primary source"
+assert_contains "$cc_tools" "WebSearch" "cross-checker can search for one"
+assert_eq "$(frontmatter_field "$REPO_ROOT/agents/cross-checker.md" model)" \
+    fable "cross-checker runs on the strong tier, decorrelated from the default"
+
 # Three tiers: sonnet light, opus default, fable strong.
 assert_eq "$(frontmatter_field "$REPO_ROOT/agents/implementer-light.md" model)" \
     sonnet "implementer-light uses sonnet"
