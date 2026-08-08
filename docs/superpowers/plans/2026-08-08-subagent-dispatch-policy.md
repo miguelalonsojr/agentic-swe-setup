@@ -647,6 +647,18 @@ In `scripts/lib.sh`:
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims)
 ```
 
+- [ ] **Step 4b: Add the README row this registration requires**
+
+`tests/test_readme.sh:34-36` asserts that `README.md` names every entry in `LOCAL_SKILLS`, so
+Step 4 turns the suite red on its own. Add one row to the "Skills this repo ships" table, below
+the `routing-model-tiers` row that Task 4 added:
+
+```markdown
+| `cross-checking-claims` | A subagent's finding is about to change a decision and needs an independent check and a primary source. |
+```
+
+Change nothing else in `README.md`. The role counts and the ladder tables are Task 6's.
+
 - [ ] **Step 5: Write the skill**
 
 Create `skills/cross-checking-claims/SKILL.md` with this exact frontmatter:
@@ -841,16 +853,13 @@ First, correct every role count. All five statements below are wrong today, befo
 
 Line 4 says "the eight book-grounded swe-skills", which is correct; change it to "the 8 book-grounded swe-skills" so the same test can hold it in place.
 
-Then four content edits.
+Then two content edits.
 
-Add two rows to the "Skills this repo ships" table:
-
-```markdown
-| `routing-model-tiers` | Dispatching subagents, especially a batch, and choosing which model each one runs on. |
-| `cross-checking-claims` | A subagent's finding is about to change a decision and needs an independent check and a primary source. |
-```
-
-Then correct the sentence below that table. It currently reads "Each has a `SKILL.md` for agents and a `README.md` for running it by hand." Only `jira-fu` ships a script; the other two have a `README.md` that explains where the skill came from.
+The two skill-table rows and the correction to the sentence below that table ("a `README.md`
+for running it by hand", false once a script-less skill is listed) already landed in Tasks 4
+and 5, because `tests/test_readme.sh:34-36` forces a skill's README row into the same task that
+registers it. Verify both rows and the corrected sentence are present, and move on. Do not add
+them again.
 
 Add `cross-checker` to the three model-ladder tables (`opencode/anthropic.json`, `opencode/openai.json`, Claude Code frontmatter) with the strong-tier model, and note that it sits on the strong tier to stay decorrelated from the default tier rather than because the work is hard.
 
