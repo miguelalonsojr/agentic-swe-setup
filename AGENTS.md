@@ -98,15 +98,36 @@ Prime Agent has no agent-definition files. The same six roles are
 installed as continual-harness subagent specs, and every dispatch is
 an `rlm(...)` call that names its model explicitly.
 
-- Look the role up in `rlm.harness` (kind `subagent`, ids use
-  underscores: `implementer_light`, `reviewer_final`). Each spec records
-  the model and thinking level for its tier.
-- Dispatch with the model from the spec, never the inherited default:
+- The harness roster is a hint, not a lookup. Prime Agent summarises each
+  subagent spec to 180 characters and shows only six of them, so some roles
+  are missing from it and none of them show a complete dispatch. This table
+  is authoritative. The model strings are Prime Agent `rlm(model=...)`
+  selectors and are not valid anywhere else.
+
+| Role | Model |
+|---|---|
+| `implementer-light` | `anthropic/claude-sonnet-5` |
+| `implementer` | `anthropic/claude-opus-5` |
+| `implementer-strong` | `anthropic/claude-fable-5` |
+| `reviewer` | `anthropic/claude-opus-5` |
+| `reviewer-final` | `anthropic/claude-fable-5` |
+| `reviewer-lite` | `anthropic/claude-sonnet-5` |
+| `cross-checker` | `anthropic/claude-fable-5` |
+| `explore` | `anthropic/claude-sonnet-5` |
+| `general` | `anthropic/claude-opus-5` |
+
+  Installed with `provider=openai` instead, the selectors are the ones in
+  `prime/openai.json`.
+
+- Dispatch with the model from the table, never the one you are running on:
 
   ```python
   handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5")
   ```
 
+- `rlm()` accepts `name` and `model` and nothing else. A child's thinking
+  level is inherited from this session and clamped to the child's model, so
+  there is no per-dispatch thinking argument to pass.
 - Children reply with `await agent_message.send(msg, receiver_role='parent')`.
   Ask for an explicit reply in the task text whenever you need the
   DONE / DONE_WITH_CONCERNS / BLOCKED status back.
