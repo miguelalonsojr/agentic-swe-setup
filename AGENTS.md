@@ -58,8 +58,8 @@ for humans):
 
 ### Subagent-driven development routing
 
-Six role agents are defined in both harnesses under the same names:
-implementer-light, implementer, implementer-strong, reviewer,
+Six role agents are defined in all three harnesses under the same
+names: implementer-light, implementer, implementer-strong, reviewer,
 reviewer-final, reviewer-lite. When executing superpowers
 subagent-driven-development:
 
@@ -91,6 +91,34 @@ subagent-driven-development:
 - Exception: all review dispatches MUST go to the `reviewer` /
   `reviewer-final` / `reviewer-lite` agents regardless of model
   choice, so the read-only tool restriction applies.
+
+#### When running under Prime Agent
+
+Prime Agent has no agent-definition files. The same six roles are
+installed as continual-harness subagent specs, and every dispatch is
+an `rlm(...)` call that names its model explicitly.
+
+- Look the role up in `rlm.harness` (kind `subagent`, ids use
+  underscores: `implementer_light`, `reviewer_final`). Each spec records
+  the model and thinking level for its tier.
+- Dispatch with the model from the spec, never the inherited default:
+
+  ```python
+  handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5")
+  ```
+
+- Children reply with `await agent_message.send(msg, receiver_role='parent')`.
+  Ask for an explicit reply in the task text whenever you need the
+  DONE / DONE_WITH_CONCERNS / BLOCKED status back.
+- Prime Agent cannot enforce read-only tools per child. A spec marked
+  read-only must say so in the dispatch text: tell the reviewer to
+  report findings only and to make no edits.
+- Escalation ladder matches OpenCode: DONE_WITH_CONCERNS or
+  NEEDS_CONTEXT -> re-dispatch `implementer` with better scoping;
+  BLOCKED or fix round 4 -> `implementer-strong`; still BLOCKED ->
+  escalate to the human.
+- Delete a child with `await rlm.delete_subagent(handle)` once its
+  context is no longer needed.
 
 ### Precedence
 

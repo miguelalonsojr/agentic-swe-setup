@@ -7,6 +7,11 @@ SANDBOX=$(mktemp -d)
 export HOME="$SANDBOX/home"
 export XDG_CONFIG_HOME="$HOME/.config"
 export SWE_SKILLS_DIR="$SANDBOX/swe-skills"
+export SUPERPOWERS_DIR="$SANDBOX/superpowers"
+# Prime Agent's own config-root override. Without it, prime_dir() would resolve
+# under the sandbox $HOME anyway, but setting it explicitly documents the
+# contract and keeps the tests honest if that default ever changes.
+export PRIME_AGENT_CODING_AGENT_DIR="$HOME/.prime/agent"
 
 # PATH is deliberately minimal, NOT "$SANDBOX/bin:$PATH". The real machine has
 # claude at ~/.local/bin and opencode at ~/.opencode/bin; inheriting the real
@@ -73,6 +78,20 @@ for d in "$here"/skills/*/ "$here"/book-skills/*/; do
 done
 EOF
     chmod +x "$SWE_SKILLS_DIR/install.sh"
+}
+
+# stub_superpowers — a fake Superpowers checkout holding a couple of the real
+# skill names, so tests can assert Prime Agent links them without a network.
+stub_superpowers() {
+    local s
+    mkdir -p "$SUPERPOWERS_DIR/.git"
+    for s in brainstorming writing-plans subagent-driven-development; do
+        mkdir -p "$SUPERPOWERS_DIR/skills/$s"
+        printf -- '---\nname: %s\ndescription: stub\n---\n' "$s" \
+            > "$SUPERPOWERS_DIR/skills/$s/SKILL.md"
+    done
+    # A stray directory with no SKILL.md must not be linked.
+    mkdir -p "$SUPERPOWERS_DIR/skills/not-a-skill"
 }
 
 # path_without CMD — echo a PATH containing the stub dir plus everything in

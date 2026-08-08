@@ -1,0 +1,58 @@
+{
+  "settings": {
+    "defaultProvider": "anthropic",
+    "defaultModel": "claude-opus-5",
+    "defaultThinkingLevel": "high"
+  },
+  "agent": {
+    "general": {
+      "description": "Primary agent for general coding and research work.",
+      "model": "anthropic/claude-opus-5",
+      "thinking": "high"
+    },
+    "explore": {
+      "description": "Fast read-only codebase exploration and question answering.",
+      "model": "anthropic/claude-sonnet-5",
+      "thinking": "high"
+    },
+    "implementer-light": {
+      "mode": "subagent",
+      "description": "Implements a single mechanical, fully-specified plan task: isolated functions, clear spec, 1-2 files. Do NOT use for multi-file work, debugging, or judgment.",
+      "model": "anthropic/claude-sonnet-5",
+      "thinking": "high"
+    },
+    "implementer": {
+      "mode": "subagent",
+      "description": "Default implementer: multi-file coordination, integration, debugging, prose-specified tasks. Writes tests per TDD.",
+      "model": "anthropic/claude-opus-5",
+      "thinking": "high"
+    },
+    "implementer-strong": {
+      "mode": "subagent",
+      "description": "Escalation implementer for BLOCKED tasks, fix rounds 4+, or tasks needing design judgment or broad codebase understanding.",
+      "model": "anthropic/claude-fable-5",
+      "thinking": "high"
+    },
+    "reviewer": {
+      "mode": "subagent",
+      "description": "Per-task spec-compliance and code-quality review of diffs. Read-only. Not for the final whole-branch review.",
+      "model": "anthropic/claude-opus-5",
+      "thinking": "high",
+      "readOnly": true
+    },
+    "reviewer-final": {
+      "mode": "subagent",
+      "description": "Final whole-branch review before merge, after all per-task reviews have passed. Read-only.",
+      "model": "anthropic/claude-fable-5",
+      "thinking": "high",
+      "readOnly": true
+    },
+    "reviewer-lite": {
+      "mode": "subagent",
+      "description": "Scoped re-review of small fix diffs only, after a full review passed. Read-only.",
+      "model": "anthropic/claude-sonnet-5",
+      "thinking": "high",
+      "readOnly": true
+    }
+  }
+}

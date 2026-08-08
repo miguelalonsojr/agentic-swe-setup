@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -uo pipefail
+# shellcheck source=/dev/null
+. "$REPO_ROOT/tests/lib/sandbox.sh"
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/lib.sh"
+
+# The Prime Agent ladder must stay in lockstep with the OpenCode one: same
+# roles, same models per role. Only the effort field name differs.
+VALID_THINKING="off minimal low medium high xhigh"
+
+for p in anthropic openai; do
+    f="$REPO_ROOT/prime/$p.json"
+    o="$REPO_ROOT/opencode/$p.json"
+    assert_file "$f" "$p prime config exists"
+    [ -f "$f" ] || continue
+
+    jq -e . "$f" >/dev/null 2>&1 || fail "$p prime config is not valid JSON"
+
+    for a in "${PRIME_AGENTS[@]}"; do
+        model=$(jq -r --arg a "$a" '.agent[$a].model // ""' "$f")
+        [ -n "$model" ] || fail "$p prime config missing model for $a"
+        assert_contains "$model" "$p/" "$p agent $a uses the $p provider"
+
+        # Same model as the OpenCode ladder for the same role.
+        assert_eq "$model" "$(jq -r --arg a "$a" '.agent[$a].model' "$o")" \
+            "$p agent $a matches the opencode ladder"
+
+        think=$(jq -r --arg a "$a" '.agent[$a].thinking // ""' "$f")
+        assert_contains " $VALID_THINKING " " $think " \
+            "$p agent $a has a valid thinking level"
+
+        desc=$(jq -r --arg a "$a" '.agent[$a].description // ""' "$f")
+        [ -n "$desc" ] || fail "$p prime agent $a has no description"
+    done
+
+    # No extra agents beyond the managed set.
+    assert_eq "$(jq '.agent | length' "$f")" "${#PRIME_AGENTS[@]}" \
+        "$p prime config agent count"
+
+    # Prime Agent has no per-agent permission system, so read-only intent is
+    # carried by a flag the installer turns into spec text.
+    for a in reviewer reviewer-final reviewer-lite; do
+        assert_eq "$(jq -r --arg a "$a" '.agent[$a].readOnly' "$f")" "true" \
+            "$p prime agent $a is read-only"
+    done
+    for a in implementer implementer-light implementer-strong; do
+        assert_eq "$(jq -r --arg a "$a" '.agent[$a] | has("readOnly")' "$f")" \
+            "false" "$p prime agent $a is not marked read-only"
+    done
+
+    # The six dispatch targets are subagents; general and explore are not.
+    for a in implementer-light implementer implementer-strong \
+             reviewer reviewer-final reviewer-lite; do
+        assert_eq "$(jq -r --arg a "$a" '.agent[$a].mode' "$f")" "subagent" \
+            "$p prime agent $a is a subagent"
+    done
+    for a in general explore; do
+        assert_eq "$(jq -r --arg a "$a" '.agent[$a] | has("mode")' "$f")" \
+            "false" "$p prime agent $a is a primary, not a subagent"
+    done
+
+    # Settings must name a provider and a bare model id (no provider prefix:
+    # defaultProvider already carries it).
+    assert_eq "$(jq -r '.settings.defaultProvider' "$f")" "$p" \
+        "$p settings name the provider"
+    dm=$(jq -r '.settings.defaultModel' "$f")
+    assert_not_contains "$dm" "/" "$p defaultModel is a bare id"
+    assert_eq "$(jq -r '.agent.general.model' "$f")" "$p/$dm" \
+        "$p defaultModel matches the general agent"
+    assert_contains " $VALID_THINKING " \
+        " $(jq -r '.settings.defaultThinkingLevel' "$f") " \
+        "$p defaultThinkingLevel is valid"
+
+    # OpenCode's variant keys must not leak into the Prime config.
+    assert_eq "$(jq '[.agent[] | select(has("variant"))] | length' "$f")" 0 \
+        "$p prime config uses thinking, not variant"
+    assert_eq "$(jq 'has("plugin")' "$f")" "false" \
+        "$p prime config declares no plugin (Prime Agent has no plugin system)"
+done
+
+# --- Anthropic specifics: three models, escalation on fable ---
+a="$REPO_ROOT/prime/anthropic.json"
+assert_eq "$(jq -r '[.agent[].model] | unique | length' "$a")" 3 \
+    "anthropic prime ladder uses exactly three models"
+for ag in implementer-strong reviewer-final; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
+        "anthropic/claude-fable-5" "anthropic prime $ag runs on fable"
+done
+assert_eq "$(jq -r '[.agent[].thinking] | unique | join(",")' "$a")" "high" \
+    "every anthropic prime agent runs at high"
+
+# --- OpenAI specifics: effort varies by tier ---
+o="$REPO_ROOT/prime/openai.json"
+assert_eq "$(jq -r '.agent["implementer-light"].thinking' "$o")" "low" \
+    "openai prime light tier thinks less"
+assert_eq "$(jq -r '.agent["implementer-strong"].thinking' "$o")" "high" \
+    "openai prime strong tier thinks more"
+
+exit "$ASSERT_FAILURES"

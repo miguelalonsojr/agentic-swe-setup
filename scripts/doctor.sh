@@ -11,7 +11,7 @@ bad()  { printf '[warn] %s\n' "$*"; }
 skip() { printf '[skip] %s\n' "$*"; }
 
 printf 'tooling\n'
-for c in claude opencode git jq; do
+for c in claude opencode prime-agent git jq; do
     if have "$c"; then ok "$c on PATH"; else bad "$c not on PATH"; fi
 done
 
@@ -20,6 +20,14 @@ if [ -d "$(swe_skills_dir)/.git" ]; then
     ok "swe-skills checkout at $(swe_skills_dir)"
 else
     bad "no swe-skills checkout at $(swe_skills_dir)"
+fi
+# Only Prime Agent needs the Superpowers checkout; the others use the plugin.
+if have prime-agent; then
+    if [ -d "$(superpowers_dir)/.git" ]; then
+        ok "superpowers checkout at $(superpowers_dir)"
+    else
+        bad "no superpowers checkout at $(superpowers_dir)"
+    fi
 fi
 
 printf '\nclaude code\n'
@@ -89,6 +97,55 @@ if have opencode; then
     fi
 else
     skip "opencode not installed"
+fi
+
+printf '\nprime agent\n'
+if have prime-agent; then
+    pdir=$(prime_dir)
+    pcfg="$pdir/settings.json"
+    pharness="$pdir/harness/harness_state.json"
+    pman="$pdir/.agentic-swe-setup.json"
+    if have jq && [ -f "$pman" ]; then
+        ok "provider: $(jq -r .provider "$pman")"
+    else
+        bad "no install manifest at $pman"
+    fi
+    if have jq && [ -f "$pcfg" ] \
+        && jq -e '.defaultModel' "$pcfg" >/dev/null 2>&1; then
+        ok "default model: $(jq -r .defaultModel "$pcfg")"
+    else
+        bad "no defaultModel in $pcfg"
+    fi
+    for a in "${PRIME_AGENTS[@]}"; do
+        key=${a//-/_}
+        if have jq && [ -f "$pharness" ] \
+            && jq -e --arg k "$key" '.entries.subagent[$k]' "$pharness" \
+                >/dev/null 2>&1; then
+            ok "subagent spec $a"
+        else
+            bad "subagent spec $a missing from $pharness"
+        fi
+    done
+    # Superpowers reaches Prime Agent as skills, so check a representative one.
+    for s in brainstorming writing-plans subagent-driven-development; do
+        if [ -e "$pdir/skills/$s" ]; then ok "superpowers skill $s"
+        else bad "superpowers skill $s missing"; fi
+    done
+    for s in "${SKILL_NAMES[@]}"; do
+        if [ -e "$pdir/skills/$s" ]; then ok "skill $s"
+        else bad "skill $s missing"; fi
+    done
+    for s in "${LOCAL_SKILLS[@]}"; do
+        if links_into_repo "$pdir/skills/$s"; then ok "local skill $s"
+        else bad "local skill $s not linked from this repo"; fi
+    done
+    if links_into_repo "$pdir/AGENTS.md"; then
+        ok "global AGENTS.md linked"
+    else
+        bad "global AGENTS.md not linked from this repo"
+    fi
+else
+    skip "prime-agent not installed"
 fi
 
 exit 0

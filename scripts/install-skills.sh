@@ -22,6 +22,12 @@ if have opencode; then
     installed=1
 fi
 
+if have prime-agent; then
+    log "linking local skills into $(prime_dir)/skills"
+    link_local_skills "$(prime_dir)/skills"
+    installed=1
+fi
+
 if [ "$installed" -eq 0 ]; then
-    warn "neither claude nor opencode on PATH; nothing to do"
+    warn "no supported harness on PATH; nothing to do"
 fi
