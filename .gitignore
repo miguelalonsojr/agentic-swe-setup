@@ -1,0 +1,3 @@
+# Importing a skill's script for a quick check writes bytecode next to it.
+__pycache__/
+*.pyc

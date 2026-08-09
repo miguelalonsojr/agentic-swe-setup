@@ -68,6 +68,173 @@ assert_contains "$crosscheck" "flagged as unconfirmed" \
 assert_contains "$crosscheck" "Do not average the two answers" \
     "cross-check skill says how to settle two verdicts that differ"
 
+# search-fu's claims are about a third party's bot detection, so the needles are
+# the specific mechanics that make the skill work. "use DuckDuckGo" is the
+# advice that already failed: a cold request to the HTML endpoint gets a
+# challenge page, and a skill that omits the warm-up teaches the failing call.
+search=$(cat "$REPO_ROOT/skills/search-fu/SKILL.md")
+assert_contains "$search" 'GET `https://duckduckgo.com/` first' \
+    "search skill gives the session warm-up that avoids the challenge"
+assert_contains "$search" "anomaly.js" \
+    "search skill names the marker that identifies a challenge page"
+assert_contains "$search" "never as an empty result set" \
+    "search skill says a challenge is not zero results"
+# The warm-up gets a cold session in; it does not buy immunity. Sustained
+# querying gets walled anyway, and a skill that promises otherwise sends the
+# agent to debug its own parser instead of pinning the fallback engine.
+assert_contains "$search" "walled anyway" \
+    "search skill says the warm-up does not make the wall go away"
+assert_contains "$search" "200 with an empty result list" \
+    "search skill records how Bing fails, which a status check misses"
+assert_contains "$search" "A snippet is not a source" \
+    "search skill requires fetching the page behind a result"
+# `fetch` reads whatever came back. An interstitial is page text to it, and the
+# skill's central instruction is to fetch before quoting, so the one caveat
+# that instruction carries has to be in the file.
+assert_contains "$search" "no bot detection" \
+    "search skill says fetch does not detect an interstitial"
+# The engine table rots without warning, and a skill asserting a dead engine
+# still works is worse than no skill. This needle is the sentence that sends
+# the reader to selftest before believing the table.
+assert_contains "$search" 'selftest` asks each engine one known query' \
+    "search skill points at the command that rechecks its own claims"
+assert_contains "$search" 'About to report "web search is unavailable"' \
+    "search skill requires that check before declaring search broken"
+# Quick Reference is the whole command surface, and When to Use carries the
+# boundary against the harness's own search. Deleting either left the suite
+# green, which is what the anchoring convention above exists to prevent.
+assert_contains "$search" '| Search | `websearch.py search "QUERY"` | yes |' \
+    "search skill gives the command that runs a search"
+assert_contains "$search" "the fallback, not a replacement" \
+    "search skill defers to the harness's own search when it works"
+
+# --- search-fu's parser, offline, against saved markup ---
+# The parser is the load-bearing part and the part that breaks when an engine
+# changes its markup. Testing it through the network would make the suite
+# depend on a third party, so `parse` reads saved HTML on stdin instead.
+ws="$REPO_ROOT/skills/search-fu/websearch.py"
+assert_file "$ws" "search-fu ships its script"
+[ -x "$ws" ] || fail "websearch.py is executable"
+
+out=$(printf '%s' '<div class="result results_links web-result">
+<h2 class="result__title"><a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.org%2Fdoc&amp;rut=x">Example Doc</a></h2>
+<a class="result__snippet">The snippet text.</a></div>' | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "https://example.org/doc" \
+    "parse decodes the uddg redirect wrapper into the real URL"
+assert_contains "$out" "Example Doc" "parse extracts the result title"
+assert_contains "$out" "The snippet text." "parse extracts the snippet"
+
+# Only DuckDuckGo's own wrapper is a wrapper. A result URL that happens to
+# carry a uddg parameter belongs to the site it points at.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="https://example.org/p?uddg=1">Not A Wrapper</a></div>' \
+    | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "https://example.org/p?uddg=1" \
+    "parse leaves a non-wrapper URL alone"
+
+# Snippets wrap across source lines. Text that keeps the newlines reads as a
+# working search whose output is quietly mangled, which is the failure this
+# whole block exists to catch.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="https://a.org/x">T</a>
+<a class="result__snippet">first line
+   second   line</a></div>' | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "first line second line" \
+    "parse collapses whitespace inside a snippet"
+
+# Mojeek is the fallback: the path that runs when things have already gone
+# wrong. Leaving it uncovered means the parser that matters most on a bad day
+# is the one nothing checks.
+out=$(printf '%s' '<ul class="results-standard"><li class="r1">
+<h2><a class="title" href="https://example.net/page">Mojeek Result</a></h2>
+<p class="s">Mojeek snippet text.</p></li></ul>' | python3 "$ws" parse --engine mojeek 2>&1)
+assert_contains "$out" "https://example.net/page" "mojeek parse extracts the URL"
+assert_contains "$out" "Mojeek Result" "mojeek parse extracts the title"
+assert_contains "$out" "Mojeek snippet text." "mojeek parse extracts the snippet"
+
+# Both engines bold the query terms inside the snippet and the title. A parser
+# that stops collecting at the first closing tag keeps the words before the
+# first highlight and silently drops the rest of the sentence, which reads as a
+# working search returning uselessly short snippets.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="https://a.org/x">A <b>Bold</b> Title</a>
+<a class="result__snippet">Text before <b>the</b> highlight and after it.</a></div>'     | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "A Bold Title" "ddg parse keeps title text across inline markup"
+assert_contains "$out" "highlight and after it." "ddg parse keeps snippet text after a highlight"
+
+out=$(printf '%s' '<ul class="results-standard"><li><h2><a class="title" href="https://b.org/y">A <strong>Bold</strong> Title</a></h2>
+<p class="s">Text before <strong>the</strong> highlight and after it.</p></li></ul>'     | python3 "$ws" parse --engine mojeek 2>&1)
+assert_contains "$out" "A Bold Title" "mojeek parse keeps title text across inline markup"
+assert_contains "$out" "highlight and after it." "mojeek parse keeps snippet text after a highlight"
+
+# Same failure one level down: closing on the first tag of the right *name*
+# ends the field at a nested element of that name instead of at its own
+# closing tag. Truncation again, silent again.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="https://a.org/x">Title <a>nested</a> tail</a>
+<a class="result__snippet">Snippet <a href="https://b/">nested</a> tail.</a></div>' \
+    | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "Title nested tail" "ddg parse survives a same-tag nesting in the title"
+assert_contains "$out" "Snippet nested tail." "ddg parse survives a same-tag nesting in the snippet"
+
+out=$(printf '%s' '<ul class="results-standard"><li><h2><a class="title" href="https://b.org/y">T</a></h2>
+<p class="s">Snippet <p>nested</p> tail.</p></li></ul>' \
+    | python3 "$ws" parse --engine mojeek 2>&1)
+assert_contains "$out" "Snippet nested tail." "mojeek parse survives a same-tag nesting in the snippet"
+
+# A challenge page parses to zero results while returning HTTP 200, so the
+# script has to name that case rather than report an empty search.
+out=$(printf '%s' '<html><form id="challenge-form" action="//duckduckgo.com/anomaly.js?sv=html"></form></html>' \
+    | python3 "$ws" parse --engine ddg 2>&1)
+rc=$?
+assert_eq "$rc" 1 "parse exits non-zero on a challenge page"
+assert_contains "$out" "challenge" "parse says the page was a challenge, not an empty result set"
+
+# The same page routed to the other engine must still be called a challenge.
+# Exempting every engine but DuckDuckGo from the check reintroduces, on the
+# fallback path, the exact confusion this script exists to prevent.
+out=$(printf '%s' '<html><form id="challenge-form" action="//duckduckgo.com/anomaly.js?sv=html"></form></html>' \
+    | python3 "$ws" parse --engine mojeek 2>&1)
+assert_contains "$out" "challenge" "a challenge is a challenge on the fallback engine too"
+
+# `anomaly.js` and `challenge-form` are ordinary document text: they turn up in
+# titles, in snippets, and in the query the HTML endpoint echoes back into its
+# own search box. Matching them anywhere in the body makes every query about
+# bot walls look like a bot wall.
+# The fixture carries the search-box form every real results page has: the test
+# is worthless without it, since "any form at all" would then pass.
+out=$(printf '%s' '<html><form id="search_form" action="/html/">
+<input name="q" value="anomaly.js challenge-form"></form>
+<div class="result"><a class="result__a" href="https://a.org/doc">What anomaly.js does</a>
+<a class="result__snippet">The challenge-form explained.</a></div></html>' \
+    | python3 "$ws" parse --engine ddg 2>&1)
+rc=$?
+assert_eq "$rc" 0 "a results page that merely mentions the wall is not a challenge"
+assert_contains "$out" "https://a.org/doc" "that page's result is still parsed"
+
+# An unwrapped href with no scheme cannot be fetched, and the skill tells the
+# agent to fetch every URL this prints. The assertion is on the dropped
+# result's title, not on the href: an empty `uddg=` unwraps to the empty
+# string, so a needle on the wrapper text is absent either way and the test
+# stays green with the filter deleted.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="//duckduckgo.com/l/?uddg=">Unfetchable</a></div>
+<div class="result"><a class="result__a" href="ftp://files.example/x">Wrong scheme</a></div>
+<div class="result"><a class="result__a" href="https://real.example/ok">Real</a></div>' \
+    | python3 "$ws" parse --engine ddg 2>&1)
+assert_contains "$out" "https://real.example/ok" "a fetchable result survives"
+assert_not_contains "$out" "Unfetchable" "a result with no scheme is dropped"
+assert_not_contains "$out" "Wrong scheme" "a result with a non-http scheme is dropped"
+
+# Every failure the script can hit has to arrive as one error line. A traceback
+# is unreadable to the agent and, worse, is not the `error:` line it is told to
+# expect. Connection refused is the cheap offline stand-in for a timeout.
+out=$(python3 "$ws" fetch 'example.org' 2>&1)
+rc=$?
+assert_eq "$rc" 1 "fetch on a URL with no scheme exits 1"
+assert_contains "$out" "error:" "fetch reports a bad URL as an error"
+[[ "$out" == *"Traceback"* ]] && fail "fetch printed a traceback for a bad URL"
+
+out=$(python3 "$ws" fetch 'http://127.0.0.1:9/' 2>&1)
+rc=$?
+assert_eq "$rc" 1 "fetch on a refused connection exits 1"
+[[ "$out" == *"Traceback"* ]] && fail "fetch printed a traceback for a refused connection"
+
 # --- install-skills alone, with no harness present ---
 out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)
 assert_eq "$?" 0 "install-skills exits 0 with no harness"
