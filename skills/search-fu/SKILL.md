@@ -38,6 +38,7 @@ check does not catch:
 | Query Bing | 200 with an empty result list, no error and no results |
 | Query Brave | 429, first request, no history |
 | Query a public SearXNG instance | 429 or 403 from nearly all of them |
+| Query Mojeek in a burst | 403, or a page that asks for JavaScript; neither carries results |
 | Query DuckDuckGo's Instant Answer API | 200 and empty abstracts; it disambiguates, it does not search |
 | Quote the snippet a search returned | a claim sourced from 30 words a search engine chose |
 
@@ -58,6 +59,11 @@ is what Mojeek is for. A challenge after a run of successful searches means you
 are rate-limited, not that the warm-up or the parser is broken: pin
 `--engine mojeek` and carry on rather than debugging.
 
+Mojeek rate-limits too, and says so differently: a burst of queries earns an
+HTTP 403 whose body says your network is sending automated queries, or a 200
+holding an interstitial that asks for JavaScript. Both clear in a few minutes.
+Two walled engines at once means wait, not that the script broke.
+
 **Detect the challenge, do not count it.** Treat a challenge as an error to
 retry or fall back from — never as an empty result set. The two look identical
 to a parser that only counts results and mean opposite things.
@@ -66,6 +72,13 @@ Detect it from the challenge form, not from the words in the page. A results
 page for a query about bot walls contains `anomaly.js` in its snippets, and the
 HTML endpoint echoes your query back into its own search box, so a substring
 scan flags a working search as a wall.
+
+A wall has three shapes and only the first is a page: the challenge form, a
+refusal status (403, 429, 503), and an interstitial demanding JavaScript. The
+status is the one that gets dropped, because the body looks like a page and
+parses like an empty one. Keep it and check it. The interstitial has no form to
+key on, so it is matched by its words — safe only because that check runs on a
+page that parsed to zero results, which a real results page never is.
 
 ## Quick Reference
 
@@ -120,9 +133,10 @@ one working engine is enough. It exits non-zero only when every engine fails,
 which is the signal to go looking for a new one.
 
 Run it before concluding that search is broken, and again before editing this
-skill's engine table. If both engines fail, the fix is usually markup drift
-rather than a new wall: save the response body and run `websearch.py parse`
-over it to see whether the parser or the engine moved.
+skill's engine table. Read what the `[fail]` lines say. A wall or a refusal
+status on both engines is a bad ten minutes, not a broken script. Two engines
+reporting no results is markup drift: save the response body and run
+`websearch.py parse` over it to see whether the parser or the engine moved.
 
 ## Red Flags
 

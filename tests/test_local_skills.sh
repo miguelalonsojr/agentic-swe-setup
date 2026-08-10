@@ -107,6 +107,13 @@ assert_contains "$search" '| Search | `websearch.py search "QUERY"` | yes |' \
     "search skill gives the command that runs a search"
 assert_contains "$search" "the fallback, not a replacement" \
     "search skill defers to the harness's own search when it works"
+# The fallback engine walls too, and its walls are the two the challenge-form
+# rule does not cover. A skill that describes only DuckDuckGo's wall sends the
+# agent to debug a parser over a rate limit it should have waited out.
+assert_contains "$search" "A wall has three shapes" \
+    "search skill names every shape a wall arrives in"
+assert_contains "$search" "Mojeek rate-limits too" \
+    "search skill says the fallback engine has its own wall"
 
 # --- search-fu's parser, offline, against saved markup ---
 # The parser is the load-bearing part and the part that breaks when an engine
@@ -220,6 +227,93 @@ out=$(printf '%s' '<div class="result"><a class="result__a" href="//duckduckgo.c
 assert_contains "$out" "https://real.example/ok" "a fetchable result survives"
 assert_not_contains "$out" "Unfetchable" "a result with no scheme is dropped"
 assert_not_contains "$out" "Wrong scheme" "a result with a non-http scheme is dropped"
+
+# --- the whole search path, offline ---
+# Every parser test above calls `parse`, which takes the engine key the CLI
+# already validated. Nothing called Engine.search, and that is the one caller
+# that looked its parser up by the engine's display name instead: `ddg` is
+# keyed `ddg` but named `duckduckgo`, so every real DuckDuckGo query died with
+# KeyError while the suite stayed green. These tests stub the network at
+# `_read` and drive `search()` itself, so the request, the status, the wall
+# check and the parser are all on the path.
+stub_read() {
+    # stub_read STATUS — a websearch.py with its one network call replaced by a
+    # canned (STATUS, BODY). BODY is defined by the caller's own heredoc, which
+    # is appended after this one and read before the lambda ever runs.
+    cat <<PY
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("websearch", "$ws")
+ws = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ws)
+ws.time.sleep = lambda _s: None
+ws._read = lambda opener, url, data=None: ($1, BODY)
+PY
+}
+
+results_page='<div class="result"><a class="result__a" href="https://example.org/doc">Doc</a><a class="result__snippet">Snippet.</a></div>'
+out=$( { stub_read 200 ; cat <<PY
+BODY = '''$results_page'''
+engine, results = ws.search("q", 3, "ddg")
+print(engine, results[0]["url"])
+PY
+} | python3 - 2>&1)
+assert_contains "$out" "ddg https://example.org/doc" \
+    "search() reaches the parser for the engine whose key and name differ"
+
+# Mojeek's wall is an HTTP 403 whose body carries no results, so a caller that
+# ignores the status reports the rate limit as an empty web. The status is the
+# only thing that tells them apart.
+mojeek_403='<html><head><title>403 - Forbidden</title></head><body><h1>403 - Forbidden</h1><h2>Sorry your network appears to be sending automated queries so we cannot process your search at this time.</h2></body></html>'
+out=$( { stub_read 403 ; cat <<PY
+BODY = '''$mojeek_403'''
+try:
+    ws.search("q", 3, "mojeek")
+except ws.SearchError as exc:
+    print(type(exc).__name__, exc)
+PY
+} | python3 - 2>&1)
+assert_contains "$out" "ChallengeError" "an HTTP 403 from an engine is a wall"
+assert_contains "$out" "403" "the wall error names the status that caused it"
+assert_not_contains "$out" "no results" "a walled engine is not an empty result set"
+
+# Mojeek's other wall is HTTP 200 carrying a JavaScript interstitial. Same
+# failure as the 403, one layer up: a results-shaped response with no results.
+# The phrase is split by inline markup and a line break, because the real page
+# is free to be, and a regex over raw HTML would miss every version that is.
+mojeek_js='<html><body><div class="header"></div><noscript>JavaScript is
+<b>required</b> to complete this challenge. Please enable it.</noscript></body></html>'
+out=$( { stub_read 200 ; cat <<PY
+BODY = '''$mojeek_js'''
+try:
+    ws.search("q", 3, "mojeek")
+except ws.SearchError as exc:
+    print(type(exc).__name__, exc)
+PY
+} | python3 - 2>&1)
+assert_contains "$out" "ChallengeError" "a JavaScript interstitial is a wall, not an empty page"
+
+# The interstitial is detected only when nothing parsed, for the same reason
+# the challenge form is matched structurally: a results page is allowed to
+# contain those words, and one about bot walls does.
+out=$(printf '%s' '<div class="result"><a class="result__a" href="https://example.org/doc">JavaScript is required to complete this challenge</a>
+<a class="result__snippet">Why engines say that.</a></div>' | python3 "$ws" parse --engine ddg 2>&1)
+rc=$?
+assert_eq "$rc" 0 "a results page quoting the interstitial is not a wall"
+assert_contains "$out" "https://example.org/doc" "that page's result is still parsed"
+
+# The fallback is only worth having if a walled first engine hands over to the
+# second rather than taking the search down with it.
+mojeek_page='<ul class="results-standard"><li class="r1"><h2><a class="title" href="https://example.net/page">Page</a></h2><p class="s">Snippet.</p></li></ul>'
+out=$( { stub_read 200 ; cat <<PY
+BODY = '''$mojeek_page'''
+ws.ENGINES["ddg"].request = lambda q: (403, "")
+engine, results = ws.search("q", 3)
+print(engine, results[0]["url"])
+PY
+} | python3 - 2>&1)
+assert_contains "$out" "mojeek https://example.net/page" \
+    "auto falls back to the second engine when the first is walled"
+
 
 # Every failure the script can hit has to arrive as one error line. A traceback
 # is unreadable to the agent and, worse, is not the `error:` line it is told to

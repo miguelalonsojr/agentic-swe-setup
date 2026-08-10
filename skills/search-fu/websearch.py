@@ -29,7 +29,10 @@ because that word is ordinary text on any results page about bot walls.
 
 Mojeek is the fallback for when DuckDuckGo is walling. It needs no warm-up and
 indexes independently, so it is a genuine second opinion rather than another
-window onto the same index.
+window onto the same index. It walls in its own way, and neither way is a page
+with a form in it: a burst of queries earns an HTTP 403, or a 200 carrying an
+interstitial that asks for JavaScript. Both are handled the same as DuckDuckGo's
+challenge, because all three mean retry later or use the other engine.
 """
 from __future__ import annotations
 
@@ -52,6 +55,10 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
+_JS_WALL = re.compile(r"required to complete this challenge", re.I)
+# Statuses an engine uses to refuse a query it understood: a wall, not an
+# answer. Anything else at 400 or above is an ordinary HTTP failure.
+WALL_STATUSES = frozenset({403, 429, 503})
 DDG_HOME = "https://duckduckgo.com/"
 DDG_HTML = "https://html.duckduckgo.com/html/"
 MOJEEK = "https://www.mojeek.com/search"
@@ -64,7 +71,10 @@ class SearchError(RuntimeError):
 
 
 class ChallengeError(SearchError):
-    """The engine served a bot challenge instead of results."""
+    """The engine refused to answer: a challenge page, a JavaScript
+    interstitial, or a refusal status. One error for all three, because the
+    caller does the same thing about each of them — wait, or use the other
+    engine."""
 
 
 # --- fetching ---------------------------------------------------------------
@@ -130,6 +140,30 @@ def is_challenge(html: str) -> bool:
     detector.feed(html)
     detector.close()
     return detector.found
+
+
+def demands_javascript(html: str) -> bool:
+    """True when a body is an interstitial telling the reader to turn JavaScript
+    on. Mojeek serves one under load: HTTP 200, its usual chrome, no results and
+    no form to key on.
+
+    This one is a phrase, which is exactly what `_ChallengeDetector` exists to
+    avoid, so it is only ever consulted about a page that parsed to nothing. A
+    real results page has results, including a results page about bot walls
+    whose snippets say this in so many words.
+
+    Matched against the text rather than the markup: an interstitial is free to
+    bold a word or wrap the sentence across lines, and a regex over raw HTML
+    misses every version of it that does.
+    """
+    return _JS_WALL.search(_strip_tags(html)) is not None
+
+
+def _strip_tags(html: str) -> str:
+    """Markup out, one line of text back. Cruder than `_TextParser` and
+    deliberately so: it keeps `noscript`, which is where a page that wants
+    JavaScript tends to say so."""
+    return " ".join(re.sub(r"<[^>]+>", " ", html).split())
 
 
 class _ResultParser(HTMLParser):
@@ -252,18 +286,20 @@ def unwrap_redirect(href: str) -> str:
 
 # --- engines ----------------------------------------------------------------
 
-def _ddg_html(query: str) -> str:
-    """One warmed DuckDuckGo query. The GET seeds the cookie jar that the POST
-    then needs; both must happen on the same opener."""
+def _ddg_response(query: str) -> tuple[int, str]:
+    """One warmed DuckDuckGo query, as (status, body). The GET seeds the cookie
+    jar that the POST then needs; both must happen on the same opener.
+
+    The status travels with the body because an engine refuses a query with it:
+    dropping it here is what turns a rate limit into an empty web.
+    """
     opener = _opener()
     _read(opener, DDG_HOME)
-    _, html = _read(opener, DDG_HTML, urllib.parse.urlencode({"q": query}).encode())
-    return html
+    return _read(opener, DDG_HTML, urllib.parse.urlencode({"q": query}).encode())
 
 
-def _mojeek_html(query: str) -> str:
-    _, html = _read(_opener(), MOJEEK + "?" + urllib.parse.urlencode({"q": query}))
-    return html
+def _mojeek_response(query: str) -> tuple[int, str]:
+    return _read(_opener(), MOJEEK + "?" + urllib.parse.urlencode({"q": query}))
 
 
 class Engine:
@@ -273,6 +309,37 @@ class Engine:
         self.name = name
         self.request = request
         self.parser = parser
+
+    def parse(self, html: str, limit: int = 10) -> list[dict]:
+        """Read one response body with this engine's own parser.
+
+        The parser comes from the engine holding it rather than from a lookup
+        by name: `Engine` is what every caller already has, and a registry
+        lookup here is a second identifier for the same engine that has to
+        agree with the first.
+        """
+        if is_challenge(html):
+            raise ChallengeError(f"{self.name} served a bot challenge, not results; "
+                                 "retry later or pin the other engine with --engine")
+        parser = self.parser()
+        parser.feed(html)
+        parser.close()
+        results = parser.results[:limit]
+        if not results and demands_javascript(html):
+            raise ChallengeError(
+                f"{self.name} served a JavaScript interstitial, not results; "
+                "retry later or pin the other engine with --engine")
+        return results
+
+    def _check_status(self, status: int) -> None:
+        """A refusal is a wall, not an answer, and the body alone cannot say so:
+        Mojeek's rate limit is a 403 whose page carries no results at all."""
+        if status in WALL_STATUSES:
+            raise ChallengeError(
+                f"{self.name} refused the query with HTTP {status}; "
+                "retry later or pin the other engine with --engine")
+        if status >= 400:
+            raise SearchError(f"{self.name} returned HTTP {status}")
 
     def search(self, query: str, limit: int, attempts: int = ATTEMPTS) -> list[dict]:
         """Query until something useful comes back.
@@ -285,7 +352,9 @@ class Engine:
         last: SearchError | None = None
         for attempt in range(attempts):
             try:
-                results = parse_results(self.request(query), self.name, limit)
+                status, html = self.request(query)
+                self._check_status(status)
+                results = self.parse(html, limit)
                 if results:
                     return results
                 raise SearchError(f"{self.name} returned no results")
@@ -298,27 +367,22 @@ class Engine:
 
 
 ENGINES = {
-    "ddg": Engine("duckduckgo", _ddg_html, _DDGParser),
-    "mojeek": Engine("mojeek", _mojeek_html, _MojeekParser),
+    "ddg": Engine("duckduckgo", _ddg_response, _DDGParser),
+    "mojeek": Engine("mojeek", _mojeek_response, _MojeekParser),
 }
 ENGINE_CHOICES = list(ENGINES)
 
 
 def parse_results(html: str, engine: str, limit: int = 10) -> list[dict]:
-    """Parse saved result HTML. Raises ChallengeError rather than returning []
-    for a bot wall, because the two mean opposite things.
+    """Parse saved result HTML for the named engine. Raises ChallengeError
+    rather than returning [] for a bot wall, because the two mean opposite
+    things.
 
-    The challenge check runs for every engine. Exempting all but the one engine
+    The wall checks run for every engine. Exempting all but the one engine
     whose wall we have seen puts the confusion back on the fallback path, which
     is where it does the most damage.
     """
-    if is_challenge(html):
-        raise ChallengeError(f"{engine} served a bot challenge, not results; "
-                             "retry later or pin the other engine with --engine")
-    parser = ENGINES[engine].parser()
-    parser.feed(html)
-    parser.close()
-    return parser.results[:limit]
+    return ENGINES[engine].parse(html, limit)
 
 
 def search(query: str, limit: int = 10, engine: str = "auto") -> tuple[str, list[dict]]:

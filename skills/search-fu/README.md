@@ -51,6 +51,12 @@ itself — searching the body for the word `anomaly.js` flags any results page
 about bot walls, including one for a query DuckDuckGo echoes back into its own
 search box.
 
+Mojeek walls differently: an HTTP 403 saying your network is sending automated
+queries, or a 200 carrying an interstitial that asks for JavaScript. The 403 is
+why the status travels with the body all the way to the caller — discard it and
+a rate limit reads as an empty web. The interstitial has no form to match, so
+it is caught by its wording, and only on a page that parsed to zero results.
+
 The warm-up gets a cold session in and buys nothing after that. Around eight
 queries in a few minutes gets you walled for ten minutes or so regardless, which
 is what the fallback is for. If you are working through a list of searches, pin
@@ -61,7 +67,7 @@ is what the fallback is for. If you are working through a list of searches, pin
 | Engine | State when last checked | Notes |
 |---|---|---|
 | DuckDuckGo | works | needs the warm-up; walls a busy session for ~10 minutes |
-| Mojeek | works | no warm-up, independent index, no wall seen yet |
+| Mojeek | works | no warm-up, independent index; a burst earns a 403 or a JavaScript interstitial for a few minutes |
 | Bing | unusable | HTTP 200 with an empty result list |
 | Brave | unusable | HTTP 429 on a first request |
 | SearXNG (public instances) | unusable | 429 or 403 across the instances tried |
