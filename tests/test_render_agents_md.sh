@@ -80,34 +80,58 @@ assert_status 1 render_agents_md prime not-a-provider
 assert_status 1 render_agents_md prime ../prime/anthropic
 
 # Missing, null, empty, and malformed model selectors must reject a provider config rather
-# than produce instructions with an unusable dispatch model. Use a temporary
-# provider file so the repository ladders remain untouched.
+# than produce instructions with an unusable dispatch model. Thinking must be
+# an RLM-supported non-empty string. Use a temporary provider file so the
+# repository ladders remain untouched.
 malformed_provider="test-malformed-renderer-$$"
 malformed_config="$REPO_ROOT/prime/$malformed_provider.json"
+malformed_base=$(mktemp "$REPO_ROOT/prime/$malformed_provider.base.XXXXXX")
+jq --arg provider "$malformed_provider" \
+    '.agent |= with_entries(.value.model |= sub("^anthropic/"; $provider + "/"))' \
+    "$REPO_ROOT/prime/anthropic.json" > "$malformed_base"
 for agent in "${PRIME_AGENTS[@]}"; do
     for mutation in missing null empty malformed; do
         case "$mutation" in
             missing) jq --arg agent "$agent" 'del(.agent[$agent].model)' \
-                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+                "$malformed_base" > "$malformed_config" ;;
             null) jq --arg agent "$agent" '.agent[$agent].model = null' \
-                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+                "$malformed_base" > "$malformed_config" ;;
             empty) jq --arg agent "$agent" '.agent[$agent].model = ""' \
-                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+                "$malformed_base" > "$malformed_config" ;;
             malformed) jq --arg agent "$agent" '.agent[$agent].model = "not-a-selector"' \
-                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+                "$malformed_base" > "$malformed_config" ;;
+        esac
+        assert_status 1 render_agents_md prime "$malformed_provider"
+    done
+    for mutation in missing null empty nonstring unsupported; do
+        case "$mutation" in
+            missing) jq --arg agent "$agent" 'del(.agent[$agent].thinking)' \
+                "$malformed_base" > "$malformed_config" ;;
+            null) jq --arg agent "$agent" '.agent[$agent].thinking = null' \
+                "$malformed_base" > "$malformed_config" ;;
+            empty) jq --arg agent "$agent" '.agent[$agent].thinking = ""' \
+                "$malformed_base" > "$malformed_config" ;;
+            nonstring) jq --arg agent "$agent" '.agent[$agent].thinking = 1' \
+                "$malformed_base" > "$malformed_config" ;;
+            unsupported) jq --arg agent "$agent" '.agent[$agent].thinking = "unsupported"' \
+                "$malformed_base" > "$malformed_config" ;;
         esac
         assert_status 1 render_agents_md prime "$malformed_provider"
     done
 done
-for mutation in missing null empty malformed; do
+# The renderer separately reads reviewer fields for the dispatch example; keep
+# those validations covered even though reviewer also appears in the role table.
+for mutation in missing null empty nonstring unsupported; do
     case "$mutation" in
-        missing) jq 'del(.agent.reviewer.model)' "$REPO_ROOT/prime/anthropic.json" \
+        missing) jq 'del(.agent.reviewer.thinking)' "$malformed_base" \
             > "$malformed_config" ;;
-        null) jq '.agent.reviewer.model = null' "$REPO_ROOT/prime/anthropic.json" \
+        null) jq '.agent.reviewer.thinking = null' "$malformed_base" \
             > "$malformed_config" ;;
-        empty) jq '.agent.reviewer.model = ""' "$REPO_ROOT/prime/anthropic.json" \
+        empty) jq '.agent.reviewer.thinking = ""' "$malformed_base" \
             > "$malformed_config" ;;
-        malformed) jq '.agent.reviewer.model = "not-a-selector"' "$REPO_ROOT/prime/anthropic.json" \
+        nonstring) jq '.agent.reviewer.thinking = 1' "$malformed_base" \
+            > "$malformed_config" ;;
+        unsupported) jq '.agent.reviewer.thinking = "unsupported"' "$malformed_base" \
             > "$malformed_config" ;;
     esac
     assert_status 1 render_agents_md prime "$malformed_provider"
@@ -120,6 +144,6 @@ rm -rf "$blocked_out"
 mkdir -p "$blocked_out"
 assert_status 1 render_agents_md opencode "$malformed_provider"
 [ -d "$blocked_out" ] || fail "failed publication replaced the blocked output directory"
-rm -rf "$blocked_out" "$malformed_config"
+rm -rf "$blocked_out" "$malformed_config" "$malformed_base"
 
 exit "$ASSERT_FAILURES"

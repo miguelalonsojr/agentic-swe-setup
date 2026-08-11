@@ -168,6 +168,14 @@ valid_model_selector() {
     [[ $selector =~ ^$provider/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
+# valid_thinking_level LEVEL — LEVEL is accepted by Prime Agent's RLM runtime.
+valid_thinking_level() {
+    case $1 in
+        off|minimal|low|medium|high|xhigh|max) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # rendered_agents_md HARNESS PROVIDER — where the rendered instructions are
 # written. Inside the repo, so the installed path stays a symlink into this
 # repo and doctor, uninstall, and update keep working unchanged.
@@ -253,6 +261,11 @@ render_agents_md() {
             rm -f "$filtered" "$table"
             return 1
         fi
+        if ! valid_thinking_level "$thinking"; then
+            warn "provider $provider has unsupported thinking for Prime agent: $agent"
+            rm -f "$filtered" "$table"
+            return 1
+        fi
         if ! printf '| `%s` | `%s` | `%s` |\n' "$agent" "$model" "$thinking" >> "$table"; then
             rm -f "$filtered" "$table"
             return 1
@@ -272,6 +285,11 @@ render_agents_md() {
     if ! reviewer_thinking=$(jq -er \
         '.agent.reviewer.thinking | select(type == "string" and length > 0)' "$config"); then
         warn "provider $provider has no thinking for Prime agent: reviewer"
+        rm -f "$filtered" "$table"
+        return 1
+    fi
+    if ! valid_thinking_level "$reviewer_thinking"; then
+        warn "provider $provider has unsupported thinking for Prime agent: reviewer"
         rm -f "$filtered" "$table"
         return 1
     fi

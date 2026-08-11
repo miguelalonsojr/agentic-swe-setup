@@ -7,7 +7,23 @@ set -uo pipefail
 
 # The Prime Agent ladder must stay in lockstep with the OpenCode one: same
 # roles, same models per role. Only the effort field name differs.
-VALID_THINKING="off minimal low medium high xhigh"
+VALID_THINKING="off minimal low medium high xhigh max"
+
+assert_valid_thinking() {
+    local thinking=$1 message=$2
+    assert_contains " $VALID_THINKING " " $thinking " "$message"
+}
+
+# `max` is accepted by RLM and must remain valid in both role and default
+# configuration fields.
+max_config=$(mktemp)
+jq '.agent.general.thinking = "max" | .settings.defaultThinkingLevel = "max"' \
+    "$REPO_ROOT/prime/anthropic.json" > "$max_config"
+assert_valid_thinking "$(jq -r '.agent.general.thinking' "$max_config")" \
+    "config validation accepts max role thinking"
+assert_valid_thinking "$(jq -r '.settings.defaultThinkingLevel' "$max_config")" \
+    "config validation accepts max default thinking"
+rm -f "$max_config"
 
 for p in anthropic openai; do
     f="$REPO_ROOT/prime/$p.json"
@@ -27,8 +43,7 @@ for p in anthropic openai; do
             "$p agent $a matches the opencode ladder"
 
         think=$(jq -r --arg a "$a" '.agent[$a].thinking // ""' "$f")
-        assert_contains " $VALID_THINKING " " $think " \
-            "$p agent $a has a valid thinking level"
+        assert_valid_thinking "$think" "$p agent $a has a valid thinking level"
 
         desc=$(jq -r --arg a "$a" '.agent[$a].description // ""' "$f")
         [ -n "$desc" ] || fail "$p prime agent $a has no description"
@@ -76,8 +91,7 @@ for p in anthropic openai; do
     assert_not_contains "$dm" "/" "$p defaultModel is a bare id"
     assert_eq "$(jq -r '.agent.general.model' "$f")" "$p/$dm" \
         "$p defaultModel matches the general agent"
-    assert_contains " $VALID_THINKING " \
-        " $(jq -r '.settings.defaultThinkingLevel' "$f") " \
+    assert_valid_thinking "$(jq -r '.settings.defaultThinkingLevel' "$f")" \
         "$p defaultThinkingLevel is valid"
 
     # OpenCode's variant keys must not leak into the Prime config.
