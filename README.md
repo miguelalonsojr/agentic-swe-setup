@@ -2,7 +2,8 @@
 
 A `just`-driven installer that reproduces one agentic SWE environment across
 three harnesses. It sets up the Superpowers workflow skills, the 8 book-grounded
-swe-skills, model-tiered subagent roles, and a single global `AGENTS.md`, into
+swe-skills, model-tiered subagent roles, and a per-harness rendering of one
+global `AGENTS.md`, into
 Claude Code, OpenCode, Prime Agent, or any combination. The repo configures
 harnesses; it does not install them.
 
@@ -51,13 +52,26 @@ applies to the OpenCode and Prime Agent ladders; Claude Code tiers live in
 |---|---|---|---|
 | Superpowers | `claude plugin marketplace add anthropics/claude-plugins-official`, then `claude plugin install superpowers@claude-plugins-official` | jq-merge `"plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]` | symlink `~/.superpowers/skills/*` into `~/.prime/agent/skills/` |
 | swe-skills | `~/.swe-skills/install.sh --scope=user --tool=claude` | `~/.swe-skills/install.sh --scope=user --tool=opencode` | symlink `~/.swe-skills/{skills,book-skills}/*` into `~/.prime/agent/skills/` |
-| Global instructions | symlink `AGENTS.md` to `~/.claude/CLAUDE.md` | symlink `AGENTS.md` to `~/.config/opencode/AGENTS.md` | symlink `AGENTS.md` to `~/.prime/agent/AGENTS.md` |
+| Global instructions | render `AGENTS.md`, symlink it to `~/.claude/CLAUDE.md` | render `AGENTS.md`, symlink it to `~/.config/opencode/AGENTS.md` | render `AGENTS.md`, symlink it to `~/.prime/agent/AGENTS.md` |
 | Subagents | symlink `agents/*.md` into `~/.claude/agents/` | jq-merge `agent.*` into `~/.config/opencode/opencode.jsonc` | jq-merge subagent specs into `~/.prime/agent/harness/harness_state.json` |
 | Model defaults | agent frontmatter | same `opencode.jsonc` merge | jq-merge into `~/.prime/agent/settings.json` |
 | Local skills | symlink `skills/*` into `~/.claude/skills/` | symlink `skills/*` into `~/.config/opencode/skills/` | symlink `skills/*` into `~/.prime/agent/skills/` |
 
 `~/.swe-skills` is a single shared checkout that every harness symlinks into.
 Everything is user-scoped. Nothing is written per-project.
+
+### Rendered instructions
+
+`AGENTS.md` carries a `When running under ...` section for each harness, and
+they contradict each other: Claude Code picks a model per dispatch, OpenCode
+takes it from `opencode.json`, Prime Agent passes an `rlm(model=...)` selector.
+Install writes `build/<harness>/AGENTS.md` — the shared body plus that
+harness's section, without the other two — and symlinks it into place. `build/`
+is generated and gitignored.
+
+Edit `AGENTS.md`, not the renderings. They are rewritten by any install recipe
+and by `just update`; until one of those runs, the installed instructions are
+the previous render.
 
 Claude Code gets 7 subagents. `general` and `explore` are built in there, so
 only OpenCode and Prime Agent receive all 9.

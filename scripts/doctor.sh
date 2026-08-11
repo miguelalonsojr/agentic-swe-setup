@@ -10,6 +10,21 @@ ok()   { printf '[ok]   %s\n' "$*"; }
 bad()  { printf '[warn] %s\n' "$*"; }
 skip() { printf '[skip] %s\n' "$*"; }
 
+# check_instructions PATH LABEL — the installed instructions are a symlink to
+# a rendered file under build/, so a link into this repo is not enough: the
+# render itself can be missing after a clean, and the harness then reads
+# nothing at all.
+check_instructions() {
+    local p=$1 label=$2
+    if ! links_into_repo "$p"; then
+        bad "$label not linked from this repo"
+    elif [ ! -f "$p" ]; then
+        bad "$label links to a missing render; run just update"
+    else
+        ok "$label linked"
+    fi
+}
+
 printf 'tooling\n'
 for c in claude opencode prime-agent git jq; do
     if have "$c"; then ok "$c on PATH"; else bad "$c not on PATH"; fi
@@ -49,11 +64,7 @@ if have claude; then
         if links_into_repo "$(claude_dir)/agents/$a.md"; then ok "agent $a"
         else bad "agent $a not linked from this repo"; fi
     done
-    if links_into_repo "$(claude_dir)/CLAUDE.md"; then
-        ok "global CLAUDE.md linked"
-    else
-        bad "global CLAUDE.md not linked from this repo"
-    fi
+    check_instructions "$(claude_dir)/CLAUDE.md" "global CLAUDE.md"
 else
     skip "claude not installed"
 fi
@@ -90,11 +101,7 @@ if have opencode; then
         if links_into_repo "$(opencode_dir)/skills/$s"; then ok "local skill $s"
         else bad "local skill $s not linked from this repo"; fi
     done
-    if links_into_repo "$(opencode_dir)/AGENTS.md"; then
-        ok "global AGENTS.md linked"
-    else
-        bad "global AGENTS.md not linked from this repo"
-    fi
+    check_instructions "$(opencode_dir)/AGENTS.md" "global AGENTS.md"
 else
     skip "opencode not installed"
 fi
@@ -151,11 +158,7 @@ if have prime-agent; then
         if links_into_repo "$pdir/skills/$s"; then ok "local skill $s"
         else bad "local skill $s not linked from this repo"; fi
     done
-    if links_into_repo "$pdir/AGENTS.md"; then
-        ok "global AGENTS.md linked"
-    else
-        bad "global AGENTS.md not linked from this repo"
-    fi
+    check_instructions "$pdir/AGENTS.md" "global AGENTS.md"
 else
     skip "prime-agent not installed"
 fi

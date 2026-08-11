@@ -55,8 +55,12 @@ for a in "${CLAUDE_AGENTS[@]}"; do
     assert_symlink_to "$(claude_dir)/agents/$a.md" \
         "$REPO_ROOT/agents/$a.md" "agent $a linked"
 done
+# Claude Code gets the rendering that carries its own harness section only.
 assert_symlink_to "$(claude_dir)/CLAUDE.md" \
-    "$REPO_ROOT/AGENTS.md" "global CLAUDE.md linked"
+    "$(rendered_agents_md claude)" "global CLAUDE.md linked"
+installed=$(cat "$(claude_dir)/CLAUDE.md")
+assert_contains "$installed" "$(harness_heading claude)" "Claude Code section installed"
+assert_not_contains "$installed" "$(harness_heading prime)" "Prime section not installed"
 assert_symlink_to "$(claude_dir)/skills/de-slop" \
     "$SWE_SKILLS_DIR/skills/de-slop" "skills installed for claude"
 
@@ -84,7 +88,10 @@ CFG="$(opencode_dir)/opencode.jsonc"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
     "anthropic/claude-opus-5" "default provider is anthropic"
 assert_symlink_to "$(opencode_dir)/AGENTS.md" \
-    "$REPO_ROOT/AGENTS.md" "global AGENTS.md linked"
+    "$(rendered_agents_md opencode)" "global AGENTS.md linked"
+installed=$(cat "$(opencode_dir)/AGENTS.md")
+assert_contains "$installed" "$(harness_heading opencode)" "OpenCode section installed"
+assert_not_contains "$installed" "$(harness_heading claude)" "Claude section not installed"
 assert_symlink_to "$(opencode_dir)/skills/clean-coding" \
     "$SWE_SKILLS_DIR/book-skills/clean-coding" "skills installed for opencode"
 

@@ -28,7 +28,8 @@ run_swe_skills_install opencode
 log "linking local skills into $(opencode_dir)/skills"
 link_local_skills "$(opencode_dir)/skills"
 
+instructions=$(render_agents_md opencode) || die "could not render AGENTS.md for OpenCode"
 log "linking global instructions to $(opencode_dir)/AGENTS.md"
-link_into "$REPO_ROOT/AGENTS.md" "$(opencode_dir)/AGENTS.md"
+link_into "$instructions" "$(opencode_dir)/AGENTS.md"
 
 log "OpenCode setup complete (provider: $provider)"

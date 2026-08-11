@@ -116,7 +116,10 @@ assert_symlink_to "$PDIR/skills/jira-fu" \
     "$REPO_ROOT/skills/jira-fu" "local skill linked"
 [ -e "$PDIR/skills/not-a-skill" ] && fail "linked a directory with no SKILL.md"
 
-assert_symlink_to "$PDIR/AGENTS.md" "$REPO_ROOT/AGENTS.md" "instructions linked"
+assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime)" "instructions linked"
+installed=$(cat "$PDIR/AGENTS.md")
+assert_contains "$installed" "$(harness_heading prime)" "Prime Agent section installed"
+assert_not_contains "$installed" "$(harness_heading opencode)" "OpenCode section not installed"
 assert_eq "$(jq -r '.provider' "$MANIFEST")" "anthropic" "manifest records provider"
 
 # --- idempotent, and created_at is preserved across re-runs ---

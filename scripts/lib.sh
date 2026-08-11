@@ -25,6 +25,12 @@ SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
 # Skills that live in this repo rather than the shared swe-skills checkout.
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu)
 
+# Harnesses this repo installs into, and the AGENTS.md section that belongs to
+# each. AGENTS.md carries all three so the repo's own agents can read any of
+# them; install renders a copy that keeps only the target harness's section,
+# because the three sections give conflicting dispatch instructions.
+HARNESSES=(claude opencode prime)
+
 log()  { printf '==> %s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -136,4 +142,52 @@ run_swe_skills_install() {
     [ -f "$dir/install.sh" ] || die "swe-skills install.sh missing in $dir"
     log "installing swe-skills for $tool"
     bash "$dir/install.sh" --scope=user --tool="$tool"
+}
+
+# harness_heading HARNESS — the AGENTS.md heading owned by HARNESS. Matched
+# literally against the file, so a reworded heading fails the render instead
+# of quietly producing instructions for the wrong harness.
+harness_heading() {
+    case $1 in
+        claude)   printf '%s\n' '#### When running under Claude Code' ;;
+        opencode) printf '%s\n' '#### When running under OpenCode' ;;
+        prime)    printf '%s\n' '#### When running under Prime Agent' ;;
+        *) return 1 ;;
+    esac
+}
+
+# rendered_agents_md HARNESS — where the rendered instructions are written.
+# Inside the repo, so the installed path stays a symlink into this repo and
+# doctor, uninstall, and update keep working unchanged.
+rendered_agents_md() { printf '%s\n' "$REPO_ROOT/build/$1/AGENTS.md"; }
+
+# render_agents_md HARNESS — write AGENTS.md minus the other harnesses'
+# sections, and print the path. Returns non-zero rather than dying, so the
+# caller decides whether a failed render is fatal.
+render_agents_md() {
+    local harness=$1 keep out src
+    src="$REPO_ROOT/AGENTS.md"
+    if ! keep=$(harness_heading "$harness"); then
+        warn "unknown harness: $harness"
+        return 1
+    fi
+    if ! grep -qxF "$keep" "$src"; then
+        warn "AGENTS.md has no section titled: $keep"
+        return 1
+    fi
+    out=$(rendered_agents_md "$harness")
+    mkdir -p "$(dirname "$out")"
+    # A section runs from its heading to the next heading of any level. The
+    # fence toggle keeps a `#` comment inside a code block from ending one.
+    awk -v keep="$keep" '
+        /^```/ { fence = !fence }
+        !fence && /^#### When running under / {
+            drop = ($0 != keep)
+            if (drop) next
+        }
+        !fence && /^#/ && !/^#### When running under / { drop = 0 }
+        drop { next }
+        { print }
+    ' "$src" > "$out" || return 1
+    printf '%s\n' "$out"
 }

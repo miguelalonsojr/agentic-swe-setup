@@ -1,3 +1,6 @@
 # Importing a skill's script for a quick check writes bytecode next to it.
 __pycache__/
 *.pyc
+
+# Per-harness renderings of AGENTS.md, rebuilt on every install.
+build/

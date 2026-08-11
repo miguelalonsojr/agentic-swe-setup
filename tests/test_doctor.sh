@@ -77,6 +77,18 @@ assert_eq "$("$DOCTOR" >/dev/null 2>&1; echo $?)" 0 \
 
 cp "$SANDBOX/harness_state.json.bak" "$harness"
 
+# --- a link into this repo whose render is gone is still broken ---
+# The installed instructions point at build/, which a clean checkout or a
+# `git clean` does not have. The link still resolves inside the repo, so the
+# repo-membership check alone would call this green while the harness reads
+# nothing.
+render=$(rendered_agents_md prime)
+mv "$render" "$SANDBOX/AGENTS.md.bak"
+out=$("$DOCTOR" 2>&1)
+assert_contains "$out" "[warn] global AGENTS.md links to a missing render" \
+    "dangling render flagged"
+mv "$SANDBOX/AGENTS.md.bak" "$render"
+
 # --- a link that points somewhere else is reported, not silently accepted ---
 ln -sfn /etc/hostname "$(claude_dir)/CLAUDE.md"
 out=$("$DOCTOR" 2>&1)
