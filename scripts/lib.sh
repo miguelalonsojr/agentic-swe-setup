@@ -156,6 +156,18 @@ harness_heading() {
     esac
 }
 
+# valid_provider PROVIDER — providers are simple repository config names, not paths.
+valid_provider() {
+    [[ $1 =~ ^[a-z0-9][a-z0-9-]*$ ]]
+}
+
+# valid_model_selector PROVIDER SELECTOR — a Prime selector belongs to its provider
+# and has exactly one model-name component.
+valid_model_selector() {
+    local provider=$1 selector=$2
+    [[ $selector =~ ^$provider/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+}
+
 # rendered_agents_md HARNESS PROVIDER — where the rendered instructions are
 # written. Inside the repo, so the installed path stays a symlink into this
 # repo and doctor, uninstall, and update keep working unchanged.
@@ -175,6 +187,10 @@ render_agents_md() {
     fi
     if ! keep=$(harness_heading "$harness"); then
         warn "unknown harness: $harness"
+        return 1
+    fi
+    if ! valid_provider "$provider"; then
+        warn "invalid provider: $provider"
         return 1
     fi
     config="$REPO_ROOT/prime/$provider.json"
@@ -226,6 +242,11 @@ render_agents_md() {
             rm -f "$filtered" "$table"
             return 1
         fi
+        if ! valid_model_selector "$provider" "$model"; then
+            warn "provider $provider has an invalid model for Prime agent: $agent"
+            rm -f "$filtered" "$table"
+            return 1
+        fi
         if ! printf '| `%s` | `%s` |\n' "$agent" "$model" >> "$table"; then
             rm -f "$filtered" "$table"
             return 1
@@ -234,6 +255,11 @@ render_agents_md() {
     if ! reviewer=$(jq -er \
         '.agent.reviewer.model | select(type == "string" and length > 0)' "$config"); then
         warn "provider $provider has no model for Prime agent: reviewer"
+        rm -f "$filtered" "$table"
+        return 1
+    fi
+    if ! valid_model_selector "$provider" "$reviewer"; then
+        warn "provider $provider has an invalid model for Prime agent: reviewer"
         rm -f "$filtered" "$table"
         return 1
     fi
