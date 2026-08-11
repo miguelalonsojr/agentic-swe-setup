@@ -166,7 +166,7 @@ rendered_agents_md() { printf '%s\n' "$REPO_ROOT/build/$1/$2/AGENTS.md"; }
 # ladder into the markers left in its section. Returns non-zero rather than
 # dying, so the caller decides whether a failed render is fatal.
 render_agents_md() {
-    local harness=${1:-} provider=${2:-} keep out src config filtered table reviewer
+    local harness=${1:-} provider=${2:-} keep out src config filtered table rendered reviewer
     local agent model
     src="$REPO_ROOT/AGENTS.md"
     if [ -z "$harness" ] || [ -z "$provider" ]; then
@@ -205,7 +205,15 @@ render_agents_md() {
         return 1
     fi
     if [ "$harness" != prime ]; then
-        mv "$filtered" "$out"
+        if [ -d "$out" ]; then
+            warn "render output is a directory: $out"
+            rm -f "$filtered"
+            return 1
+        fi
+        if ! mv "$filtered" "$out"; then
+            rm -f "$filtered"
+            return 1
+        fi
         printf '%s\n' "$out"
         return 0
     fi
@@ -218,7 +226,10 @@ render_agents_md() {
             rm -f "$filtered" "$table"
             return 1
         fi
-        printf '| `%s` | `%s` |\n' "$agent" "$model" >> "$table"
+        if ! printf '| `%s` | `%s` |\n' "$agent" "$model" >> "$table"; then
+            rm -f "$filtered" "$table"
+            return 1
+        fi
     done
     if ! reviewer=$(jq -er \
         '.agent.reviewer.model | select(type == "string" and length > 0)' "$config"); then
@@ -226,8 +237,14 @@ render_agents_md() {
         rm -f "$filtered" "$table"
         return 1
     fi
+    rendered=$(mktemp "${out}.rendered.XXXXXX") || {
+        rm -f "$filtered" "$table"
+        return 1
+    }
     if ! awk -v table="$table" -v reviewer="$reviewer" '
         $0 == "<!-- PRIME_AGENT_MODEL_TABLE -->" {
+            print "| Role | Model |"
+            print "|---|---|"
             while ((getline row < table) > 0) print row
             close(table)
             next
@@ -236,10 +253,19 @@ render_agents_md() {
             gsub(/<!-- PRIME_AGENT_REVIEWER_MODEL -->/, reviewer)
             print
         }
-    ' "$filtered" > "$out"; then
-        rm -f "$filtered" "$table"
+    ' "$filtered" > "$rendered"; then
+        rm -f "$filtered" "$table" "$rendered"
         return 1
     fi
     rm -f "$filtered" "$table"
+    if [ -d "$out" ]; then
+        warn "render output is a directory: $out"
+        rm -f "$rendered"
+        return 1
+    fi
+    if ! mv "$rendered" "$out"; then
+        rm -f "$rendered"
+        return 1
+    fi
     printf '%s\n' "$out"
 }

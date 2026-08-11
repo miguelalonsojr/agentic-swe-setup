@@ -51,6 +51,10 @@ for h in "${HARNESSES[@]}"; do
     done
 done
 
+assert_contains "$prime_openai" '| Role | Model |' \
+    "Prime renders a Markdown table header"
+assert_contains "$prime_openai" '|---|---|' \
+    "Prime renders a Markdown table separator"
 assert_contains "$prime_openai" '| `reviewer` | `openai/gpt-5.6-terra` |'     "OpenAI Prime table uses the selected model"
 assert_contains "$prime_openai" 'model="openai/gpt-5.6-terra"'     "OpenAI Prime example uses the selected model"
 assert_not_contains "$prime_openai" 'anthropic' "OpenAI Prime render has no Anthropic selector"
@@ -70,5 +74,44 @@ assert_eq "$b" "$a" "re-rendering is idempotent"
 
 assert_status 1 render_agents_md nonesuch openai
 assert_status 1 render_agents_md prime not-a-provider
+
+# Missing, null, and empty model selectors must reject a provider config rather
+# than produce instructions with an unusable dispatch model. Use a temporary
+# provider file so the repository ladders remain untouched.
+malformed_provider="test-malformed-renderer-$$"
+malformed_config="$REPO_ROOT/prime/$malformed_provider.json"
+for agent in "${PRIME_AGENTS[@]}"; do
+    for mutation in missing null empty; do
+        case "$mutation" in
+            missing) jq --arg agent "$agent" 'del(.agent[$agent].model)' \
+                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+            null) jq --arg agent "$agent" '.agent[$agent].model = null' \
+                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+            empty) jq --arg agent "$agent" '.agent[$agent].model = ""' \
+                "$REPO_ROOT/prime/anthropic.json" > "$malformed_config" ;;
+        esac
+        assert_status 1 render_agents_md prime "$malformed_provider"
+    done
+done
+for mutation in missing null empty; do
+    case "$mutation" in
+        missing) jq 'del(.agent.reviewer.model)' "$REPO_ROOT/prime/anthropic.json" \
+            > "$malformed_config" ;;
+        null) jq '.agent.reviewer.model = null' "$REPO_ROOT/prime/anthropic.json" \
+            > "$malformed_config" ;;
+        empty) jq '.agent.reviewer.model = ""' "$REPO_ROOT/prime/anthropic.json" \
+            > "$malformed_config" ;;
+    esac
+    assert_status 1 render_agents_md prime "$malformed_provider"
+done
+
+# A directory at the publication path makes mv succeed by moving a temporary
+# file into it. Treat that as a publication failure, not a successful render.
+blocked_out=$(rendered_agents_md opencode "$malformed_provider")
+rm -rf "$blocked_out"
+mkdir -p "$blocked_out"
+assert_status 1 render_agents_md opencode "$malformed_provider"
+[ -d "$blocked_out" ] || fail "failed publication replaced the blocked output directory"
+rm -rf "$blocked_out" "$malformed_config"
 
 exit "$ASSERT_FAILURES"
