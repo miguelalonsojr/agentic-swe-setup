@@ -35,7 +35,7 @@ done
 
 # Only Claude Code's own harness section travels with the shared body; the
 # other two contradict it on how to pass a model.
-instructions=$(render_agents_md claude) || die "could not render AGENTS.md for Claude Code"
+instructions=$(render_agents_md claude anthropic) || die "could not render AGENTS.md for Claude Code"
 log "linking global instructions to $(claude_dir)/CLAUDE.md"
 link_into "$instructions" "$(claude_dir)/CLAUDE.md"
 

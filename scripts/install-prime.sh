@@ -41,7 +41,7 @@ link_skill_tree "$(swe_skills_dir)/book-skills" "$skills_dir"
 log "linking local skills into $skills_dir"
 link_local_skills "$skills_dir"
 
-instructions=$(render_agents_md prime) || die "could not render AGENTS.md for Prime Agent"
+instructions=$(render_agents_md prime "$provider") || die "could not render AGENTS.md for Prime Agent"
 log "linking global instructions to $(prime_dir)/AGENTS.md"
 link_into "$instructions" "$(prime_dir)/AGENTS.md"
 

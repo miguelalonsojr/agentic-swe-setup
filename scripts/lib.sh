@@ -156,30 +156,42 @@ harness_heading() {
     esac
 }
 
-# rendered_agents_md HARNESS — where the rendered instructions are written.
-# Inside the repo, so the installed path stays a symlink into this repo and
-# doctor, uninstall, and update keep working unchanged.
-rendered_agents_md() { printf '%s\n' "$REPO_ROOT/build/$1/AGENTS.md"; }
+# rendered_agents_md HARNESS PROVIDER — where the rendered instructions are
+# written. Inside the repo, so the installed path stays a symlink into this
+# repo and doctor, uninstall, and update keep working unchanged.
+rendered_agents_md() { printf '%s\n' "$REPO_ROOT/build/$1/$2/AGENTS.md"; }
 
-# render_agents_md HARNESS — write AGENTS.md minus the other harnesses'
-# sections, and print the path. Returns non-zero rather than dying, so the
-# caller decides whether a failed render is fatal.
+# render_agents_md HARNESS PROVIDER — write AGENTS.md minus the other
+# harnesses' sections, and print the path. Prime renders its provider's model
+# ladder into the markers left in its section. Returns non-zero rather than
+# dying, so the caller decides whether a failed render is fatal.
 render_agents_md() {
-    local harness=$1 keep out src
+    local harness=${1:-} provider=${2:-} keep out src config filtered table reviewer
+    local agent model
     src="$REPO_ROOT/AGENTS.md"
+    if [ -z "$harness" ] || [ -z "$provider" ]; then
+        warn "render_agents_md requires a harness and provider"
+        return 1
+    fi
     if ! keep=$(harness_heading "$harness"); then
         warn "unknown harness: $harness"
+        return 1
+    fi
+    config="$REPO_ROOT/prime/$provider.json"
+    if [ ! -f "$config" ]; then
+        warn "unknown provider: $provider"
         return 1
     fi
     if ! grep -qxF "$keep" "$src"; then
         warn "AGENTS.md has no section titled: $keep"
         return 1
     fi
-    out=$(rendered_agents_md "$harness")
+    out=$(rendered_agents_md "$harness" "$provider")
     mkdir -p "$(dirname "$out")"
+    filtered=$(mktemp "${out}.filtered.XXXXXX") || return 1
     # A section runs from its heading to the next heading of any level. The
     # fence toggle keeps a `#` comment inside a code block from ending one.
-    awk -v keep="$keep" '
+    if ! awk -v keep="$keep" '
         /^```/ { fence = !fence }
         !fence && /^#### When running under / {
             drop = ($0 != keep)
@@ -188,6 +200,46 @@ render_agents_md() {
         !fence && /^#/ && !/^#### When running under / { drop = 0 }
         drop { next }
         { print }
-    ' "$src" > "$out" || return 1
+    ' "$src" > "$filtered"; then
+        rm -f "$filtered"
+        return 1
+    fi
+    if [ "$harness" != prime ]; then
+        mv "$filtered" "$out"
+        printf '%s\n' "$out"
+        return 0
+    fi
+
+    table=$(mktemp "${out}.table.XXXXXX") || { rm -f "$filtered"; return 1; }
+    for agent in "${PRIME_AGENTS[@]}"; do
+        if ! model=$(jq -er --arg agent "$agent" \
+            '.agent[$agent].model | select(type == "string" and length > 0)' "$config"); then
+            warn "provider $provider has no model for Prime agent: $agent"
+            rm -f "$filtered" "$table"
+            return 1
+        fi
+        printf '| `%s` | `%s` |\n' "$agent" "$model" >> "$table"
+    done
+    if ! reviewer=$(jq -er \
+        '.agent.reviewer.model | select(type == "string" and length > 0)' "$config"); then
+        warn "provider $provider has no model for Prime agent: reviewer"
+        rm -f "$filtered" "$table"
+        return 1
+    fi
+    if ! awk -v table="$table" -v reviewer="$reviewer" '
+        $0 == "<!-- PRIME_AGENT_MODEL_TABLE -->" {
+            while ((getline row < table) > 0) print row
+            close(table)
+            next
+        }
+        {
+            gsub(/<!-- PRIME_AGENT_REVIEWER_MODEL -->/, reviewer)
+            print
+        }
+    ' "$filtered" > "$out"; then
+        rm -f "$filtered" "$table"
+        return 1
+    fi
+    rm -f "$filtered" "$table"
     printf '%s\n' "$out"
 }

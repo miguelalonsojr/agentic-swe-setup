@@ -131,25 +131,12 @@ subagent spec to 180 characters and shows only six of them, so some roles
 are missing from it. This table is authoritative. The model strings are
 Prime Agent `rlm(model=...)` selectors and are not valid anywhere else.
 
-| Role | Model |
-|---|---|
-| `implementer-light` | `anthropic/claude-sonnet-5` |
-| `implementer` | `anthropic/claude-opus-5` |
-| `implementer-strong` | `anthropic/claude-fable-5` |
-| `reviewer` | `anthropic/claude-opus-5` |
-| `reviewer-final` | `anthropic/claude-fable-5` |
-| `reviewer-lite` | `anthropic/claude-sonnet-5` |
-| `cross-checker` | `anthropic/claude-fable-5` |
-| `explore` | `anthropic/claude-sonnet-5` |
-| `general` | `anthropic/claude-opus-5` |
-
-If you installed with `provider=openai`, the selectors are the ones in
-`prime/openai.json`.
+<!-- PRIME_AGENT_MODEL_TABLE -->
 
 - Dispatch with the model from the table, never the one you are running on:
 
   ```python
-  handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5")
+  handle = await rlm(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->")
   ```
 
 - `rlm()` accepts `name` and `model` and nothing else. A child's thinking

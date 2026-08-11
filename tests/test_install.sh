@@ -57,7 +57,7 @@ for a in "${CLAUDE_AGENTS[@]}"; do
 done
 # Claude Code gets the rendering that carries its own harness section only.
 assert_symlink_to "$(claude_dir)/CLAUDE.md" \
-    "$(rendered_agents_md claude)" "global CLAUDE.md linked"
+    "$(rendered_agents_md claude anthropic)" "global CLAUDE.md linked"
 installed=$(cat "$(claude_dir)/CLAUDE.md")
 assert_contains "$installed" "$(harness_heading claude)" "Claude Code section installed"
 assert_not_contains "$installed" "$(harness_heading prime)" "Prime section not installed"
@@ -88,7 +88,7 @@ CFG="$(opencode_dir)/opencode.jsonc"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
     "anthropic/claude-opus-5" "default provider is anthropic"
 assert_symlink_to "$(opencode_dir)/AGENTS.md" \
-    "$(rendered_agents_md opencode)" "global AGENTS.md linked"
+    "$(rendered_agents_md opencode anthropic)" "global AGENTS.md linked"
 installed=$(cat "$(opencode_dir)/AGENTS.md")
 assert_contains "$installed" "$(harness_heading opencode)" "OpenCode section installed"
 assert_not_contains "$installed" "$(harness_heading claude)" "Claude section not installed"
@@ -99,6 +99,16 @@ assert_symlink_to "$(opencode_dir)/skills/clean-coding" \
 "$IO" openai >/dev/null 2>&1 || fail "install-opencode openai failed"
 assert_eq "$(jq -r '.agent.reviewer.model' "$CFG")" \
     "openai/gpt-5.6-terra" "explicit provider honoured"
+assert_symlink_to "$(opencode_dir)/AGENTS.md" \
+    "$(rendered_agents_md opencode openai)" "OpenCode instructions use the OpenAI render"
+installed=$(cat "$(opencode_dir)/AGENTS.md")
+assert_not_contains "$installed" 'anthropic' "OpenAI OpenCode instructions have no Anthropic selector"
+assert_not_contains "$installed" 'claude' "OpenAI OpenCode instructions have no Claude model name"
+"$IO" anthropic >/dev/null 2>&1 || fail "reinstall-opencode anthropic failed"
+assert_symlink_to "$(opencode_dir)/AGENTS.md" \
+    "$(rendered_agents_md opencode anthropic)" "OpenCode instructions use the Anthropic render"
+installed=$(cat "$(opencode_dir)/AGENTS.md")
+assert_not_contains "$installed" 'openai' "Anthropic OpenCode instructions have no OpenAI selector"
 
 # --- comment guard aborts the whole opencode install ---
 rm -f "$(opencode_dir)/AGENTS.md"

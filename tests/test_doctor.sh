@@ -82,7 +82,7 @@ cp "$SANDBOX/harness_state.json.bak" "$harness"
 # `git clean` does not have. The link still resolves inside the repo, so the
 # repo-membership check alone would call this green while the harness reads
 # nothing.
-render=$(rendered_agents_md prime)
+render=$(rendered_agents_md prime anthropic)
 mv "$render" "$SANDBOX/AGENTS.md.bak"
 out=$("$DOCTOR" 2>&1)
 assert_contains "$out" "[warn] global AGENTS.md links to a missing render" \

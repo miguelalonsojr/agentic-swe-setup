@@ -10,23 +10,18 @@ set -uo pipefail
 . "$REPO_ROOT/scripts/lib.sh"
 
 A="$REPO_ROOT/AGENTS.md"
-L="$REPO_ROOT/prime/anthropic.json"
 assert_file "$A" "AGENTS.md exists"
 body=$(cat "$A")
 
-# Every managed role appears with the selector the ladder gives it.
-for a in "${PRIME_AGENTS[@]}"; do
-    model=$(jq -r --arg a "$a" '.agent[$a].model' "$L")
-    assert_contains "$body" "| \`$a\` | \`$model\` |" \
-        "AGENTS.md routing table has the row for $a"
-done
-
-# No stale rows for roles that no longer exist. The selector pattern is
-# provider-agnostic: an `anthropic/` prefix here would let a stale row naming
-# any other provider sit in the table with the count still matching.
-rows=$(grep -c '^| `[a-z-]\+` | `[a-z][a-z0-9-]*/' "$A")
-assert_eq "$rows" "${#PRIME_AGENTS[@]}" \
-    "AGENTS.md routing table has exactly one row per managed role"
+# Provider-selected renders populate this marker from the ladder; keeping only
+# the marker in the source prevents one provider's selectors leaking into
+# another provider's installed instructions.
+assert_contains "$body" '<!-- PRIME_AGENT_MODEL_TABLE -->' \
+    "AGENTS.md has the Prime model-table marker"
+assert_contains "$body" '<!-- PRIME_AGENT_REVIEWER_MODEL -->' \
+    "AGENTS.md has the Prime reviewer-model marker"
+assert_not_contains "$body" '| `reviewer` | `anthropic/' \
+    "AGENTS.md has no hard-coded Anthropic Prime table"
 
 # The instruction this table replaces sent the agent to a truncated roster.
 assert_not_contains "$body" "Look the role up in" \
