@@ -4,3 +4,6 @@ __pycache__/
 
 # Per-harness renderings of AGENTS.md, rebuilt on every install.
 build/
+
+# Isolated feature worktrees.
+.worktrees/
