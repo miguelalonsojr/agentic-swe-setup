@@ -190,19 +190,21 @@ This file also sets `provider.openai.options.store` to `false`.
 
 ### Prime Agent, `prime/anthropic.json` and `prime/openai.json`
 
-Same roles and same model per role as the OpenCode ladder; a test asserts the
-two stay in lockstep. OpenCode's `variant` becomes Prime Agent's `thinking`,
-and `settings` carries the session defaults:
+Same roles and model IDs per role as the OpenCode ladder; Prime uses the
+`openai-codex` provider selector for its OpenAI Codex authentication. OpenCode's
+`variant` becomes Prime Agent's `thinking`, and `settings` carries the session
+defaults:
 
 | Key | Anthropic | OpenAI |
 |---|---|---|
-| `defaultProvider` | `anthropic` | `openai` |
+| `defaultProvider` | `anthropic` | `openai-codex` |
 | `defaultModel` | `claude-opus-5` | `gpt-5.6-terra` |
 | `defaultThinkingLevel` | `high` | `medium` |
 
-`defaultModel` is a bare model id; `defaultProvider` supplies the prefix. The
-per-agent `model` fields keep the `provider/id` form that `rlm(model=...)`
-expects.
+`defaultModel` is a bare model ID; `defaultProvider` supplies the prefix. The
+per-agent `model` fields use the `provider/id` selector that `rlm(model=...)`
+expects. Prime's OpenAI configuration emits `openai-codex/gpt-5.6-*`; OpenCode
+continues to use `openai/gpt-5.6-*`.
 
 ### Claude Code
 

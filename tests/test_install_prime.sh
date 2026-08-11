@@ -132,14 +132,14 @@ assert_eq "$n" 0 "no spurious backup on re-run"
 
 # --- explicit provider ---
 "$IP" openai >/dev/null 2>&1 || fail "install-prime openai failed"
-assert_eq "$(jq -r '.defaultProvider' "$SETTINGS")" "openai" "explicit provider honoured"
+assert_eq "$(jq -r '.defaultProvider' "$SETTINGS")" "openai-codex" "explicit provider honoured"
 assert_eq "$(jq -r '.entries.subagent.reviewer.metadata.model' "$HARNESS")" \
-    "openai/gpt-5.6-terra" "specs re-pointed at the openai ladder"
+    "openai-codex/gpt-5.6-terra" "specs re-pointed at the OpenAI Codex ladder"
 assert_render_cap_and_read_only openai
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime openai)" \
     "Prime instructions use the OpenAI render"
 installed=$(cat "$PDIR/AGENTS.md")
-assert_contains "$installed" 'openai/gpt-5.6-terra' "OpenAI Prime instructions use selected model"
+assert_contains "$installed" 'openai-codex/gpt-5.6-terra' "OpenAI Prime instructions use selected model"
 assert_not_contains "$installed" 'anthropic' "OpenAI Prime instructions have no Anthropic selector"
 assert_not_contains "$installed" 'claude' "OpenAI Prime instructions have no Claude model name"
 "$IP" anthropic >/dev/null 2>&1 || fail "reinstall-prime anthropic failed"

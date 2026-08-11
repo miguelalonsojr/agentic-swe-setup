@@ -161,11 +161,12 @@ valid_provider() {
     [[ $1 =~ ^[a-z0-9][a-z0-9-]*$ ]]
 }
 
-# valid_model_selector PROVIDER SELECTOR — a Prime selector belongs to its provider
-# and has exactly one model-name component.
+# valid_model_selector PROVIDER SELECTOR — a Prime selector belongs to its
+# authenticated provider and has exactly one model-name component.
 valid_model_selector() {
-    local provider=$1 selector=$2
-    [[ $selector =~ ^$provider/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+    local provider=$1 selector=$2 selector_provider=$provider
+    [ "$provider" = "openai" ] && selector_provider="openai-codex"
+    [[ $selector =~ ^$selector_provider/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
 # valid_thinking_level LEVEL — LEVEL is accepted by Prime Agent's RLM runtime.

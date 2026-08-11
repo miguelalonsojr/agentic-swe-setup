@@ -23,7 +23,6 @@
 - Modify: `tests/test_prime_configs.sh`
 - Modify: `tests/test_render_agents_md.sh`
 - Modify: `tests/test_install_prime.sh`
-- Modify: `tests/test_uninstall.sh`
 - Modify: `README.md`
 
 **Interfaces:**
@@ -36,7 +35,7 @@ Update the Prime-specific assertions to expect `openai-codex` for the default pr
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `bash tests/test_prime_configs.sh && bash tests/test_render_agents_md.sh && bash tests/test_install_prime.sh && bash tests/test_uninstall.sh`
+Run: `bash tests/test_prime_configs.sh && bash tests/test_render_agents_md.sh && bash tests/test_install_prime.sh`
 
 Expected: FAIL because `prime/openai.json` still emits `openai` selectors.
 
@@ -46,7 +45,7 @@ Set `prime/openai.json` `settings.defaultProvider` to `openai-codex` and prefix 
 
 - [ ] **Step 4: Run focused tests**
 
-Run: `bash tests/test_prime_configs.sh && bash tests/test_render_agents_md.sh && bash tests/test_install_prime.sh && bash tests/test_uninstall.sh`
+Run: `bash tests/test_prime_configs.sh && bash tests/test_render_agents_md.sh && bash tests/test_install_prime.sh`
 
 Expected: PASS.
 

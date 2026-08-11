@@ -5,8 +5,8 @@ set -uo pipefail
 # shellcheck source=/dev/null
 . "$REPO_ROOT/scripts/lib.sh"
 
-# The Prime Agent ladder must stay in lockstep with the OpenCode one: same
-# roles, same models per role. Only the effort field name differs.
+# Prime Agent keeps OpenCode's model IDs per role, but provider selectors may
+# differ because Prime Agent authenticates OpenAI Codex as `openai-codex`.
 VALID_THINKING="off minimal low medium high xhigh max"
 
 assert_valid_thinking() {
@@ -36,11 +36,13 @@ for p in anthropic openai; do
     for a in "${PRIME_AGENTS[@]}"; do
         model=$(jq -r --arg a "$a" '.agent[$a].model // ""' "$f")
         [ -n "$model" ] || fail "$p prime config missing model for $a"
-        assert_contains "$model" "$p/" "$p agent $a uses the $p provider"
+        provider=$p
+        [ "$p" = "openai" ] && provider="openai-codex"
+        assert_contains "$model" "$provider/" "$p agent $a uses the $provider provider"
 
-        # Same model as the OpenCode ladder for the same role.
-        assert_eq "$model" "$(jq -r --arg a "$a" '.agent[$a].model' "$o")" \
-            "$p agent $a matches the opencode ladder"
+        # Same model ID as the OpenCode ladder for the same role.
+        assert_eq "${model#*/}" "$(jq -r --arg a "$a" '.agent[$a].model | split("/")[1]' "$o")" \
+            "$p agent $a matches the opencode model ID"
 
         think=$(jq -r --arg a "$a" '.agent[$a].thinking // ""' "$f")
         assert_valid_thinking "$think" "$p agent $a has a valid thinking level"
@@ -85,11 +87,13 @@ for p in anthropic openai; do
 
     # Settings must name a provider and a bare model id (no provider prefix:
     # defaultProvider already carries it).
-    assert_eq "$(jq -r '.settings.defaultProvider' "$f")" "$p" \
+    provider=$p
+    [ "$p" = "openai" ] && provider="openai-codex"
+    assert_eq "$(jq -r '.settings.defaultProvider' "$f")" "$provider" \
         "$p settings name the provider"
     dm=$(jq -r '.settings.defaultModel' "$f")
     assert_not_contains "$dm" "/" "$p defaultModel is a bare id"
-    assert_eq "$(jq -r '.agent.general.model' "$f")" "$p/$dm" \
+    assert_eq "$(jq -r '.agent.general.model' "$f")" "$provider/$dm" \
         "$p defaultModel matches the general agent"
     assert_valid_thinking "$(jq -r '.settings.defaultThinkingLevel' "$f")" \
         "$p defaultThinkingLevel is valid"
