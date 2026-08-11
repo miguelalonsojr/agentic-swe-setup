@@ -178,8 +178,8 @@ rendered_agents_md() { printf '%s\n' "$REPO_ROOT/build/$1/$2/AGENTS.md"; }
 # ladder into the markers left in its section. Returns non-zero rather than
 # dying, so the caller decides whether a failed render is fatal.
 render_agents_md() {
-    local harness=${1:-} provider=${2:-} keep out src config filtered table rendered reviewer
-    local agent model
+    local harness=${1:-} provider=${2:-} keep out src config filtered table rendered
+    local agent model thinking reviewer reviewer_thinking
     src="$REPO_ROOT/AGENTS.md"
     if [ -z "$harness" ] || [ -z "$provider" ]; then
         warn "render_agents_md requires a harness and provider"
@@ -247,7 +247,13 @@ render_agents_md() {
             rm -f "$filtered" "$table"
             return 1
         fi
-        if ! printf '| `%s` | `%s` |\n' "$agent" "$model" >> "$table"; then
+        if ! thinking=$(jq -er --arg agent "$agent" \
+            '.agent[$agent].thinking | select(type == "string" and length > 0)' "$config"); then
+            warn "provider $provider has no thinking for Prime agent: $agent"
+            rm -f "$filtered" "$table"
+            return 1
+        fi
+        if ! printf '| `%s` | `%s` | `%s` |\n' "$agent" "$model" "$thinking" >> "$table"; then
             rm -f "$filtered" "$table"
             return 1
         fi
@@ -263,20 +269,27 @@ render_agents_md() {
         rm -f "$filtered" "$table"
         return 1
     fi
+    if ! reviewer_thinking=$(jq -er \
+        '.agent.reviewer.thinking | select(type == "string" and length > 0)' "$config"); then
+        warn "provider $provider has no thinking for Prime agent: reviewer"
+        rm -f "$filtered" "$table"
+        return 1
+    fi
     rendered=$(mktemp "${out}.rendered.XXXXXX") || {
         rm -f "$filtered" "$table"
         return 1
     }
-    if ! awk -v table="$table" -v reviewer="$reviewer" '
-        $0 == "<!-- PRIME_AGENT_MODEL_TABLE -->" {
-            print "| Role | Model |"
-            print "|---|---|"
+    if ! awk -v table="$table" -v reviewer="$reviewer" -v reviewer_thinking="$reviewer_thinking" '
+        $0 == "<!-- PRIME_AGENT_ROLE_ROUTING_TABLE -->" {
+            print "| Role | Model | Thinking |"
+            print "|---|---|---|"
             while ((getline row < table) > 0) print row
             close(table)
             next
         }
         {
             gsub(/<!-- PRIME_AGENT_REVIEWER_MODEL -->/, reviewer)
+            gsub(/<!-- PRIME_AGENT_REVIEWER_THINKING -->/, reviewer_thinking)
             print
         }
     ' "$filtered" > "$rendered"; then

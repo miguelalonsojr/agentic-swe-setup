@@ -166,20 +166,22 @@ an `rlm(...)` call that names its model explicitly.
 
 The harness roster is a hint, not a lookup. Prime Agent summarises each
 subagent spec to 180 characters and shows only six of them, so some roles
-are missing from it. This table is authoritative. The model strings are
-Prime Agent `rlm(model=...)` selectors and are not valid anywhere else.
+are missing from it. This table is authoritative. Its model strings are Prime
+Agent `rlm(model=...)` selectors and are not valid anywhere else. Installed roles must use the
+configured thinking level shown in the table. A direct `rlm()` call that omits
+`thinking` inherits the parent session's thinking level.
 
-<!-- PRIME_AGENT_MODEL_TABLE -->
+<!-- PRIME_AGENT_ROLE_ROUTING_TABLE -->
 
-- Dispatch with the model from the table, never the one you are running on:
+- Dispatch with the model and thinking level from the table, never the ones
+  you are running on:
 
   ```python
-  handle = await rlm(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->")
+  handle = await rlm(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->", thinking="<!-- PRIME_AGENT_REVIEWER_THINKING -->")
   ```
 
-- `rlm()` accepts `name` and `model` and nothing else. A child's thinking
-  level is inherited from this session and clamped to the child's model, so
-  there is no per-dispatch thinking argument to pass.
+- `rlm()` accepts `name`, `model`, and optional `thinking`. Thinking is clamped
+  to the selected child's model.
 - Children reply with `await agent_message.send(msg, receiver_role='parent')`.
   Ask for an explicit reply in the task text whenever you need the
   DONE / DONE_WITH_CONCERNS / BLOCKED status back.

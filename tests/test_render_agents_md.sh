@@ -51,16 +51,18 @@ for h in "${HARNESSES[@]}"; do
     done
 done
 
-assert_contains "$prime_openai" '| Role | Model |' \
+assert_contains "$prime_openai" '| Role | Model | Thinking |' \
     "Prime renders a Markdown table header"
-assert_contains "$prime_openai" '|---|---|' \
+assert_contains "$prime_openai" '|---|---|---|' \
     "Prime renders a Markdown table separator"
-assert_contains "$prime_openai" '| `reviewer` | `openai/gpt-5.6-terra` |'     "OpenAI Prime table uses the selected model"
-assert_contains "$prime_openai" 'model="openai/gpt-5.6-terra"'     "OpenAI Prime example uses the selected model"
+assert_contains "$prime_openai" '| `reviewer` | `openai/gpt-5.6-terra` | `high` |'     "OpenAI Prime table uses the selected model"
+assert_contains "$prime_openai" '| `implementer-light` | `openai/gpt-5.6-luna` | `low` |' \
+    "OpenAI Prime table uses implementer-light thinking"
+assert_contains "$prime_openai" 'model="openai/gpt-5.6-terra", thinking="high"'     "OpenAI Prime example uses the selected model"
 assert_not_contains "$prime_openai" 'anthropic' "OpenAI Prime render has no Anthropic selector"
 assert_not_contains "$prime_openai" 'claude' "OpenAI Prime render has no Claude model name"
-assert_contains "$prime_anthropic" '| `reviewer` | `anthropic/claude-opus-5` |'     "Anthropic Prime table uses the selected model"
-assert_contains "$prime_anthropic" 'model="anthropic/claude-opus-5"'     "Anthropic Prime example uses the selected model"
+assert_contains "$prime_anthropic" '| `reviewer` | `anthropic/claude-opus-5` | `high` |'     "Anthropic Prime table uses the selected model"
+assert_contains "$prime_anthropic" 'model="anthropic/claude-opus-5", thinking="high"'     "Anthropic Prime example uses the selected model"
 assert_not_contains "$prime_anthropic" 'openai' "Anthropic Prime render has no OpenAI selector"
 
 assert_contains "$prime_anthropic" '| `reviewer` |' "prime keeps the routing table"

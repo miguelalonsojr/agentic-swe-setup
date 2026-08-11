@@ -16,10 +16,12 @@ body=$(cat "$A")
 # Provider-selected renders populate this marker from the ladder; keeping only
 # the marker in the source prevents one provider's selectors leaking into
 # another provider's installed instructions.
-assert_contains "$body" '<!-- PRIME_AGENT_MODEL_TABLE -->' \
-    "AGENTS.md has the Prime model-table marker"
+assert_contains "$body" '<!-- PRIME_AGENT_ROLE_ROUTING_TABLE -->' \
+    "AGENTS.md has the Prime role-routing-table marker"
 assert_contains "$body" '<!-- PRIME_AGENT_REVIEWER_MODEL -->' \
     "AGENTS.md has the Prime reviewer-model marker"
+assert_contains "$body" '<!-- PRIME_AGENT_REVIEWER_THINKING -->' \
+    "AGENTS.md has the Prime reviewer-thinking marker"
 assert_not_contains "$body" '| `reviewer` | `anthropic/' \
     "AGENTS.md has no hard-coded Anthropic Prime table"
 

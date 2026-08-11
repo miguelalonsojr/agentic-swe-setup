@@ -68,24 +68,26 @@ fi
 
 now=$(date -u +%Y-%m-%dT%H:%M:%S+00:00)
 tmp=$(mktemp)
-jq -n \
+if ! jq -n \
     --argjson base "$(cat "$harness")" \
     --argjson mgd "$(cat "$src")" \
     --arg now "$now" \
     --arg provider "$provider" '
       def spec($name; $cfg):
-        { id: ($name | gsub("-"; "_")),
+        ($cfg.thinking | if type == "string" and length > 0 then .
+                          else error("no thinking for " + $name)
+                          end) as $thinking
+        | { id: ($name | gsub("-"; "_")),
           kind: "subagent",
           title: $name,
           # Prime Agent truncates this at 180 chars and shows only six specs
           # per kind (refinement.js:12,14), neither of which an installer can
           # raise. So the dispatch form leads: truncation can then only cost
           # the hint, never the call an agent needs to make. The role name is
-          # already printed from `title`, the selector is already in the
-          # dispatch form, and rlm() cannot be passed a thinking level, so
-          # none of those are repeated here.
+          # already printed from `title`; the selector and configured thinking
+          # level are already in the dispatch form, so neither is repeated here.
           content: (
-            "await rlm(task, name=\"" + $name + "\", model=\"" + $cfg.model + "\")"
+            "await rlm(task, name=\"" + $name + "\", model=\"" + $cfg.model + "\", thinking=\"" + $thinking + "\")"
             + (if $cfg.readOnly then " | read-only" else "" end)
             # A missing hint would otherwise silently degrade to a dangling
             # " | " separator (jq treats null as the identity for +), so
@@ -99,7 +101,7 @@ jq -n \
           arguments: {},
           metadata: {
             model: $cfg.model,
-            thinking: $cfg.thinking,
+            thinking: $thinking,
             mode: ($cfg.mode // "primary"),
             read_only: ($cfg.readOnly // false),
             provider: $provider,
@@ -127,7 +129,10 @@ jq -n \
             )
           )
       )
-    ' > "$tmp"
+    ' > "$tmp"; then
+    rm -f "$tmp"
+    die "invalid Prime agent configuration for provider $provider"
+fi
 mv "$tmp" "$harness"
 
 printf '%s\n' "${PRIME_AGENTS[@]}" \

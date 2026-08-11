@@ -59,7 +59,7 @@ done
 assert_render_cap_and_read_only() {
     local provider=$1
     local cfg="$REPO_ROOT/prime/$provider.json"
-    local a key content model want read_only hint
+    local a key content model thinking want read_only hint
     for a in "${PRIME_AGENTS[@]}"; do
         key=${a//-/_}
         content=$(jq -r --arg k "$key" '.entries.subagent[$k].content' "$HARNESS")
@@ -68,16 +68,15 @@ assert_render_cap_and_read_only() {
 
         # The dispatch form leads, so truncation can only ever cost the hint.
         model=$(jq -r --arg a "$a" '.agent[$a].model' "$cfg")
-        want="await rlm(task, name=\"$a\", model=\"$model\")"
+        thinking=$(jq -r --arg a "$a" '.agent[$a].thinking' "$cfg")
+        want="await rlm(task, name=\"$a\", model=\"$model\", thinking=\"$thinking\")"
         case "$content" in
             "$want"*) ;;
             *) fail "$provider spec $a does not lead with its dispatch form: [$content]" ;;
         esac
 
-        # rlm() takes only name and model (agent-session.js:7768); a child's
-        # thinking level is inherited from the parent session and clamped.
-        assert_not_contains "$content" "Thinking:" \
-            "$provider spec $a claims a thinking level no dispatch can set"
+        assert_eq "$(jq -r --arg k "$key" '.entries.subagent[$k].metadata.thinking' \
+            "$HARNESS")" "$thinking" "spec $a records its thinking"
 
         # Read-only intent must show up as the " | read-only" marker that
         # merge-prime.sh emits, not merely as prose — `explore`'s hint says
@@ -158,6 +157,26 @@ jq '.entries.subagent.my_own = {id:"my_own",kind:"subagent",title:"mine",
 assert_eq "$(jq -r '.theme' "$SETTINGS")" "tokyonight" "unmanaged setting survived"
 assert_eq "$(jq -r '.entries.subagent.my_own.title' "$HARNESS")" "mine" \
     "unmanaged subagent spec survived"
+
+# --- missing or invalid thinking rejects spec generation ---
+malformed_provider="test-malformed-thinking-$$"
+malformed_config="$REPO_ROOT/prime/$malformed_provider.json"
+for a in "${PRIME_AGENTS[@]}"; do
+    for mutation in missing null empty nonstring; do
+        case "$mutation" in
+            missing) jq --arg a "$a" 'del(.agent[$a].thinking)' "$REPO_ROOT/prime/anthropic.json" \
+                > "$malformed_config" ;;
+            null) jq --arg a "$a" '.agent[$a].thinking = null' "$REPO_ROOT/prime/anthropic.json" \
+                > "$malformed_config" ;;
+            empty) jq --arg a "$a" '.agent[$a].thinking = ""' "$REPO_ROOT/prime/anthropic.json" \
+                > "$malformed_config" ;;
+            nonstring) jq --arg a "$a" '.agent[$a].thinking = 1' "$REPO_ROOT/prime/anthropic.json" \
+                > "$malformed_config" ;;
+        esac
+        assert_status 1 "$REPO_ROOT/scripts/merge-prime.sh" "$malformed_provider"
+    done
+done
+rm -f "$malformed_config"
 
 # --- comment guard aborts the whole install ---
 rm -f "$PDIR/AGENTS.md"
