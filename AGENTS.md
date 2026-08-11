@@ -17,6 +17,44 @@ spec is broken, that comes before agreement and before starting work.
 - Structure earns its place: bullets for discrete items, prose for reasoning.
   A report format required by a skill outranks this.
 
+## Coding Discipline
+
+These checks apply before and during code changes in every supported harness.
+They bias toward caution over speed; use judgment for trivial tasks.
+
+### Think before coding
+
+- State assumptions explicitly. If uncertain, ask.
+- If a request has multiple plausible interpretations, present them instead of
+  choosing silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop, name the confusion, and ask.
+
+### Simplicity first
+
+- Write the minimum code that solves the problem.
+- Do not add features, abstractions, flexibility, configurability, or error
+  handling that the task does not require.
+- If the solution is much larger than the problem, simplify before proceeding.
+
+### Surgical changes
+
+- Touch only the files and lines needed for the request.
+- Do not refactor, reformat, or clean up adjacent code unless the task requires
+  it.
+- Match existing style, even when you would choose differently.
+- Remove imports, variables, functions, or files that your own change makes
+  unused. Mention unrelated dead code; do not delete it unless asked.
+- Every changed line should trace back to the user's request.
+
+### Goal-driven execution
+
+- Turn work into verifiable goals: reproduce bugs with tests, make new behavior
+  observable, and define what proves a refactor is safe.
+- For multi-step tasks, state a brief plan with a verification check for each
+  step.
+- If success criteria are weak or ambiguous, clarify them before implementation.
+
 ## Craft skills (swe-agent-skills)
 
 In addition to the Superpowers workflow skills, this environment has book-grounded
