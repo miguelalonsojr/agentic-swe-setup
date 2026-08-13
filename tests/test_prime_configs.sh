@@ -123,4 +123,25 @@ assert_eq "$(jq -r '.agent["implementer-light"].thinking' "$o")" "low" \
 assert_eq "$(jq -r '.agent["implementer-strong"].thinking' "$o")" "high" \
     "openai prime strong tier thinks more"
 
+# --- Compaction: compact before OpenAI's long-context price tier ---
+# The openai-codex gpt-5.6 models have a 272k context window and OpenAI bills
+# input at a premium above roughly that threshold. reserveTokens: 22000 makes
+# auto-compaction fire at 250k (trigger = window - reserveTokens), leaving a
+# one-turn margin under the tier. Anthropic carries the Prime Agent defaults
+# explicitly so switching providers resets the OpenAI-tuned values: the merge
+# is a shallow right-biased object merge, so each block must name every key
+# the other sets.
+for p in anthropic openai; do
+    f="$REPO_ROOT/prime/$p.json"
+    assert_eq "$(jq -r '.settings.compaction.enabled' "$f")" "true" \
+        "$p prime compaction is enabled"
+    assert_eq "$(jq -c '.settings.compaction | keys' "$f")" \
+        '["enabled","keepRecentTokens","reserveTokens"]' \
+        "$p prime compaction block names every managed key"
+done
+assert_eq "$(jq -r '.settings.compaction.reserveTokens' "$o")" 22000 \
+    "openai prime compaction triggers at 250k of the 272k window"
+assert_eq "$(jq -r '.settings.compaction.reserveTokens' "$a")" 16384 \
+    "anthropic prime compaction keeps the default reserve"
+
 exit "$ASSERT_FAILURES"

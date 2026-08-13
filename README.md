@@ -110,6 +110,7 @@ under `skills/`, and are symlinked into every harness:
 | `routing-model-tiers` | Dispatching subagents, especially a batch, and choosing which model each one runs on. |
 | `cross-checking-claims` | A subagent's finding is about to change a decision and needs an independent check and a primary source. |
 | `search-fu` | The harness has no configured web search, or a search result needs reading at its source before a claim is made from it. |
+| `plain-technical-prose` | Writing or revising prose that should read as a specification: docs, design specs, commit messages, PR descriptions, issue bodies. |
 
 Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. `jira-fu`
 and `search-fu` ship a script, and their `README.md` covers running it by hand.

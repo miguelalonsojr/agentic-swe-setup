@@ -33,6 +33,8 @@ stub_superpowers
 assert_eq "$(jq -r '.defaultProvider' "$SETTINGS")" "anthropic" "default provider"
 assert_eq "$(jq -r '.defaultModel' "$SETTINGS")" "claude-opus-5" "default model"
 assert_eq "$(jq -r '.defaultThinkingLevel' "$SETTINGS")" "high" "default thinking"
+assert_eq "$(jq -r '.compaction.reserveTokens' "$SETTINGS")" 16384 \
+    "compaction settings merged into settings.json"
 
 # Every role became a harness subagent spec, keyed with underscores.
 for a in "${PRIME_AGENTS[@]}"; do

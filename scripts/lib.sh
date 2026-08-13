@@ -23,7 +23,7 @@ LEGACY_CLAUDE_AGENTS=(reviewer-light)
 SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
              de-slop generating-design-doc pragmatic-engineer system-designing)
 # Skills that live in this repo rather than the shared swe-skills checkout.
-LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu)
+LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu plain-technical-prose)
 
 # Harnesses this repo installs into, and the AGENTS.md section that belongs to
 # each. AGENTS.md carries all three so the repo's own agents can read any of
