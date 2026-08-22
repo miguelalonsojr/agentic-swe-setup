@@ -24,6 +24,14 @@ while the light read-only role that exists for that work went unused.
 
 ## The Routing Test
 
+## Access mode and isolation
+
+Choose access mode and isolation before model tier. Use `dispatching-parallel-agents` to build the largest safe wave and `using-git-worktrees` to isolate write-capable workers.
+
+Model choice does not change isolation requirements. A stronger model does not make shared writes safe, and a light model still needs a worker worktree when it can edit.
+
+When write scope is uncertain, use a read-only exploration dispatch first. Update the dependency and collision map before routing the implementation task.
+
 Ask one question before every dispatch: what does this task produce?
 
 | The task produces | Tier |

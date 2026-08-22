@@ -34,4 +34,6 @@ to this repo's installed roles. The skill points at it rather than copying it.
 
 - `cross-checking-claims` covers the other half of the same session's lesson:
   children on one model share one model's blind spots.
-- `dispatching-parallel-agents`, from Superpowers, covers when to fan out at all.
+- Local `dispatching-parallel-agents` covers the largest safe wave.
+- Local `using-git-worktrees` covers worker worktrees for write-capable workers.
+- Local `subagent-driven-development` covers implementation routing.

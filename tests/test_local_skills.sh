@@ -38,6 +38,14 @@ assert_contains "$routing" "clamped to the child model" \
 # one is the light-tier row's own wording: one matching site, inside the table.
 assert_contains "$routing" "A list. Cataloguing licences" \
     "routing skill keeps the list-vs-verdict routing table"
+assert_contains "$routing" "Choose access mode and isolation before model tier" \
+    "routing skill keeps isolation ahead of model choice"
+assert_contains "$routing" "Model choice does not change isolation requirements" \
+    "routing skill cannot buy out of a worktree"
+assert_contains "$routing" "read-only exploration dispatch" \
+    "routing skill uses exploration before uncertain writes"
+assert_contains "$routing" "largest safe wave" \
+    "routing skill points dispatch volume to the parallel policy"
 
 # The needles here are whole clauses for the reason stated above, and this
 # skill makes the point sharply: a bare "primary source" matches the mandated
