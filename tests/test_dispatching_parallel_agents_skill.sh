@@ -12,6 +12,8 @@ assert_contains "$body" "A different file does not prove independence" \
     "parallel skill checks interfaces and shared state"
 assert_contains "$body" "Dispatch the largest safe wave" \
     "parallel skill maximizes safe concurrency"
+assert_contains "$body" "A safe wave contains only tasks whose dependencies are satisfied and whose collision edges are resolved" \
+    "parallel skill requires satisfied dependencies"
 assert_contains "$body" "controller-created worktree" \
     "parallel skill isolates every concurrent writer"
 assert_contains "$body" "lockfiles, generated artifacts, migrations, and configuration" \

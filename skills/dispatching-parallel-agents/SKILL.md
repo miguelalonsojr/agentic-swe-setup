@@ -7,7 +7,7 @@ description: Use when 2 or more subagent tasks may run concurrently and their de
 
 ## Purpose
 
-Use parallel agents only after mapping dependencies and collision edges. A collision edge connects tasks that cannot run together because one task changes state that the other task reads or changes. A safe wave contains tasks with no collision edge between them.
+Use parallel agents only after mapping dependencies and collision edges. A collision edge connects tasks that cannot run together because one task changes state that the other task reads or changes. A safe wave contains only tasks whose dependencies are satisfied and whose collision edges are resolved.
 
 A different file does not prove independence. Two tasks collide when one changes an interface, generated artifact, migration, lockfile, configuration, or external resource that the other consumes.
 
