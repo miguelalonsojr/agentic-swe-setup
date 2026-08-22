@@ -165,10 +165,18 @@ Workers must not create, remove, merge, rebase, or cherry-pick worktrees or bran
 
 The controller cleans up only after the ledger records the worker's integration commit or an explicitly abandoned ruling. A cherry-picked worker commit is not an ancestor of the integration branch. The controller must not infer integration from branch ancestry.
 
-The `ledger_state` variable is the task state read from the plan ledger. Before removal, verify that the recorded path remains registered and that it has the recorded branch. Require a clean worker worktree. A dirty worktree must not be force-removed.
+The plan ledger stores one terminal authorization record per task. Its stable format is `Task $task_id | state=integrated | worktree=$path | branch=$branch` or `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. The controller derives `ledger_state` from an exact matching record. The `ledger_state` variable is the task state read from the plan ledger. It does not accept `ledger_state` as input. Before removal, verify that the recorded path remains registered and that it has the recorded branch. Require a clean worker worktree. A dirty worktree must not be force-removed.
 
 ```bash
 set -euo pipefail
+
+if grep -F -x "Task $task_id | state=integrated | worktree=$path | branch=$branch" "$ledger" >/dev/null; then
+  ledger_state=integrated
+elif grep -F -x "Task $task_id | state=abandoned | worktree=$path | branch=$branch" "$ledger" >/dev/null; then
+  ledger_state=abandoned
+else
+  exit 1
+fi
 
 case "$ledger_state" in
   integrated|abandoned) ;;

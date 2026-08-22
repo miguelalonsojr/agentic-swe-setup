@@ -20,6 +20,16 @@ assert_contains "$body" "Workers must not dispatch nested agents." \
     "worktree skill prevents nested worker dispatch"
 assert_contains "$body" 'set -euo pipefail' \
     "worktree cleanup fails closed"
+assert_contains "$body" 'It does not accept `ledger_state` as input.' \
+    "worktree cleanup does not trust external ledger state"
+assert_contains "$body" 'grep -F -x "Task $task_id | state=integrated | worktree=$path | branch=$branch" "$ledger"' \
+    "worktree cleanup matches the integrated task record"
+assert_contains "$body" 'grep -F -x "Task $task_id | state=abandoned | worktree=$path | branch=$branch" "$ledger"' \
+    "worktree cleanup matches the abandoned task record"
+assert_contains "$body" 'ledger_state=integrated' \
+    "worktree cleanup sets integration only after a matching record"
+assert_contains "$body" 'ledger_state=abandoned' \
+    "worktree cleanup sets abandonment only after a matching record"
 assert_contains "$body" 'case "$ledger_state" in' \
     "worktree cleanup gates on ledger state"
 assert_contains "$body" 'integrated|abandoned)' \
