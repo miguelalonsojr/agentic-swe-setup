@@ -229,7 +229,7 @@ Create worker worktrees sequentially before dispatching the wave. Concurrent `gi
 
 ```bash
 base=$(git rev-parse HEAD)
-main_worktree=$(git worktree list --porcelain | awk '$1 == "worktree" {print $2; exit}')
+main_worktree=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 path="$main_worktree/.worktrees/$plan_slug/task-$task_id-$task_slug"
 branch="sdd/$plan_slug/task-$task_id-$task_slug"
 git worktree add "$path" -b "$branch" "$base"
@@ -552,7 +552,7 @@ assert_symlink_to "$PDIR/skills/de-slop" \
     "$SWE_SKILLS_DIR/skills/de-slop" "non-overlapping Prime skill remains shared"
 ```
 
-This specifically proves that the local `subagent-driven-development` replaces the Superpowers copy linked earlier and that all shared-name collisions resolve locally.
+This proves final local resolution despite earlier Superpowers and `agentic-swe-skills` links. It does not depend on which shared source was linked immediately before the local override.
 
 - [ ] **Step 5: Run installer tests and verify RED**
 
