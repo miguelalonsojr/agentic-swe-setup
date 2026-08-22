@@ -61,8 +61,13 @@ assert_symlink_to "$(claude_dir)/CLAUDE.md" \
 installed=$(cat "$(claude_dir)/CLAUDE.md")
 assert_contains "$installed" "$(harness_heading claude)" "Claude Code section installed"
 assert_not_contains "$installed" "$(harness_heading prime)" "Prime section not installed"
+for s in dispatching-parallel-agents routing-model-tiers \
+         subagent-driven-development using-git-worktrees; do
+    assert_symlink_to "$(claude_dir)/skills/$s" \
+        "$REPO_ROOT/skills/$s" "local skill $s overrides shared skill for claude"
+done
 assert_symlink_to "$(claude_dir)/skills/de-slop" \
-    "$SWE_SKILLS_DIR/skills/de-slop" "skills installed for claude"
+    "$SWE_SKILLS_DIR/skills/de-slop" "non-overlapping claude skill remains shared"
 
 log_out=$(cat "$SANDBOX/claude.log")
 assert_contains "$log_out" "plugin marketplace add anthropics/claude-plugins-official" \
@@ -78,6 +83,9 @@ assert_contains "$log_out" "plugin install superpowers@claude-plugins-official" 
 "$IC" >/dev/null 2>&1 || fail "second install-claude failed"
 assert_symlink_to "$(claude_dir)/agents/reviewer.md" \
     "$REPO_ROOT/agents/reviewer.md" "agent still linked after re-run"
+assert_symlink_to "$(claude_dir)/skills/subagent-driven-development" \
+    "$REPO_ROOT/skills/subagent-driven-development" \
+    "local subagent-driven-development still overrides shared skill after re-run"
 n=$(find "$(claude_dir)" -name 'CLAUDE.md.bak.*' | wc -l)
 assert_eq "$n" 0 "no spurious backup on re-run"
 
@@ -94,6 +102,13 @@ assert_contains "$installed" "$(harness_heading opencode)" "OpenCode section ins
 assert_not_contains "$installed" "$(harness_heading claude)" "Claude section not installed"
 assert_symlink_to "$(opencode_dir)/skills/clean-coding" \
     "$SWE_SKILLS_DIR/book-skills/clean-coding" "skills installed for opencode"
+for s in dispatching-parallel-agents routing-model-tiers \
+         subagent-driven-development using-git-worktrees; do
+    assert_symlink_to "$(opencode_dir)/skills/$s" \
+        "$REPO_ROOT/skills/$s" "local skill $s overrides shared skill for opencode"
+done
+assert_symlink_to "$(opencode_dir)/skills/de-slop" \
+    "$SWE_SKILLS_DIR/skills/de-slop" "non-overlapping opencode skill remains shared"
 
 # --- opencode install, explicit provider ---
 "$IO" openai >/dev/null 2>&1 || fail "install-opencode openai failed"

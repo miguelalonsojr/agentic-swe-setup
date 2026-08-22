@@ -115,6 +115,13 @@ assert_symlink_to "$PDIR/skills/clean-coding" \
     "$SWE_SKILLS_DIR/book-skills/clean-coding" "book-skill linked"
 assert_symlink_to "$PDIR/skills/jira-fu" \
     "$REPO_ROOT/skills/jira-fu" "local skill linked"
+for s in dispatching-parallel-agents routing-model-tiers \
+         subagent-driven-development using-git-worktrees; do
+    assert_symlink_to "$PDIR/skills/$s" \
+        "$REPO_ROOT/skills/$s" "local skill $s overrides shared skills for Prime"
+done
+assert_symlink_to "$PDIR/skills/de-slop" \
+    "$SWE_SKILLS_DIR/skills/de-slop" "non-overlapping Prime skill remains shared"
 [ -e "$PDIR/skills/not-a-skill" ] && fail "linked a directory with no SKILL.md"
 
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime anthropic)" "instructions linked"

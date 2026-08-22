@@ -53,11 +53,16 @@ EOF
 # stub_swe_skills — a fake swe-skills checkout whose install.sh links two
 # dummy skills into the right per-tool directory.
 stub_swe_skills() {
+    local s
     mkdir -p "$SWE_SKILLS_DIR/.git" \
-             "$SWE_SKILLS_DIR/skills/de-slop" \
              "$SWE_SKILLS_DIR/book-skills/clean-coding"
-    touch "$SWE_SKILLS_DIR/skills/de-slop/SKILL.md" \
-          "$SWE_SKILLS_DIR/book-skills/clean-coding/SKILL.md"
+    touch "$SWE_SKILLS_DIR/book-skills/clean-coding/SKILL.md"
+    for s in de-slop dispatching-parallel-agents routing-model-tiers \
+             subagent-driven-development using-git-worktrees; do
+        mkdir -p "$SWE_SKILLS_DIR/skills/$s"
+        printf -- '---\nname: %s\ndescription: shared stub\n---\n' "$s" \
+            > "$SWE_SKILLS_DIR/skills/$s/SKILL.md"
+    done
     cat >"$SWE_SKILLS_DIR/install.sh" <<'EOF'
 #!/usr/bin/env bash
 set -eu
