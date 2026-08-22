@@ -2,6 +2,6 @@
 
 Upstream source: `$HOME/.superpowers/skills/dispatching-parallel-agents`.
 
-This repository provides a local override for the upstream skill. The override classifies each task as `read-only` or `write-capable`, maps collision edges, and schedules the largest safe wave.
+The local override owns task inventory, dependency and collision edges, controller-assigned namespace decisions, and selection of the largest safe wave. The inventory includes expected files, interfaces, generated artifacts, lockfiles, migrations, configuration, and external resources.
 
-`using-git-worktrees` defines worktree setup. This skill requires a controller-created worktree for every concurrent writer. `subagent-driven-development` consumes the safe-wave decision when it dispatches and integrates tasks.
+`using-git-worktrees` owns writer lifecycle. `subagent-driven-development` consumes this skill's inventory and safe-wave decision, then orchestrates dispatch, review, integration, and recovery.

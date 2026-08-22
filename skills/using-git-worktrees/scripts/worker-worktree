@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+usage:
+  worker-worktree create --plan-slug SLUG --task-id ID --task-slug SLUG --base COMMIT
+  worker-worktree cleanup --ledger FILE --task-id ID --path PATH --branch BRANCH
+EOF
+  exit 2
+}
+
+die() {
+  printf 'worker-worktree: %s\n' "$*" >&2
+  exit 1
+}
+
+primary_worktree() {
+  local path
+  path=$(git worktree list --porcelain | sed -n 's/^worktree //p' | sed -n '1p')
+  [ -n "$path" ] || die "cannot derive the primary worktree"
+  (cd "$path" && pwd -P)
+}
+
+valid_component() {
+  [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] && [[ $1 != *".."* ]]
+}
+
+create_writer() {
+  local plan_slug= task_id= task_slug= base=
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --plan-slug) [ $# -ge 2 ] || usage; plan_slug=$2; shift 2 ;;
+      --task-id) [ $# -ge 2 ] || usage; task_id=$2; shift 2 ;;
+      --task-slug) [ $# -ge 2 ] || usage; task_slug=$2; shift 2 ;;
+      --base) [ $# -ge 2 ] || usage; base=$2; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -n "$plan_slug" ] && [ -n "$task_id" ] && [ -n "$task_slug" ] && [ -n "$base" ] || usage
+  valid_component "$plan_slug" || die "invalid plan slug"
+  valid_component "$task_slug" || die "invalid task slug"
+  [[ $task_id =~ ^[0-9]+$ ]] || die "invalid task ID"
+
+  local primary root path branch resolved_base actual_base actual_branch actual_path
+  primary=$(primary_worktree)
+  root="$primary/.worktrees"
+  if ! git -C "$primary" check-ignore -q --no-index .worktrees/; then
+    die "$root is not ignored relative to the primary worktree"
+  fi
+  if ! resolved_base=$(git -C "$primary" rev-parse --verify "$base^{commit}"); then
+    die "base is not a commit: $base"
+  fi
+  path="$root/$plan_slug/task-$task_id-$task_slug"
+  branch="sdd/$plan_slug/task-$task_id-$task_slug"
+  git check-ref-format "refs/heads/$branch" >/dev/null || die "invalid worker branch"
+  [ ! -e "$path" ] || die "worker path already exists: $path"
+  if git -C "$primary" show-ref --verify --quiet "refs/heads/$branch"; then
+    die "worker branch already exists: $branch"
+  fi
+
+  mkdir -p "$root/$plan_slug"
+  git -C "$primary" worktree add "$path" -b "$branch" "$resolved_base" >/dev/null
+  actual_path=$(cd "$path" && pwd -P)
+  actual_branch=$(git -C "$path" branch --show-current)
+  actual_base=$(git -C "$path" rev-parse HEAD)
+  [ "$actual_path" = "$path" ] || die "created path does not match requested path"
+  [ "$actual_branch" = "$branch" ] || die "created branch does not match requested branch"
+  [ "$actual_base" = "$resolved_base" ] || die "created base does not match recorded base"
+
+  printf 'path=%s\nbranch=%s\nbase=%s\n' "$path" "$branch" "$resolved_base"
+}
+
+cleanup_writer() {
+  local ledger= task_id= path= branch=
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --ledger) [ $# -ge 2 ] || usage; ledger=$2; shift 2 ;;
+      --task-id) [ $# -ge 2 ] || usage; task_id=$2; shift 2 ;;
+      --path) [ $# -ge 2 ] || usage; path=$2; shift 2 ;;
+      --branch) [ $# -ge 2 ] || usage; branch=$2; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -n "$ledger" ] && [ -n "$task_id" ] && [ -n "$path" ] && [ -n "$branch" ] || usage
+  [ -f "$ledger" ] || die "ledger does not exist: $ledger"
+  [[ $task_id =~ ^[0-9]+$ ]] || die "invalid task ID"
+  git check-ref-format "refs/heads/$branch" >/dev/null || die "invalid worker branch"
+  [[ $branch == sdd/* ]] || die "branch is not an SDD writer branch"
+
+  local primary integrated abandoned registered actual_path actual_branch
+  primary=$(primary_worktree)
+  case "$path" in
+    "$primary"/.worktrees/*) ;;
+    *) die "worker path is outside the canonical primary-worktree root" ;;
+  esac
+  integrated="Task $task_id | state=integrated | worktree=$path | branch=$branch"
+  abandoned="Task $task_id | state=abandoned | worktree=$path | branch=$branch"
+  if ! grep -F -x "$integrated" "$ledger" >/dev/null &&
+     ! grep -F -x "$abandoned" "$ledger" >/dev/null; then
+    die "no exact terminal ledger record authorizes cleanup"
+  fi
+
+  registered=$(git -C "$primary" worktree list --porcelain | sed -n 's/^worktree //p' | grep -F -x "$path" || true)
+  [ "$registered" = "$path" ] || die "worker path is not registered"
+  actual_path=$(cd "$path" && pwd -P)
+  [ "$actual_path" = "$path" ] || die "registered path does not match the ledger path"
+  actual_branch=$(git -C "$path" branch --show-current)
+  [ "$actual_branch" = "$branch" ] || die "checked-out branch does not match the ledger branch"
+  [ -z "$(git -C "$path" status --porcelain)" ] || die "worker worktree is dirty"
+
+  git -C "$primary" worktree remove "$path"
+  git -C "$primary" branch -D "$branch" >/dev/null
+  printf 'state=cleaned\npath=%s\nbranch=%s\n' "$path" "$branch"
+}
+
+[ $# -gt 0 ] || usage
+command=$1
+shift
+case "$command" in
+  create) create_writer "$@" ;;
+  cleanup) cleanup_writer "$@" ;;
+  *) usage ;;
+esac

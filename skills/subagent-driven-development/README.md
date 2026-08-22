@@ -1,11 +1,9 @@
 # Controller-managed subagent-driven development
 
-This local skill overrides the upstream serial implementation dispatch. It keeps the upstream briefs, reports, range-based review packages, five-round fix loop, rulings, final review, and escalation rules.
+This local skill overrides the upstream serial implementation dispatch. It retains task TDD, range-based review packages, the five-round fix loop, role escalation, sequential integration, rulings, and strongest whole-branch review.
 
-The controller maps dependencies and collision edges before dispatch. It dispatches the largest safe wave. A safe wave contains tasks with satisfied dependencies and resolved collision edges.
+`dispatching-parallel-agents` owns the complete collision inventory, controller-assigned namespace rulings, and largest safe wave. `using-git-worktrees` and `worker-worktree` own writer creation and cleanup. `routing-model-tiers` owns general per-dispatch model choice. SDD loads and consumes those policies. SDD owns orchestration, role routing, review and fix loops, integration, recovery, and final review.
 
-The controller creates each writer worktree sequentially from the wave integration HEAD. Read-only tasks use stable inputs. Workers only change and commit their assigned task in the supplied worktree.
+The task ledger uses `planned`, `dispatched`, `committed`, `reviewed`, `integrating`, `integrated`, `abandoned`, and `cleaned` states. It records commit ranges and source-to-integration mappings so restart recovery does not repeat implementation or lose a commit when a worktree is missing.
 
-The task reviewer reads the worker commit range before integration. The controller compares the actual change scope, then cherry-picks approved commits one at a time in dependency order. It runs focused tests after each integrated commit and the full suite after each wave.
-
-The controller records worker state in the plan ledger. It records worktree cleanup only after integration or an explicit abandonment ruling. The final whole-branch review runs after all waves complete.
+Each plan workspace uses a readable basename and a stable hash of its canonical repository-relative path. Plans with the same basename do not share artifacts.

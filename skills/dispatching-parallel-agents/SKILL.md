@@ -7,41 +7,53 @@ description: Use when 2 or more subagent tasks may run concurrently and their de
 
 ## Purpose
 
-Use parallel agents only after mapping dependencies and collision edges. A collision edge connects tasks that cannot run together because one task changes state that the other task reads or changes. A safe wave contains only tasks whose dependencies are satisfied and whose collision edges are resolved.
+Map all dependencies and collision edges before parallel dispatch. A collision edge connects tasks that cannot run in one wave because one task changes state that another task reads or changes. A safe wave contains only tasks whose dependencies are satisfied and whose collision edges are resolved.
 
-A different file does not prove independence. Two tasks collide when one changes an interface, generated artifact, migration, lockfile, configuration, or external resource that the other consumes.
+A different file does not prove independence. Tasks can collide through interfaces, generated state, repository-wide configuration, or external resources.
 
-## Decision order
+## Mandatory task inventory
+
+Record one row for every task before selecting a wave. Each row retains:
+
+- dependencies;
+- access mode, classified as `read-only` or `write-capable`;
+- expected files and interfaces read or changed;
+- generated artifacts and lockfiles;
+- migrations and configuration;
+- external resources, including ports, databases, services, and test fixtures;
+- controller-assigned namespaces;
+- collision edges;
+- rulings that add or remove edges.
+
+Check every pair of tasks against the complete inventory. Check lockfiles, generated artifacts, migrations, and configuration. Record the producer and consumer for each edge. Do not define independence from disjoint test files.
+
+## Namespace decisions
+
+A namespace removes an external-resource collision edge only when the controller assigns it before dispatch, the namespace is unique among tasks in the wave, and the namespace is explicit and testable. Record the concrete namespace value and its verification command. A worker-selected, implicit, duplicated, or untestable namespace does not remove an edge.
+
+Each namespace ruling adds or removes an identified collision edge. Keep the ruling in the inventory. Repository state such as files, interfaces, generated artifacts, lockfiles, migrations, and configuration does not become independent through an external-resource namespace.
+
+## Safe-wave decision
+
+Apply this order:
 
 1. Map dependencies.
 2. Classify every task as `read-only` or `write-capable`.
-3. Map file, interface, generated-artifact, and external-resource collisions.
-4. Namespace external resources when the namespace is explicit and testable.
-5. Dispatch the largest safe wave.
-6. Run read-only tasks in a stable worktree.
-7. Give every concurrent writer a controller-created worktree.
-8. Review actual diffs and integrate approved commits sequentially.
+3. Complete the file, interface, generated-artifact, lockfile, migration, configuration, and external-resource inventory.
+4. Add collision edges for each shared producer or consumer.
+5. Apply only valid controller-assigned namespace rulings.
+6. Dispatch the largest safe wave.
 
-## Access modes and collision edges
+Read-only tasks use stable inputs. Every concurrent writer receives a separate controller-created worktree. Never dispatch concurrent write-capable agents into one worktree. If isolated worktrees are unavailable, keep writers sequential and continue to parallelize read-only tasks.
 
-A `read-only` task does not modify repository state or shared external state. A `write-capable` task modifies either form of state.
+A task with uncertain write scope first receives a read-only exploration dispatch. Update the inventory and graph from its result before scheduling implementation.
 
-Check each task pair for collision edges. Check files and interfaces. Check lockfiles, generated artifacts, migrations, and configuration. Check ports, databases, services, and test fixtures. A shared-state task runs sequentially unless an explicit, testable namespace removes the collision edge.
+## Dispatch output
 
-Never dispatch concurrent write-capable agents into one worktree. If isolated worktrees are unavailable, keep writers sequential and continue to parallelize read-only work.
+Return the inventory, namespace rulings, collision graph, and largest safe wave to the orchestration skill. Prompts state the goal, acceptance criteria, scope, constraints, access mode, namespace values, relevant edges, and expected report.
 
-## Dispatch prompts and output
+## Integration feedback
 
-Give each agent one focused, self-contained task. State the goal, relevant failures or acceptance criteria, permitted scope, constraints, access mode, and expected output. Ask for the changed files, commands run, test results, commit hash when applicable, and concerns.
+Unexpected overlap stops integration of the affected tasks. Preserve their branches. Update the inventory and collision graph. Integrate the selected first task, then rerun or revise later work against the integrated state.
 
-Do not define independence from disjoint test files. Describe dependencies and collision edges in the prompt when they affect the task.
-
-## Integration
-
-The controller creates a worktree for every concurrent writer. The controller keeps read-only tasks in a stable worktree. After a safe wave completes, the controller reviews actual diffs, integrates approved commits sequentially, and runs the full suite.
-
-Unexpected overlap stops integration of the affected tasks. Preserve both worker branches, update the collision map, and rerun or revise the later task against the integrated state.
-
-## Verification
-
-Before the next safe wave, verify each requested focused check and the full suite after integration. Do not treat worker reports or disjoint paths as proof that changes integrate safely.
+After integration, run each focused check and the wave suite. Worker reports and disjoint paths do not prove safe integration.

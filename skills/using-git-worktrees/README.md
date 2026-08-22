@@ -2,6 +2,8 @@
 
 Upstream source: `$HOME/.superpowers/skills/using-git-worktrees`.
 
-The controller worktree is the integration workspace. It records the integration commit for each wave. Each writer uses a separate controller-created worktree and branch based on that commit. The controller creates and removes those writer worktrees. A writer only changes and commits its assigned task in the supplied path.
+The local skill has two modes. Feature/controller workspace mode retains the upstream isolation, setup, and baseline flow. SDD writer provisioning mode permits a linked controller to create child writer worktrees.
 
-Local links override the upstream skill. The local skill keeps the upstream isolation, setup, and baseline rules. It adds the controller-managed lifecycle for concurrent writers.
+The controller runs `scripts/worker-worktree` sequentially for writer creation and cleanup. The helper uses the canonical primary-worktree `.worktrees/<plan>/...` root. It verifies ignore status, the explicit base, the branch, the path, exact terminal ledger authorization, and clean status. A conforming native writer tool must accept the recorded base and return verified path, branch, and base values.
+
+Local links override the upstream skill.

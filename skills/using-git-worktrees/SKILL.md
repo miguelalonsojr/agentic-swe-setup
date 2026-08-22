@@ -13,9 +13,20 @@ Ensure work happens in an isolated workspace. Prefer your platform's native work
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
 
-## Step 0: Detect Existing Isolation
+## Mode selection
 
-**Before creating anything, check if you are already in an isolated workspace.**
+Use one mode for one purpose:
+
+- Feature/controller workspace mode prepares the workspace that owns a feature or plan. It uses the detect, create, setup, and baseline flow below.
+- SDD writer provisioning mode creates and cleans controller-owned child worktrees. It uses `scripts/worker-worktree` and does not run the feature/controller detection flow.
+
+A linked worktree stops creation only in feature/controller workspace mode. SDD writer provisioning may create child writer worktrees from a linked controller worktree.
+
+## Feature/controller workspace mode
+
+### Step 0: Detect existing isolation
+
+**Before creating anything, check if the feature or controller workspace is already isolated.**
 
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
@@ -44,7 +55,7 @@ Has the user already indicated their worktree preference in your instructions? I
 
 Honor any existing declared preference without asking. If the user declines consent, work in place and skip to Step 2.
 
-## Step 1: Create Isolated Workspace
+### Step 1: Create isolated workspace
 
 **You have two mechanisms. Try them in this order.**
 
@@ -99,7 +110,7 @@ cd "$path"
 
 **Sandbox fallback:** If `git worktree add` fails with a permission error (sandbox denial), tell the user the sandbox blocked worktree creation and you're working in the current directory instead. Then run setup and baseline tests in place.
 
-## Step 2: Project Setup
+### Step 2: Project setup
 
 Auto-detect and run appropriate setup:
 
@@ -118,7 +129,7 @@ if [ -f pyproject.toml ]; then poetry install; fi
 if [ -f go.mod ]; then go mod download; fi
 ```
 
-## Step 3: Verify Clean Baseline
+### Step 3: Verify clean baseline
 
 Run tests to ensure workspace starts clean:
 
@@ -140,65 +151,56 @@ Ready to implement <feature-name>
 ```
 
 
-## Controller-managed writer worktrees
+## SDD writer provisioning mode
 
-The controller creates and removes worker worktrees. Workers only use the path in their dispatch brief.
+The controller creates and removes worker worktrees. It owns each writer worktree and branch. Workers only use the path in their dispatch brief. Workers must not create, remove, merge, rebase, or cherry-pick worktrees or branches. Workers must not dispatch nested agents. A worker commits only its assigned task changes.
 
-The controller records a fresh integration `HEAD` as `base` before each wave. Every worker branch in that wave starts from that recorded integration commit. The controller records `path`, `branch`, `base`, and task ownership before dispatch.
+The controller records the integration `HEAD` as the explicit `base` before each wave. Create writer worktrees sequentially before dispatching the wave. The skill owns this sequencing because concurrent Git metadata changes can collide.
 
-Create worker worktrees sequentially before dispatching the wave. Concurrent `git worktree add` commands can contend on shared Git metadata.
+A native writer-worktree tool is valid only when it accepts the recorded base and returns the path, branch, and base needed by the ledger. It must also verify those values, use the canonical root, and satisfy the same cleanup contract. A general native workspace tool that chooses its own base does not meet this contract.
+
+Without such a native tool, use the helper from the controller worktree:
 
 ```bash
-base=$(git rev-parse HEAD)
-main_worktree=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
-path="$main_worktree/.worktrees/$plan_slug/task-$task_id-$task_slug"
-branch="sdd/$plan_slug/task-$task_id-$task_slug"
-git worktree add "$path" -b "$branch" "$base"
-test "$(git -C "$path" rev-parse HEAD)" = "$base"
+skills/using-git-worktrees/scripts/worker-worktree create \
+  --plan-slug "$plan_slug" \
+  --task-id "$task_id" \
+  --task-slug "$task_slug" \
+  --base "$base"
 ```
 
-The `sed` command preserves spaces in the integration-worktree path. Do not derive this path with a field-based parser.
+The helper derives the primary worktree from porcelain output without field splitting. It restricts each slug component. It places writers under the canonical primary-worktree `.worktrees/<plan>/...` root. It verifies that `.worktrees/` is ignored relative to the primary worktree before creation. It refuses an unignored root. It creates from the explicit base, then verifies and prints `path`, `branch`, and `base`.
 
-Workers must not create, remove, merge, rebase, or cherry-pick worktrees or branches. Workers must not dispatch nested agents. A worker commits only its task changes on the supplied branch.
+Record the printed values and task ownership in the ledger before dispatch. Do not reconstruct them later.
 
 ### Cleanup after integration or abandonment
 
-The controller cleans up only after the ledger records the worker's integration commit or an explicitly abandoned ruling. A cherry-picked worker commit is not an ancestor of the integration branch. The controller must not infer integration from branch ancestry.
+Cleanup requires an exact terminal ledger record. The accepted records are:
 
-The plan ledger stores one terminal authorization record per task. Its stable format is `Task $task_id | state=integrated | worktree=$path | branch=$branch` or `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. The controller derives `ledger_state` from an exact matching record. The `ledger_state` variable is the task state read from the plan ledger. It does not accept `ledger_state` as input. Before removal, verify that the recorded path remains registered and that it has the recorded branch. Require a clean worker worktree. A dirty worktree must not be force-removed.
-
-```bash
-set -euo pipefail
-
-if grep -F -x "Task $task_id | state=integrated | worktree=$path | branch=$branch" "$ledger" >/dev/null; then
-  ledger_state=integrated
-elif grep -F -x "Task $task_id | state=abandoned | worktree=$path | branch=$branch" "$ledger" >/dev/null; then
-  ledger_state=abandoned
-else
-  exit 1
-fi
-
-case "$ledger_state" in
-  integrated|abandoned) ;;
-  *) exit 1 ;;
-esac
-
-git worktree list --porcelain | grep -F -x "worktree $path"
-test "$(git -C "$path" branch --show-current)" = "$branch"
-test -z "$(git -C "$path" status --porcelain)"
-git worktree remove "$path"
-git branch -D "$branch"
+```text
+Task $task_id | state=integrated | worktree=$path | branch=$branch
+Task $task_id | state=abandoned | worktree=$path | branch=$branch
 ```
 
-Remove the worktree before deleting its branch. Run `git branch -D` only after the ledger records integration or explicit abandonment.
+A cherry-picked worker commit is not an ancestor of the integration branch. Do not infer integration from ancestry. After recording one accepted line, run:
+
+```bash
+skills/using-git-worktrees/scripts/worker-worktree cleanup \
+  --ledger "$ledger" \
+  --task-id "$task_id" \
+  --path "$path" \
+  --branch "$branch"
+```
+
+The helper derives authorization from the ledger. It does not accept a caller-supplied state. It verifies the canonical path, Git registration, checked-out branch, and clean status. A dirty writer is never force-removed. Remove the worktree before deleting its branch. Record `cleaned` only after the helper succeeds.
 
 ## Quick Reference
 
 | Situation | Action |
 |-----------|--------|
-| Already in linked worktree | Skip creation (Step 0) |
+| Feature/controller mode in a linked worktree | Skip controller creation and continue setup |
 | In a submodule | Treat as normal repo (Step 0 guard) |
-| Native worktree tool available | Use it (Step 1a) |
+| Native feature-workspace tool available | Use it in feature/controller mode |
 | No native tool | Git worktree fallback (Step 1b) |
 | `.worktrees/` exists | Use it (verify ignored) |
 | `worktrees/` exists | Use it (verify ignored) |
