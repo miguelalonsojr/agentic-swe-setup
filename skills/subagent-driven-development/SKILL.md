@@ -213,14 +213,16 @@ child is noticed within minutes, not at the end of the session.
 ### 1. Run safe waves
 
 1. Build the dependency and collision graph from every plan task.
-2. Dispatch every task in the largest safe wave.
-3. Create and record one worker worktree for each write-capable task before dispatch.
-4. Run each task's implementation, fix loop, and task review in its worker worktree.
-5. Review each worker commit before integration.
-6. Compare the actual diff with the declared scope.
-7. Cherry-pick approved commits into the controller branch one at a time in dependency order.
-8. Run focused tests after each integrated commit and the full suite after each wave.
-9. Recompute the graph and dispatch the next wave.
+2. Select the largest safe wave.
+3. Record the wave integration HEAD.
+4. Create and record one worker worktree for each write-capable task sequentially.
+5. Dispatch every task in the largest safe wave.
+6. Run each task's implementation, fix loop, and task review in its worker worktree.
+7. Review each worker commit before integration.
+8. Compare the actual diff with the declared scope.
+9. Cherry-pick approved commits into the controller branch one at a time in dependency order.
+10. Run focused tests after each integrated commit and the full suite after each wave.
+11. Recompute the graph and dispatch the next wave.
 
 Never implement an eligible task in the controller. The controller owns planning, dispatch, review coordination, integration, verification, and recovery.
 

@@ -17,6 +17,8 @@ assert_contains "$body" "Build the dependency and collision graph" \
     "SDD skill plans safe waves"
 assert_contains "$body" "Dispatch every task in the largest safe wave" \
     "SDD skill maximizes safe delegation"
+assert_contains "$body" $'2. Select the largest safe wave.\n3. Record the wave integration HEAD.\n4. Create and record one worker worktree for each write-capable task sequentially.\n5. Dispatch every task in the largest safe wave.' \
+    "SDD creates writer worktrees before wave dispatch"
 assert_contains "$body" "Never implement an eligible task in the controller" \
     "SDD controller delegates implementation"
 assert_contains "$body" "Review each worker commit before integration" \
