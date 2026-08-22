@@ -50,8 +50,8 @@ EOF
     chmod +x "$SANDBOX/bin/$name"
 }
 
-# stub_swe_skills — a fake swe-skills checkout whose install.sh links two
-# dummy skills into the right per-tool directory.
+# stub_swe_skills — a fake shared checkout with overlapping and non-overlapping
+# skills whose install.sh links them into the right per-tool directory.
 stub_swe_skills() {
     local s
     mkdir -p "$SWE_SKILLS_DIR/.git" \
