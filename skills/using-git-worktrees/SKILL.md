@@ -159,15 +159,22 @@ test "$(git -C "$path" rev-parse HEAD)" = "$base"
 
 The `sed` command preserves spaces in the integration-worktree path. Do not derive this path with a field-based parser.
 
-Workers must not create, remove, merge, rebase, or cherry-pick worktrees or branches. A worker commits only its task changes on the supplied branch.
+Workers must not create, remove, merge, rebase, or cherry-pick worktrees or branches. Workers must not dispatch nested agents. A worker commits only its task changes on the supplied branch.
 
 ### Cleanup after integration or abandonment
 
 The controller cleans up only after the ledger records the worker's integration commit or an explicitly abandoned ruling. A cherry-picked worker commit is not an ancestor of the integration branch. The controller must not infer integration from branch ancestry.
 
-Before removal, verify that the recorded path remains registered and that it has the recorded branch. Require a clean worker worktree. A dirty worktree must not be force-removed.
+The `ledger_state` variable is the task state read from the plan ledger. Before removal, verify that the recorded path remains registered and that it has the recorded branch. Require a clean worker worktree. A dirty worktree must not be force-removed.
 
 ```bash
+set -euo pipefail
+
+case "$ledger_state" in
+  integrated|abandoned) ;;
+  *) exit 1 ;;
+esac
+
 git worktree list --porcelain | grep -F -x "worktree $path"
 test "$(git -C "$path" branch --show-current)" = "$branch"
 test -z "$(git -C "$path" status --porcelain)"
