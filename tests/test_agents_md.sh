@@ -27,6 +27,13 @@ assert_contains "$body" "Inspect the diff and run focused verification before re
 assert_contains "$body" "Classification can become heavier after work starts. It cannot become lighter during the same task."     "workflow upgrades are one-way"
 assert_contains "$body" "Workflow classification and the rules for the selected path."     "precedence uses workflow classification"
 assert_contains "$body" "Applicable Superpowers workflow skills."     "precedence limits Superpowers to applicable skills"
+assert_contains "$body" "### Bounded path"     "AGENTS.md defines the bounded path"
+assert_contains "$body" 'Use the short in-chat `brainstorming` flow and obtain approval before implementation.'     "bounded path requires approval"
+assert_contains "$body" "Do not write a design document or implementation-plan document."     "bounded path excludes design and implementation-plan documents"
+assert_contains "$body" "### Full path"     "AGENTS.md defines the full path"
+assert_contains "$body" "Use the full path for architectural, unclear, cross-component, or high-risk work."     "full path names its selection criteria"
+assert_contains "$body" "The full path retains the Superpowers design, planning, TDD, worktree, delegation, review, and verification workflows."     "full path retains the complete workflow"
+assert_contains "$body" "They are not mandatory when the fast path explicitly excludes them."     "fast-path exclusions override otherwise applicable Superpowers workflows"
 
 # Provider-selected renders populate this marker from the ladder; keeping only
 # the marker in the source prevents one provider's selectors leaking into

@@ -50,6 +50,13 @@ for h in "${HARNESSES[@]}"; do
         assert_contains "$body" "### Precedence"             "$h keeps trailing shared content"
         assert_contains "$body" "Workflow classification and the rules for the selected path."             "$h keeps adaptive precedence"
         assert_contains "$body" "Applicable Superpowers workflow skills."             "$h keeps conditional Superpowers precedence"
+        assert_contains "$body" "### Bounded path"             "$h keeps the bounded path"
+        assert_contains "$body" 'Use the short in-chat `brainstorming` flow and obtain approval before implementation.'             "$h keeps bounded-path approval"
+        assert_contains "$body" "Do not write a design document or implementation-plan document."             "$h keeps bounded-path document exclusions"
+        assert_contains "$body" "### Full path"             "$h keeps the full path"
+        assert_contains "$body" "Use the full path for architectural, unclear, cross-component, or high-risk work."             "$h keeps full-path selection criteria"
+        assert_contains "$body" "The full path retains the Superpowers design, planning, TDD, worktree, delegation, review, and verification workflows."             "$h keeps the complete full workflow"
+        assert_contains "$body" "They are not mandatory when the fast path explicitly excludes them."             "$h keeps the fast-path precedence exception"
     done
 done
 
