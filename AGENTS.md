@@ -17,6 +17,56 @@ spec is broken, that comes before agreement and before starting work.
 - Structure earns its place: bullets for discrete items, prose for reasoning.
   A report format required by a skill outranks this.
 
+## Workflow Scaling
+
+Classify implementation work before selecting workflow skills. Use the fast path only when every eligibility condition holds. Use the bounded or full path when any required condition does not hold.
+
+### Fast path
+
+A task uses the fast path only when all of these conditions hold:
+
+- The change affects at most two files.
+- The change is localized and easy to reverse.
+- The expected result is clear.
+- The change requires no cross-component coordination.
+- One focused command can verify the result.
+- The change does not affect a public API, schema, migration, dependency, security control, authentication flow, concurrent behavior, or destructive operation.
+
+Fast-path work follows these rules:
+
+- Make the change directly and keep the edit surgical.
+- Do not invoke `brainstorming`, `writing-plans`, worktree management, subagents, or formal review.
+- Do not require a new test for documentation, formatting, or mechanical configuration changes.
+- Add or update a focused test for a behavior change when practical.
+- Inspect the diff and run focused verification before reporting completion.
+- Load a craft skill only when the task needs its specific guidance.
+
+A failure whose root cause is unknown does not qualify for the fast path. Use the bounded path with `systematic-debugging` unless the risk or scope requires the full path.
+
+### Bounded path
+
+Use the bounded path for a localized change to an existing flow when the task fails a fast-path condition but has no architectural or listed high-risk effect.
+
+- Use the short in-chat `brainstorming` flow and obtain approval before implementation.
+- Do not write a design document or implementation-plan document.
+- Work directly unless isolation or delegation has a concrete benefit.
+- Use tests and review in proportion to the change risk.
+- Apply the coding discipline and verification rules below.
+
+### Full path
+
+Use the full path for architectural, unclear, cross-component, or high-risk work. Public APIs, schemas, migrations, dependencies, security, authentication, concurrency, and destructive operations are high-risk even when their diffs are small.
+
+The full path retains the Superpowers design, planning, TDD, worktree, delegation, review, and verification workflows.
+
+### Reclassification
+
+Classification can become heavier after work starts. It cannot become lighter during the same task.
+
+If fast-path work expands beyond two files or exposes new risk, stop direct implementation. Explain the new classification and obtain the approval required by the bounded or full path. Preserve existing edits, but do not extend them until approval.
+
+An explicit user request for more process selects the heavier requested path. A request for less process can reduce optional ceremony but cannot remove a safety check required by a high-risk change.
+
 ## Coding Discipline
 
 These checks apply before and during code changes in every supported harness.
@@ -197,7 +247,10 @@ configured thinking level shown in the table. A direct `rlm()` call that omits
 
 ### Precedence
 
-1. Superpowers workflow skills (process, TDD, verification) — mandatory.
-2. This file's phase mapping — load the named craft skill at the named phase.
-3. Craft skill advice — apply where it fits the task; drop it where it conflicts
-   with YAGNI or the approved plan.
+1. Direct user instructions, subject to necessary safety checks.
+2. Workflow classification and the rules for the selected path.
+3. Applicable Superpowers workflow skills.
+4. This file's phase mapping.
+5. Advisory craft-skill guidance.
+
+Superpowers workflows remain mandatory when the bounded or full path names them. They are not mandatory when the fast path explicitly excludes them. YAGNI overrides optional abstractions and unrelated work.

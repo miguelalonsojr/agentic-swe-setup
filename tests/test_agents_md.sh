@@ -13,6 +13,21 @@ A="$REPO_ROOT/AGENTS.md"
 assert_file "$A" "AGENTS.md exists"
 body=$(cat "$A")
 
+# Workflow classification must make the low-risk path effective rather than
+# leaving the unconditional Superpowers precedence in control.
+assert_contains "$body" "## Workflow Scaling"     "AGENTS.md defines workflow scaling"
+assert_contains "$body" "The change affects at most two files."     "fast path has a file boundary"
+assert_contains "$body" "The change is localized and easy to reverse."     "fast path requires reversibility"
+assert_contains "$body" "The expected result is clear."     "fast path requires a clear result"
+assert_contains "$body" "The change requires no cross-component coordination."     "fast path excludes component coordination"
+assert_contains "$body" "One focused command can verify the result."     "fast path requires focused verification"
+assert_contains "$body" "public API, schema, migration, dependency, security control, authentication flow, concurrent behavior, or destructive operation"     "fast path names every high-risk exclusion"
+assert_contains "$body" 'Do not invoke `brainstorming`, `writing-plans`, worktree management, subagents, or formal review.'     "fast path skips heavy workflow steps"
+assert_contains "$body" "Inspect the diff and run focused verification before reporting completion."     "fast path retains completion evidence"
+assert_contains "$body" "Classification can become heavier after work starts. It cannot become lighter during the same task."     "workflow upgrades are one-way"
+assert_contains "$body" "Workflow classification and the rules for the selected path."     "precedence uses workflow classification"
+assert_contains "$body" "Applicable Superpowers workflow skills."     "precedence limits Superpowers to applicable skills"
+
 # Provider-selected renders populate this marker from the ladder; keeping only
 # the marker in the source prevents one provider's selectors leaking into
 # another provider's installed instructions.

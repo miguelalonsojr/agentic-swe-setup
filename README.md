@@ -76,6 +76,12 @@ the previous render.
 Claude Code gets 7 subagents. `general` and `explore` are built in there, so
 only OpenCode and Prime Agent receive all 9.
 
+### Adaptive workflow
+
+The rendered instructions scale process by change risk. Trivial low-risk changes use a fast path with a surgical edit and focused verification. Localized changes that need more care use a short in-chat approval flow. Architectural, unclear, cross-component, and high-risk changes retain the full design, planning, isolation, delegation, review, and verification workflow.
+
+`AGENTS.md` defines the eligibility rules and precedence. The installer renders the same shared policy for Claude Code, OpenCode, and Prime Agent.
+
 ### Why Prime Agent is different
 
 Prime Agent has no plugin system and no agent-definition files, which changes

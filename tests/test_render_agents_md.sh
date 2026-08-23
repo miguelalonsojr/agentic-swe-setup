@@ -45,9 +45,11 @@ assert_not_contains "$prime_anthropic" "reasoning effort are fixed"     "prime d
 for h in "${HARNESSES[@]}"; do
     for provider in "${PROVIDERS[@]}"; do
         body=$(cat "$(rendered_agents_md "$h" "$provider")")
-        assert_contains "$body" "## Disagreement" "$h keeps the shared opening"
-        assert_contains "$body" "### Precedence" "$h keeps trailing shared content"
-        assert_contains "$body" "Superpowers workflow skills (process, TDD, verification)"             "$h keeps trailing shared content"
+        assert_contains "$body" "## Disagreement"             "$h keeps the shared opening"
+        assert_contains "$body" "## Workflow Scaling"             "$h keeps workflow classification"
+        assert_contains "$body" "### Precedence"             "$h keeps trailing shared content"
+        assert_contains "$body" "Workflow classification and the rules for the selected path."             "$h keeps adaptive precedence"
+        assert_contains "$body" "Applicable Superpowers workflow skills."             "$h keeps conditional Superpowers precedence"
     done
 done
 
