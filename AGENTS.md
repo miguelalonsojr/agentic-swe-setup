@@ -105,6 +105,15 @@ They bias toward caution over speed; use judgment for trivial tasks.
   step.
 - If success criteria are weak or ambiguous, clarify them before implementation.
 
+### Test design
+
+Test intent, not implementation. Some contracts require implementation
+awareness, including performance characteristics, concurrency guarantees, and
+safety invariants. Test an implementation detail only when it is part of the
+contract, such as “this function is O(log n)” or “this operation is atomic
+under contention.” Otherwise, treat it as internal and avoid locking tests to
+it.
+
 ## Craft skills (swe-agent-skills)
 
 In addition to the Superpowers workflow skills, this environment has book-grounded
