@@ -239,8 +239,12 @@ configured thinking level shown in the table. A direct `rlm()` call that omits
   handle = await rlm(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->", thinking="<!-- PRIME_AGENT_REVIEWER_THINKING -->")
   ```
 
-- `rlm()` accepts `name`, `model`, and optional `thinking`. Thinking is clamped
-  to the selected child's model.
+- `rlm()` accepts `name`, `model`, and optional `thinking`. An explicit model
+  is preserved; if unavailable, admission fails without fallback. Omitting
+  `model` inherits the parent model.
+- An explicit `thinking` level must be supported by the selected model or
+  admission fails. Omitting `thinking` inherits the parent's current effective
+  level, clamped to the selected child's supported levels.
 - Children reply with `await agent_message.send(msg, receiver_role='parent')`.
   Ask for an explicit reply in the task text whenever you need the
   DONE / DONE_WITH_CONCERNS / BLOCKED status back.
@@ -251,7 +255,7 @@ configured thinking level shown in the table. A direct `rlm()` call that omits
   NEEDS_CONTEXT -> re-dispatch `implementer` with better scoping;
   BLOCKED or fix round 4 -> `implementer-strong`; still BLOCKED ->
   escalate to the human.
-- Delete a child with `await rlm.delete_subagent(handle)` once its
+- Delete a child with `await rlm.delete_subagent(handle.rlm_child_id)` once its
   context is no longer needed.
 
 ### Precedence

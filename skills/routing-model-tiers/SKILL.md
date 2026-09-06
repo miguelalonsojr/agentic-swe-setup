@@ -70,12 +70,17 @@ of working from the selectors you happen to remember.
 ### Prime Agent
 
 ```python
-handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5")
+handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5", thinking="high")
 ```
 
-`rlm()` accepts `name` and `model` and nothing else. Any other keyword raises
-`Unsupported rlm.run kwargs`. The child's thinking level is inherited from the parent
-session and clamped to the child model's capability, so it cannot be set per dispatch.
+`rlm()` accepts `name`, `model`, and optional `thinking`. For installed roles,
+pass the model and thinking level from the `AGENTS.md` table explicitly.
+An explicit model is preserved; if unavailable, admission fails without fallback.
+Omitting `model` inherits the parent model.
+
+An explicit `thinking` level must be supported by the selected model or admission
+fails. Omitting `thinking` inherits the parent's current effective level, clamped
+to the selected child's supported levels.
 
 The role-to-model map is the table under `#### When running under Prime Agent` in
 `AGENTS.md`. The harness roster shown in the system prompt is not that map, because
