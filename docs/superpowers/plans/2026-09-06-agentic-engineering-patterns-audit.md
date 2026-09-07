@@ -891,12 +891,12 @@ alone.
 with:
 
 ```
-When the final whole-branch review is clean and its fixes are merged,
-run `compound-step` with the ledger path (`Ledger: <workspace>/progress.md`)
-before deleting the workspace. Then delete this plan's workspace
-(`rm -rf <workspace>`) — the git history is the record of the code, and the
-compound step is the record of the process. Sibling directories belong to
-other plans; leave them alone.
+When the final whole-branch review is clean and its fixes are merged, two
+steps remain. Run `compound-step` with the ledger path
+(`Ledger: <workspace>/progress.md`) before deleting the workspace. Then delete
+this plan's workspace (`rm -rf <workspace>`) — the git history is the record
+of the code, and the compound step is the record of the process. Sibling
+directories belong to other plans; leave them alone.
 ```
 
 - [ ] **Step 4: Edit the three prompt files**
