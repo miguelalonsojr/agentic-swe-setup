@@ -5,7 +5,7 @@ Use this template when dispatching an implementer subagent.
 ```
 Subagent (general-purpose):
   description: "Implement Task N: [task name]"
-  model: [MODEL — REQUIRED: choose per SKILL.md Model Selection; an omitted
+  model: [MODEL — REQUIRED: choose per `routing-model-tiers`; role per SKILL.md `## Role routing and recovery`; an omitted
          model silently inherits the session's most expensive one]
   prompt: |
     You are implementing Task N: [task name]
@@ -34,7 +34,9 @@ Subagent (general-purpose):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write tests following TDD
-    3. Verify implementation works
+    3. Verify: run the covering tests; then exercise the change per `agentic-manual-testing`
+       when it has a runnable surface (CLI, HTTP API, web UI, startup path, migration),
+       and record the commands and their pasted output in the report
     4. Commit your work
     5. Self-review (see below)
     6. Report back
@@ -135,6 +137,9 @@ Subagent (general-purpose):
     - **TDD Evidence** (if TDD was required for this task):
       - RED: command run, relevant failing output before implementation, and why the failure was expected
       - GREEN: command run and relevant passing output after implementation
+    - **Manual testing evidence** (when the change has a runnable surface):
+      each command run and its pasted output; screenshots for UI; or the exact
+      command you would have run if you could not run it here
     - actual files changed
     - Self-review findings (if any)
     - Any issues or concerns

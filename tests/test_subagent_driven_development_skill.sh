@@ -50,9 +50,25 @@ assert_contains "$body" 'Write `Task N: complete` only after'     "SDD delays co
 assert_contains "$body" "scope check -> task review -> cherry-pick -> focused test -> wave suite -> terminal record -> completion -> cleanup"     "SDD worked example demonstrates integration and cleanup order"
 assert_contains "$body" "most capable available model"     "SDD retains strongest final review"
 
+assert_contains "$body" "scripts/test-summary" "SDD controller runs tests through test-summary"
+assert_contains "$body" 'Run `compound-step`' "SDD Finish runs the compound step"
+assert_contains "$body" "before deleting the workspace" "compound step precedes workspace deletion"
+assert_not_contains "$body" "superpowers:using-git-worktrees" "SDD names the forked worktree skill without the plugin prefix"
+assert_not_contains "$body" "superpowers:finishing-a-development-branch" "SDD names the forked finishing skill without the plugin prefix"
+assert_contains "$body" "superpowers:requesting-code-review" "SDD keeps the prefix for skills this repo does not fork"
+assert_contains "$body" "## Role routing and recovery" "SDD keeps the role section other skills point at"
+for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
+    assert_not_contains "$(cat "$root/$f.md")" "Model Selection" "$f no longer points at the removed section"
+    assert_contains "$(cat "$root/$f.md")" 'choose per `routing-model-tiers`' "$f points at routing-model-tiers"
+done
+
 implementer=$(cat "$root/implementer-prompt.md")
 assert_contains "$implementer" "Do not merge, rebase, cherry-pick, or create or remove worktrees"     "implementer prompt limits Git authority"
 assert_contains "$implementer" "actual files changed"     "implementer reports its real scope"
+assert_contains "$implementer" 'exercise the change per `agentic-manual-testing`' "implementer prompt names the manual check"
+assert_contains "$implementer" "Manual testing evidence" "implementer report carries manual evidence"
+reviewer=$(cat "$root/task-reviewer-prompt.md")
+assert_contains "$reviewer" "was the documentation updated?" "reviewer checks documentation"
 
 workspace="$root/scripts/sdd-workspace"
 if [ -x "$workspace" ]; then

@@ -79,7 +79,7 @@ digraph process {
     "Run full suite after wave; clean up integrated workers" [shape=box];
     "Tasks remain?" [shape=diamond];
     "Final whole-branch review, one fix dispatch, scoped re-review" [shape=box];
-    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+    "Use finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
     "Setup: workspace, ledger, plan, dependency and collision graph" -> "Largest safe wave";
     "Largest safe wave" -> "Create writer worktrees sequentially from recorded integration HEAD";
@@ -91,14 +91,14 @@ digraph process {
     "Run full suite after wave; clean up integrated workers" -> "Tasks remain?";
     "Tasks remain?" -> "Largest safe wave" [label="yes"];
     "Tasks remain?" -> "Final whole-branch review, one fix dispatch, scoped re-review" [label="no"];
-    "Final whole-branch review, one fix dispatch, scoped re-review" -> "Use superpowers:finishing-a-development-branch";
+    "Final whole-branch review, one fix dispatch, scoped re-review" -> "Use finishing-a-development-branch";
 }
 ```
 
 ## Setup
 
 Ensure the work happens in an isolated workspace: use
-superpowers:using-git-worktrees to create one or verify the existing one.
+using-git-worktrees to create one or verify the existing one.
 Never start implementation on a main/master branch without your human
 partner's explicit consent.
 
@@ -128,7 +128,7 @@ a ledger file, not only in todos.
   when your context no longer remembers creating them. After compaction,
   trust the ledger and `git log` over your own recollection.
 - For every task, retain the policy inventory: dependencies; access mode; expected files and interfaces; generated artifacts; lockfiles; migrations; configuration; external resources; controller-assigned namespaces; collision edges; and rulings that add or remove edges. Also record the worker worktree, branch, base, worker identity, report path, commit range, task review status, source-to-integration commit mappings, and cleanup state. Record each wave's integration `HEAD` before creating writers.
-- After a worker is integrated or explicitly abandoned, write exactly one terminal cleanup authorization record: `Task $task_id | state=integrated | worktree=$path | branch=$branch` or `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. Remove the worktree and branch only after this record and the checks in `superpowers:using-git-worktrees`.
+- After a worker is integrated or explicitly abandoned, write exactly one terminal cleanup authorization record: `Task $task_id | state=integrated | worktree=$path | branch=$branch` or `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. Remove the worktree and branch only after this record and the checks in `using-git-worktrees`.
 - `git clean -fdx` will destroy the workspace (it's git-ignored scratch); if
   that happens, recover from `git log`.
 
@@ -223,7 +223,7 @@ child is noticed within minutes, not at the end of the session.
 7. Review each worker commit before integration.
 8. Compare the actual diff with the declared scope.
 9. Cherry-pick approved commits into the controller branch one at a time in dependency order.
-10. Run focused tests after each integrated commit and the full suite after each wave.
+10. Run focused tests after each integrated commit and the full suite after each wave, through this skill's `scripts/test-summary -- <command>`; read its summary, and open the log path only when something failed.
 11. Recompute the graph and dispatch the next wave.
 
 Never implement an eligible task in the controller. The controller owns planning, dispatch, review coordination, integration, verification, and recovery.
@@ -416,12 +416,14 @@ took on your human partner's behalf reach them — they read it and rework
 whatever you got wrong. A ruling that dies with the workspace was a decision
 made in secret.
 
-When the final whole-branch review is clean and its fixes are merged,
-delete this plan's workspace (`rm -rf <workspace>`) — the git history is
-the record now. Sibling directories belong to other plans; leave them
-alone.
+When the final whole-branch review is clean and its fixes are merged, two
+steps remain. Run `compound-step` with the ledger path
+(`Ledger: <workspace>/progress.md`) before deleting the workspace. Then delete
+this plan's workspace (`rm -rf <workspace>`) — the git history is the record
+of the code, and the compound step is the record of the process. Sibling
+directories belong to other plans; leave them alone.
 
-Use superpowers:finishing-a-development-branch.
+Use finishing-a-development-branch.
 
 ## Common Rationalizations
 

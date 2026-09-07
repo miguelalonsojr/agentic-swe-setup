@@ -10,7 +10,7 @@ more, nothing less) and is well-built (clean, tested, maintainable)
 ```
 Subagent (general-purpose):
   description: "Review Task N (spec + quality)"
-  model: [MODEL — REQUIRED: choose per SKILL.md Model Selection; an omitted
+  model: [MODEL — REQUIRED: choose per `routing-model-tiers`; role per SKILL.md `## Role routing and recovery`; an omitted
          model silently inherits the session's most expensive one]
   prompt: |
     You are reviewing one task's implementation: first whether it matches its
@@ -102,6 +102,8 @@ Subagent (general-purpose):
       "nice to haves"
     - **Misunderstood:** right feature built the wrong way, wrong problem
       solved
+    - **Docs:** if the change alters documented behavior,
+      was the documentation updated? A missing doc update is a Missing finding.
 
     If the brief lists several files each with its own change (a batched
     dispatch), check the diff against that list file by file: every listed
@@ -189,7 +191,7 @@ Subagent (general-purpose):
 ```
 
 **Placeholders:**
-- `[MODEL]` — REQUIRED: reviewer model per SKILL.md Model Selection
+- `[MODEL]` — REQUIRED: reviewer model per `routing-model-tiers`
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`scripts/task-brief PLAN N`
   prints the path; same file the implementer worked from)
 - `[GLOBAL_CONSTRAINTS]` — the binding requirements copied verbatim from
