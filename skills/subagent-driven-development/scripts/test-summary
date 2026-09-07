@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# test-summary [--log-dir DIR] -- CMD [ARGS...]
+#
+# Run CMD, keep its full output in a log file, and print only what the
+# controller needs: the exit code, the log path, the summary line on success,
+# or the failure lines and tail on failure. Exits with CMD's exit code.
+set -uo pipefail
+
+usage() {
+    printf 'usage: test-summary [--log-dir DIR] -- CMD [ARGS...]\n' >&2
+    exit 2
+}
+
+log_dir="${SDD_TEST_LOG_DIR:-/tmp/test-summary}"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --log-dir) [ $# -ge 2 ] || usage; log_dir=$2; shift 2 ;;
+        --) shift; break ;;
+        *) usage ;;
+    esac
+done
+[ $# -gt 0 ] || usage
+
+mkdir -p "$log_dir"
+log="$log_dir/$(date -u +%Y%m%dT%H%M%SZ)-$$.log"
+
+"$@" >"$log" 2>&1
+code=$?
+
+printf 'exit=%s\n' "$code"
+printf 'log=%s\n' "$log"
+
+if [ "$code" -eq 0 ]; then
+    tail -n 1 "$log"
+    exit 0
+fi
+
+grep -E 'FAIL|FAILED|not ok|Error|error:|✗' "$log" | head -n 20
+printf -- '--- last 30 lines ---\n'
+tail -n 30 "$log"
+exit "$code"
