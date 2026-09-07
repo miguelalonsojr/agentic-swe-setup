@@ -1107,21 +1107,34 @@ If the output is `xhigh`, use `xhigh` for the two strong Claude Code agents. If 
 
 In `tests/test_prime_configs.sh`, replace lines 116-117 (`every anthropic prime agent runs at high`) with:
 
+In that file `$a` is already the path to `prime/anthropic.json`, so the loop variable is `ag`:
+
 ```bash
-for a in explore implementer-light reviewer-lite; do
-    assert_eq "$(jq -r --arg a "$a" '.agent[$a].thinking' "$a_cfg")" "medium" "anthropic prime $a runs at medium"
+for ag in explore implementer-light reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "medium" "anthropic prime $ag runs at medium"
 done
-for a in general implementer reviewer cross-checker; do
-    assert_eq "$(jq -r --arg a "$a" '.agent[$a].thinking' "$a_cfg")" "high" "anthropic prime $a runs at high"
+for ag in general implementer reviewer cross-checker; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "high" "anthropic prime $ag runs at high"
 done
-for a in implementer-strong reviewer-final; do
-    assert_eq "$(jq -r --arg a "$a" '.agent[$a].thinking' "$a_cfg")" "xhigh" "anthropic prime $a runs at xhigh"
+for ag in implementer-strong reviewer-final; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "xhigh" "anthropic prime $ag runs at xhigh"
 done
 ```
 
-where `$a_cfg` is the variable the file already uses for `prime/anthropic.json` (it is `$a` on line 116; rename the loop variable, not the file variable — read the file first).
+In `tests/test_provider_configs.sh`, `$a` is the path to `opencode/anthropic.json`. Replace lines 75-77 (the comment "Every agent runs at high" and the `unique | join` assertion) with:
 
-In `tests/test_provider_configs.sh`, replace lines 75-77 (`every anthropic agent runs at high`) with the same three loops against `.agent[$a].variant` in `opencode/anthropic.json`.
+```bash
+# Light tier at medium, default at high, strong at xhigh; cross-checker at high.
+for ag in explore implementer-light reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "medium" "anthropic $ag runs at medium"
+done
+for ag in general implementer reviewer cross-checker; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "high" "anthropic $ag runs at high"
+done
+for ag in implementer-strong reviewer-final; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "xhigh" "anthropic $ag runs at xhigh"
+done
+```
 
 In `tests/test_agents.sh`, replace:
 
