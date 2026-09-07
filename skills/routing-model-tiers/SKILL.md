@@ -13,9 +13,9 @@ inherits.
 
 `dispatching-parallel-agents` decides whether to fan out into several agents; this
 skill decides which model each of those agents gets. `subagent-driven-development`
-`## Model Selection` is the overlapping authority: it ranks the roles of a plan by
-tier and it is where the cost reasoning lives. Read it for role tiers, read this for
-the per-dispatch decision, and follow it where the two ever disagree.
+`## Role routing and recovery` is the overlapping authority: it names the role for
+each dispatch and owns escalation. Read it for roles, read this for the per-dispatch
+model decision, and follow it where the two ever disagree.
 
 The failure this prevents, from the session recorded in `subagents-2026-08-08.md`:
 seven children were dispatched, the model was read off one role spec and reused for

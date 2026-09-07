@@ -64,8 +64,9 @@ the harness's own model list: `routing-model-tiers` `## The Menu Is Bigger Than 
 Roster` has the call for each harness, and `## Dispatch Mechanics By Harness` has the
 dispatch itself. Where no second model is reachable, Step 2 stands on its own.
 
-`subagent-driven-development` `## Model Selection` is the overlapping authority on
-model choice. Follow it where it and this section ever disagree.
+`subagent-driven-development` `## Role routing and recovery` is the overlapping
+authority on which role a dispatch gets. Follow it where it and this section ever
+disagree.
 
 ## Step 2: Ground
 

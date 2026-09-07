@@ -29,9 +29,18 @@ done
 routing=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
 assert_contains "$routing" 'rlm.find_models("", limit=20)' \
     "routing skill gives the model-menu call, with its capped limit"
-assert_contains "$routing" 'accepts `name` and `model` and nothing else' \
-    "routing skill names the rlm keywords and excludes the rest"
-assert_contains "$routing" "clamped to the child model" \
+assert_contains "$routing" '`rlm()` accepts `name`, `model`, and optional `thinking`' \
+    "routing skill names the rlm keywords"
+assert_not_contains "$routing" "## Model Selection" \
+    "routing skill no longer points at the removed SDD section"
+assert_contains "$routing" '`## Role routing and recovery`' \
+    "routing skill points at the SDD role section"
+crosscheck=$(cat "$REPO_ROOT/skills/cross-checking-claims/SKILL.md")
+assert_not_contains "$crosscheck" "## Model Selection" \
+    "cross-checking skill no longer points at the removed SDD section"
+assert_contains "$crosscheck" '`## Role routing and recovery`' \
+    "cross-checking skill points at the SDD role section"
+assert_contains "$routing" "to the selected child's supported levels" \
     "routing skill states how thinking level is set"
 # The list-vs-verdict table is what the skill exists to install. Deleting the
 # whole `## The Routing Test` section left every needle above green, so this
