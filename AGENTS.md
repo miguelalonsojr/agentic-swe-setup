@@ -59,6 +59,17 @@ Use the full path for architectural, unclear, cross-component, or high-risk work
 
 The full path retains the Superpowers design, planning, TDD, worktree, delegation, review, and verification workflows.
 
+### Spike
+
+A spike is a feasibility question whose output is an answer, not code you keep.
+Present the question and what you will try in two or three sentences, get a nod,
+then find out as cheaply as correctness allows. Label anything you build as
+throwaway. Keeping the code is a new request; classify it.
+
+### Path mapping
+
+The fast path uses no `brainstorming`; the bounded path is `brainstorming`'s bounded path; the full path is `brainstorming`'s architectural path; a spike is `brainstorming`'s spike.
+
 ### Reclassification
 
 Classification can become heavier after work starts. It cannot become lighter during the same task.
@@ -71,6 +82,10 @@ An explicit user request for more process selects the heavier requested path. A 
 
 These checks apply before and during code changes in every supported harness.
 They bias toward caution over speed; use judgment for trivial tasks.
+
+### First run the tests
+
+On an existing project, run the test suite with the project's documented command before the first edit, and report the count and result. This applies on every path.
 
 ### Think before coding
 
@@ -86,6 +101,7 @@ They bias toward caution over speed; use judgment for trivial tasks.
 - Do not add features, abstractions, flexibility, configurability, or error
   handling that the task does not require.
 - If the solution is much larger than the problem, simplify before proceeding.
+- If a change alters documented behavior, update the documentation that describes it.
 
 ### Surgical changes
 
@@ -94,7 +110,10 @@ They bias toward caution over speed; use judgment for trivial tasks.
   it.
 - Match existing style, even when you would choose differently.
 - Remove imports, variables, functions, or files that your own change makes
-  unused. Mention unrelated dead code; do not delete it unless asked.
+  unused. For unrelated dead code, smells, and refactor opportunities you
+  notice, list them under "Follow-ups" in the final message;
+  never fold them into the current diff. After the goal lands, offer to
+  dispatch each as its own small task.
 - Every changed line should trace back to the user's request.
 
 ### Goal-driven execution
@@ -104,6 +123,18 @@ They bias toward caution over speed; use judgment for trivial tasks.
 - For multi-step tasks, state a brief plan with a verification check for each
   step.
 - If success criteria are weak or ambiguous, clarify them before implementation.
+
+### Exercise the code
+
+Passing tests are necessary, not sufficient. Before claiming a change works,
+exercise it as a user would (`agentic-manual-testing`) when it has a runnable
+surface.
+
+### Reference code
+
+When the user points at an example — a repo, a file, a URL — read the real
+thing. Clone repos to `/tmp`, fetch raw source with `curl`, and
+never commit reference copies.
 
 ### Test design
 

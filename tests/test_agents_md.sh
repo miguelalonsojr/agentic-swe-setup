@@ -35,6 +35,18 @@ assert_contains "$body" "Use the full path for architectural, unclear, cross-com
 assert_contains "$body" "The full path retains the Superpowers design, planning, TDD, worktree, delegation, review, and verification workflows."     "full path retains the complete workflow"
 assert_contains "$body" "They are not mandatory when the fast path explicitly excludes them."     "fast-path exclusions override otherwise applicable Superpowers workflows"
 
+assert_contains "$body" "### Spike" "AGENTS.md defines the spike path"
+assert_contains "$body" "A spike is a feasibility question whose output is an answer, not code you keep." "spike is defined by its output"
+assert_contains "$body" 'The fast path uses no `brainstorming`; the bounded path is `brainstorming`'"'"'s bounded path; the full path is `brainstorming`'"'"'s architectural path; a spike is `brainstorming`'"'"'s spike.' "AGENTS.md maps its paths onto brainstorming's"
+assert_contains "$body" "run the test suite with the project's documented command before the first edit" "AGENTS.md runs the tests first"
+assert_contains "$body" 'list them under "Follow-ups" in the final message' "AGENTS.md captures follow-ups"
+assert_contains "$body" "never fold them into the current diff" "follow-ups stay out of the diff"
+assert_contains "$body" "Passing tests are necessary, not sufficient." "AGENTS.md requires manual exercise"
+assert_contains "$body" '`agentic-manual-testing`' "AGENTS.md names the manual testing skill"
+assert_contains "$body" 'Clone repos to `/tmp`' "AGENTS.md reads reference code from /tmp"
+assert_contains "$body" "never commit reference copies" "reference copies stay out of commits"
+assert_contains "$body" "update the documentation that describes it" "AGENTS.md keeps docs current"
+
 # Provider-selected renders populate this marker from the ladder; keeping only
 # the marker in the source prevents one provider's selectors leaking into
 # another provider's installed instructions.
