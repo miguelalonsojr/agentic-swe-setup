@@ -404,4 +404,20 @@ mkdir -p "$(claude_dir)/skills/$first"
 "$REPO_ROOT/scripts/uninstall.sh" >/dev/null 2>&1 || fail "second uninstall failed"
 [ -d "$(claude_dir)/skills/$first" ] || fail "uninstall removed a directory it did not create"
 
+# --- the skills this audit added are registered and documented ---
+# Registration is what makes a skill directory reachable: install, doctor and
+# uninstall all read LOCAL_SKILLS, so a directory missing from the array ships
+# as dead weight. The README table is the human-facing half of the same fact.
+for s in agentic-manual-testing compound-step codebase-walkthrough finishing-a-development-branch systematic-debugging; do
+    case " ${LOCAL_SKILLS[*]} " in
+        *" $s "*) ;;
+        *) fail "LOCAL_SKILLS registers $s" ;;
+    esac
+done
+readme=$(cat "$REPO_ROOT/README.md")
+for s in agentic-manual-testing compound-step codebase-walkthrough finishing-a-development-branch systematic-debugging; do
+    assert_contains "$readme" "| \`$s\` |" "README skill table lists $s"
+done
+assert_contains "$readme" "Forked from Superpowers at commit \`b36e082\`" "README names the fork pin"
+
 exit "$ASSERT_FAILURES"

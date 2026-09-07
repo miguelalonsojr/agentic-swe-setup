@@ -25,7 +25,9 @@ SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
 # Skills that live in this repo rather than the shared swe-skills checkout.
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu
               plain-technical-prose dispatching-parallel-agents
-              subagent-driven-development using-git-worktrees)
+              subagent-driven-development using-git-worktrees
+              agentic-manual-testing compound-step codebase-walkthrough
+              finishing-a-development-branch systematic-debugging)
 
 # Harnesses this repo installs into, and the AGENTS.md section that belongs to
 # each. AGENTS.md carries all three so the repo's own agents can read any of

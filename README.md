@@ -120,8 +120,13 @@ under `skills/`, and are symlinked into every harness:
 | `dispatching-parallel-agents` | Dispatching two or more independent tasks in parallel. |
 | `subagent-driven-development` | Executing an implementation plan with independent tasks in the current session. |
 | `using-git-worktrees` | Starting isolated feature work or executing an implementation plan. |
+| `agentic-manual-testing` | Tests pass and a change has a runnable surface: run it as a user would and record the evidence before claiming it works. |
+| `compound-step` | A branch or plan finishes: turn rulings, recurring findings, and corrections into small updates to instructions, skills, or memory. |
+| `codebase-walkthrough` | A human needs to understand code they did not write: a reading-order walkthrough with real snippets, and an interactive explanation on request. |
+| `finishing-a-development-branch` | Implementation is complete: tidy history, size report, PR description contract, compound step, then merge or PR. Forked from Superpowers at commit `b36e082`. |
+| `systematic-debugging` | Any bug or unexpected behavior, before proposing a fix. Forked from Superpowers at commit `b36e082`; adds `git bisect` and recovery. |
 
-Repository-owned skills link after Superpowers and `agentic-swe-skills`. A repository-owned skill therefore replaces an installed skill with the same name. Skills with other names remain linked from their shared checkout.
+Repository-owned skills link after Superpowers and `agentic-swe-skills`. A repository-owned skill therefore replaces an installed skill with the same name. On Claude Code, Superpowers is a plugin, so a forked skill coexists with `superpowers:<name>`; the rendered instructions name forks without the prefix so the fork is the one loaded. Skills with other names remain linked from their shared checkout.
 
 Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. `jira-fu`
 and `search-fu` ship a script, and their `README.md` covers running it by hand.
