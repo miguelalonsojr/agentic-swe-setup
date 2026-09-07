@@ -113,8 +113,15 @@ for ag in implementer-strong reviewer-final; do
     assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
         "anthropic/claude-fable-5" "anthropic prime $ag runs on fable"
 done
-assert_eq "$(jq -r '[.agent[].thinking] | unique | join(",")' "$a")" "high" \
-    "every anthropic prime agent runs at high"
+for ag in explore implementer-light reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "medium" "anthropic prime $ag runs at medium"
+done
+for ag in general implementer reviewer cross-checker; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "high" "anthropic prime $ag runs at high"
+done
+for ag in implementer-strong reviewer-final; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "xhigh" "anthropic prime $ag runs at xhigh"
+done
 
 # --- OpenAI specifics: effort varies by tier ---
 o="$REPO_ROOT/prime/openai.json"

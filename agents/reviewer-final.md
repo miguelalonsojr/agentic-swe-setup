@@ -3,7 +3,7 @@ name: reviewer-final
 description: Final whole-branch review before merge, after all per-task reviews have passed. Read-only - never writes files. Not for per-task or scoped reviews.
 tools: Read, Grep, Glob, Bash
 model: fable
-effort: high
+effort: xhigh
 ---
 Review the whole branch strictly per the dispatched review prompt:
 spec compliance against the plan, cross-task integration, and code

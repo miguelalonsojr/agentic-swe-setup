@@ -72,9 +72,16 @@ assert_eq "$(jq -r '[.agent[].model] | map(select(test("haiku"))) | length' "$a"
 assert_eq "$(jq -r '[.agent[] | select(has("variant") | not)] | length' "$a")" \
     0 "every anthropic agent declares a variant"
 
-# Every agent runs at high. The tiers differ by model, not by rung.
-assert_eq "$(jq -r '[.agent[].variant] | unique | join(",")' "$a")" \
-    "high" "every anthropic agent runs at high"
+# Light tier at medium, default at high, strong at xhigh; cross-checker at high.
+for ag in explore implementer-light reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "medium" "anthropic $ag runs at medium"
+done
+for ag in general implementer reviewer cross-checker; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "high" "anthropic $ag runs at high"
+done
+for ag in implementer-strong reviewer-final; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].variant' "$a")" "xhigh" "anthropic $ag runs at xhigh"
+done
 for ag in implementer-strong reviewer-final; do
     assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$a")" \
         "anthropic/claude-fable-5" "anthropic $ag runs on fable"

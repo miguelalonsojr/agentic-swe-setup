@@ -143,20 +143,22 @@ one case today is `~/.claude/agents/reviewer-light.md`, which declared
 
 ### Anthropic (default), `opencode/anthropic.json`
 
-Three tiers, distinguished by model. Every tier reasons at `high`, so the cheap
-tier is still a careful one and escalating means a stronger model rather than
-more thinking on the same one.
+Three tiers, distinguished by model and by thinking level. The light tier runs
+at `medium` because its work is one pass over a known target; the default tier
+runs at `high`; the strong tier runs at `xhigh` because it is dispatched rarely
+and its judgment gates an outcome. `cross-checker` stays at `high`: it reads
+primary sources, which does not need deeper reasoning.
 
 | Tier | Agent | Model | Variant |
 |---|---|---|---|
-| light | `explore` | `anthropic/claude-sonnet-5` | `high` |
-| light | `implementer-light` | `anthropic/claude-sonnet-5` | `high` |
-| light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `high` |
+| light | `explore` | `anthropic/claude-sonnet-5` | `medium` |
+| light | `implementer-light` | `anthropic/claude-sonnet-5` | `medium` |
+| light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `medium` |
 | default | `general` | `anthropic/claude-opus-5` | `high` |
 | default | `implementer` | `anthropic/claude-opus-5` | `high` |
 | default | `reviewer` | `anthropic/claude-opus-5` | `high` |
-| strong | `implementer-strong` | `anthropic/claude-fable-5` | `high` |
-| strong | `reviewer-final` | `anthropic/claude-fable-5` | `high` |
+| strong | `implementer-strong` | `anthropic/claude-fable-5` | `xhigh` |
+| strong | `reviewer-final` | `anthropic/claude-fable-5` | `xhigh` |
 | strong | `cross-checker` | `anthropic/claude-fable-5` | `high` |
 
 The per-task reviewer sits on the default tier: reviews run twice per task
@@ -172,8 +174,8 @@ errors have to be less correlated, which means a different model from the one
 that made the claim. Both ladders decorrelate within one vendor, which is the
 weaker form of it; `cross-checking-claims` covers what that is worth.
 
-All three models also accept `xhigh` and `max` if you want to raise the strong
-tier later.
+All three models also accept `max` if you want to raise the strong tier
+further.
 
 All three models expose the full `low` through `max` variant range. Haiku, which
 earlier versions used for the light tier, exposed only `high` and `max` because
@@ -224,12 +226,12 @@ Tiers live in the frontmatter of each `agents/*.md`.
 
 | Agent | Model | Effort |
 |---|---|---|
-| `implementer-light` | `sonnet` | `high` |
+| `implementer-light` | `sonnet` | `medium` |
 | `implementer` | `opus` | `high` |
-| `implementer-strong` | `fable` | `high` |
+| `implementer-strong` | `fable` | `xhigh` |
 | `reviewer` | `opus` | `high` |
-| `reviewer-final` | `fable` | `high` |
-| `reviewer-lite` | `sonnet` | `high` |
+| `reviewer-final` | `fable` | `xhigh` |
+| `reviewer-lite` | `sonnet` | `medium` |
 | `cross-checker` | `fable` | `high` |
 
 The reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review

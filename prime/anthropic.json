@@ -20,14 +20,14 @@
       "description": "Fast read-only codebase exploration and question answering.",
       "hint": "fast read-only exploration, enumeration, and lookups; the cheap tier for list-shaped work",
       "model": "anthropic/claude-sonnet-5",
-      "thinking": "high"
+      "thinking": "medium"
     },
     "implementer-light": {
       "mode": "subagent",
       "description": "Implements a single mechanical, fully-specified plan task: isolated functions, clear spec, 1-2 files. Do NOT use for multi-file work, debugging, or judgment.",
-      "hint": "one mechanical fully-specified task, 1-2 files; not for multi-file work or judgment",
+      "hint": "one mechanical fully-specified task, 1-2 files; not multi-file work or judgment",
       "model": "anthropic/claude-sonnet-5",
-      "thinking": "high"
+      "thinking": "medium"
     },
     "implementer": {
       "mode": "subagent",
@@ -41,7 +41,7 @@
       "description": "Escalation implementer for BLOCKED tasks, fix rounds 4+, or tasks needing design judgment or broad codebase understanding.",
       "hint": "escalation for BLOCKED tasks, fix round 4+, or tasks needing design judgment",
       "model": "anthropic/claude-fable-5",
-      "thinking": "high"
+      "thinking": "xhigh"
     },
     "reviewer": {
       "mode": "subagent",
@@ -56,7 +56,7 @@
       "description": "Final whole-branch review before merge, after all per-task reviews have passed. Read-only.",
       "hint": "final branch review after every per-task review passed",
       "model": "anthropic/claude-fable-5",
-      "thinking": "high",
+      "thinking": "xhigh",
       "readOnly": true
     },
     "reviewer-lite": {
@@ -64,7 +64,7 @@
       "description": "Scoped re-review of small fix diffs only, after a full review passed. Read-only.",
       "hint": "scoped re-review of a small fix diff, after a full review passed",
       "model": "anthropic/claude-sonnet-5",
-      "thinking": "high",
+      "thinking": "medium",
       "readOnly": true
     },
     "cross-checker": {

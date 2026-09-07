@@ -34,12 +34,14 @@ for a in "${CLAUDE_AGENTS[@]}"; do
         *) fail "$a model must be sonnet, opus, or fable; got [$model]" ;;
     esac
 
-    # Every tier reasons hard; only the rung differs.
+    # Light tier reasons at medium, default at high, strong at xhigh.
     effort=$(frontmatter_field "$f" effort)
-    case "$effort" in
-        high|xhigh) ;;
-        *) fail "$a effort must be high or xhigh; got [$effort]" ;;
+    case "$a" in
+        implementer-light|reviewer-lite) want=medium ;;
+        implementer-strong|reviewer-final) want=xhigh ;;
+        *) want=high ;;
     esac
+    assert_eq "$effort" "$want" "$a effort"
 
     # A body prompt after the closing --- is required.
     # Print every line that follows the second "---" delimiter.
@@ -79,12 +81,6 @@ assert_eq "$(frontmatter_field "$REPO_ROOT/agents/reviewer.md" model)" \
     opus "reviewer uses opus"
 assert_eq "$(frontmatter_field "$REPO_ROOT/agents/reviewer-final.md" model)" \
     fable "reviewer-final uses fable"
-
-# Every tier reasons at high. The tiers differ by model, not by rung.
-for a in "${CLAUDE_AGENTS[@]}"; do
-    assert_eq "$(frontmatter_field "$REPO_ROOT/agents/$a.md" effort)" \
-        high "$a reasons at high"
-done
 
 # Haiku is gone from the ladder entirely.
 for f in "$REPO_ROOT"/agents/*.md; do
