@@ -163,7 +163,7 @@ except these additions:
   WIP commits into the task commit they fix; rewrite messages to describe the change,
   not the process; keep task boundaries as commits. Never rewrite commits already on a
   shared branch. If the branch is already pushed, ask first.
-- Step 1d, size report: files and lines changed against the base. Above 400 lines or 10
+- Step 1d, size report: files and lines changed against the base. Above 500 lines or 10
   files, offer a split into stacked PRs by task. The human decides.
 - Option 2 (PR), description contract: goal and a link to the spec or issue; what
   changed, per task or commit; how it was tested — test command and result, manual
