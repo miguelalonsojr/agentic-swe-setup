@@ -31,6 +31,8 @@ judgment settles what neither answers. Record every decision in the ledger as
 `Ruling: <what you decided> — <why> — <what it costs if wrong>`, and keep
 going. A wrong ruling costs rework your human partner can see and undo; a
 session parked on a question costs their whole day and buys nothing.
+A ruling may not change text a Global Constraint pins as verbatim; change
+the plan or the needle instead.
 
 Four things stop you, and only these: an irreversible or destructive
 operation; a security-sensitive action; a side effect outside this worktree
@@ -146,7 +148,7 @@ Separately scan the plan once for internal contradictions, writing down what was
 - anything the plan explicitly mandates that the review rubric treats as a
   defect (a test that asserts nothing, verbatim duplication of a logic block)
 
-The contradiction scan records one row per task. Each row compares its tests, implementation text, files, and Global Constraints. Write the table to the ledger. Rule on each contradiction before execution. The spec remains the binding authority. Keep collision and namespace decisions in the separate policy inventory from `dispatching-parallel-agents`.
+The contradiction scan records one row per task. Each row compares its tests, implementation text, files, and Global Constraints. Check every test needle the plan asserts: it must be a whole sentence, unique in its target file, and on one unwrapped line in the plan's insertion text. Fix the plan before dispatch. Write the table to the ledger. Rule on each contradiction before execution. The spec remains the binding authority. Keep collision and namespace decisions in the separate policy inventory from `dispatching-parallel-agents`.
 
 ## Role routing and recovery
 
@@ -230,7 +232,7 @@ Never implement an eligible task in the controller. The controller owns planning
 
 For a wave, record `base=$(git rev-parse HEAD)` before creating any writers. Create all writer worktrees sequentially from this recorded integration `HEAD`, using `using-git-worktrees` writer mode and its `worker-worktree create` helper. Consume the helper's verified path, branch, and base. Read-only tasks use stable inputs. Record each writer's worktree, branch, base, task ownership, and access mode before dispatch. Do not create writer worktrees concurrently.
 
-A task brief remains the single source of task requirements. The dispatch includes the worker worktree path, the brief path, the report path, relevant interfaces, global constraints, access mode, and any ledger rulings. Record the worker identity from the dispatch result. Workers do not dispatch nested agents or manipulate worktrees or branches beyond task commits.
+A task brief remains the single source of task requirements. The dispatch includes the worker worktree path, the brief path, the report path, relevant interfaces, global constraints, access mode, and any ledger rulings. State the baseline test result verbatim: run the suite at the wave base and paste the failing files and assertion lines into the dispatch; never paraphrase the count. Record the worker identity from the dispatch result. Workers do not dispatch nested agents or manipulate worktrees or branches beyond task commits.
 
 Each task keeps the existing report-status handling, five-round fix loop, and task-review gate below. Generate range-based review packages from the recorded worker `base` through the worker commit range. A task may produce multiple commits. The reviewer remains read-only and reviews the worker commit range before integration.
 
@@ -268,7 +270,7 @@ report missing either verdict — spec compliance AND task quality are both
 required. Implementer self-review never replaces the task review; both are
 needed.
 
-- Hand the reviewer its worker diff as a file: run this skill's `scripts/review-package PLAN_FILE BASE HEAD` in the worker worktree and pass the reviewer the file path it prints. The output never enters the controller context. The reviewer sees the commit list, stat summary, and full diff with context in one Read call. Use the recorded worker BASE and worker HEAD. Never use `HEAD~1`, which silently truncates multi-commit tasks. Never dispatch a task reviewer without a diff file.
+- Hand the reviewer its worker diff as a file: run this skill's `scripts/review-package PLAN_FILE BASE HEAD` in the worker worktree and pass the reviewer the file path it prints. PLAN_FILE is the repo-relative plan path; an absolute path into another worktree fails with `plan is outside the repository`. The output never enters the controller context. The reviewer sees the commit list, stat summary, and full diff with context in one Read call. Use the recorded worker BASE and worker HEAD. Never use `HEAD~1`, which silently truncates multi-commit tasks. Never dispatch a task reviewer without a diff file.
 - **Reviewer inputs:** the task reviewer gets three paths — the same brief
   file, the report file, and the review package — plus the global
   constraints that bind the task.

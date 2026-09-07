@@ -62,6 +62,11 @@ for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
     assert_contains "$(cat "$root/$f.md")" 'choose per `routing-model-tiers`' "$f points at routing-model-tiers"
 done
 
+assert_contains "$body" "A ruling may not change text a Global Constraint pins as verbatim" "SDD rulings cannot alter verbatim-pinned text"
+assert_contains "$body" "it must be a whole sentence, unique in its target file, and on one unwrapped line" "SDD contradiction scan checks needles"
+assert_contains "$body" "paste the failing files and assertion lines into the dispatch; never paraphrase the count" "SDD dispatch states the baseline red state verbatim"
+assert_contains "$body" "PLAN_FILE is the repo-relative plan path" "SDD names the review-package plan path rule"
+
 implementer=$(cat "$root/implementer-prompt.md")
 assert_contains "$implementer" "Do not merge, rebase, cherry-pick, or create or remove worktrees"     "implementer prompt limits Git authority"
 assert_contains "$implementer" "actual files changed"     "implementer reports its real scope"
