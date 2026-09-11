@@ -5,26 +5,11 @@ description: Use when about to dispatch one or more subagents, especially a batc
 
 # Routing Model Tiers
 
-## Overview
+## Policy ownership
 
-The model is a per-task decision, not a session default. Choose it while you write
-each task; a model chosen once for a whole batch is a default every later dispatch
-inherits.
+`dispatching-parallel-agents` selects access mode, isolation, and the safe dispatch wave. `subagent-driven-development` `## Role routing and recovery` selects roles and owns escalation. This skill selects the model for each dispatch. Follow the SDD skill if its role or escalation rule conflicts with this skill.
 
-`dispatching-parallel-agents` decides whether to fan out into several agents; this
-skill decides which model each of those agents gets. `subagent-driven-development`
-`## Role routing and recovery` is the overlapping authority: it names the role for
-each dispatch and owns escalation. Read it for roles, read this for the per-dispatch
-model decision, and follow it where the two ever disagree.
-
-The failure this prevents, from the session recorded in `subagents-2026-08-08.md`:
-seven children were dispatched, the model was read off one role spec and reused for
-all seven, and frontier budget went on cataloguing licences and pulling version pins
-while the light read-only role that exists for that work went unused.
-
-## The Routing Test
-
-## Access mode and isolation
+## Access and isolation
 
 Choose access mode and isolation before model tier. Use `dispatching-parallel-agents` to build the largest safe wave and `using-git-worktrees` to isolate write-capable workers.
 
@@ -32,40 +17,30 @@ Model choice does not change isolation requirements. A stronger model does not m
 
 When write scope is uncertain, use a read-only exploration dispatch first. Update the dependency and collision map before routing the implementation task.
 
-Ask one question before every dispatch: what does this task produce?
+## Tier selection
+
+Ask what the task produces.
 
 | The task produces | Tier |
 |---|---|
-| A list. Cataloguing licences, pulling version pins, listing a repository's contents, extracting an interface, reading files to answer a factual question. | Light |
-| A verdict. Synthesis across sources, feasibility calls, trade-off judgements, design decisions, anything whose answer changes the plan. | Default, or strong when the verdict is load-bearing. See `cross-checking-claims` for what load-bearing means. |
+| A list: cataloguing licences, pulling version pins, listing repository contents, extracting an interface, or reading known files for a factual answer. | Light |
+| A verdict: synthesis across sources, a feasibility call, a trade-off judgment, a design decision, or anything that changes the plan. | Default; use strong when the verdict is load-bearing. See `cross-checking-claims`. |
 
-A task that produces a list it then has to judge is two tasks. Dispatch the light
-tier to enumerate, then hand the enumeration to the default or strong tier to rule
-on. Fused into one dispatch, the judgement gains nothing and you pay frontier rates
-for the lookup.
+A task that lists and judges is two tasks. Dispatch the light tier to enumerate, then give that result to the default or strong tier for judgment.
 
-**The light tier has a floor: one pass.** Turn count beats token price. The cheapest
-models routinely take two to three times the turns on multi-step work and cost more
-in the end, so a task that loops (search, then read, then follow what it found)
-takes mid-tier however list-shaped its output is. Light tier is for work that is one
-pass over a known target.
+The light tier has a one-pass floor. Use it only for one pass over a known target. Route multi-step or iterative work to the default tier even when its output is list-shaped.
 
-## The Menu Is Bigger Than The Roster
+## Model discovery
 
-The role roster is not the model menu. Ask the harness what it can address:
+The role roster is not the model menu. Ask the harness what it can address before a batch.
 
-| Harness | Ask it |
+| Harness | Command |
 |---|---|
-| Prime Agent | `await rlm.find_models("", limit=20)`. `limit` is capped at 20 by the runtime; ask for more and the call raises. |
-| Claude Code | `/model` in-session. `--model` and agent frontmatter take either an alias or a full name. |
-| OpenCode | `opencode models`, or `opencode models <provider>` for one provider's list. |
+| Prime Agent | `await rlm.find_models("", limit=20)`. `limit` is capped at 20; a larger value raises. |
+| Claude Code | `/model` in-session. `--model` and agent frontmatter accept an alias or full name. |
+| OpenCode | `opencode models`, or `opencode models <provider>` for one provider. |
 
-In the Prime Agent environment this skill was written for, that call returned 13
-selectors against the three the installed ladder names. What comes back depends on
-which providers are authenticated, so make the call at the start of a batch instead
-of working from the selectors you happen to remember.
-
-## Dispatch Mechanics By Harness
+## Harness dispatch
 
 ### Prime Agent
 
@@ -73,38 +48,18 @@ of working from the selectors you happen to remember.
 handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5", thinking="high")
 ```
 
-`rlm()` accepts `name`, `model`, and optional `thinking`. For installed roles,
-pass the model and thinking level from the `AGENTS.md` table explicitly.
-An explicit model is preserved; if unavailable, admission fails without fallback.
-Omitting `model` inherits the parent model.
+`rlm()` accepts `name`, `model`, and optional `thinking`. For installed roles, pass the model and thinking level from the `AGENTS.md` table explicitly. The system-prompt harness roster is not the role-to-model map: it truncates specs to 180 characters and shows only six roles. An explicit model is preserved; unavailable models fail admission without fallback. Omitting `model` inherits the parent model.
 
-An explicit `thinking` level must be supported by the selected model or admission
-fails. Omitting `thinking` inherits the parent's current effective level, clamped
-to the selected child's supported levels.
-
-The role-to-model map is the table under `#### When running under Prime Agent` in
-`AGENTS.md`. The harness roster shown in the system prompt is not that map, because
-Prime Agent summarises each subagent spec to 180 characters and shows only six of
-them, so some roles do not appear in it at all.
+An explicit `thinking` level must be supported by the selected model or admission fails. Omitting `thinking` inherits the parent's current effective level, clamped to the selected child's supported levels.
 
 ### Claude Code
 
-Pass a model per dispatch, following `subagent-driven-development` `## Model
-Selection`, which ranks the roles by tier. Models in agent frontmatter are fallbacks
-for when you do not choose.
+Pass a model per dispatch. Agent-frontmatter models are fallbacks when no model is selected.
 
 ### OpenCode
 
-The model is fixed by the agent definition in `opencode.json`. Do not pass one. Route
-by choosing the agent whose tier fits the task.
+The model is fixed by the agent definition in `opencode.json`. Do not pass a model; choose the agent whose tier fits the task.
 
-## Red Flags
+## Failure prevention
 
-| Rationalisation | Reality |
-|---|---|
-| "I'll use the model I'm already on" | That is a default, not a decision. |
-| "It's all one research batch" | A batch is many tasks, and they are not the same shape. |
-| "The strong model is the safe choice" | For enumeration it buys nothing, and it costs the budget you need for the judgement calls later. |
-| "The spec names a model, so that's the model" | The spec names the tier's model for that role, not for the task you are dispatching now. |
-| "I know which models exist" | You know which ones the specs mention. Ask the harness for its list and count. |
-| "All the children agreed, so the answer is solid" | Children on one model share one model's blind spots. Agreement between them is not corroboration. See `cross-checking-claims`. |
+Do not reuse the current model or one model for a whole batch without routing each task. Do not use the strong tier for enumeration. Do not treat agreement among same-model children as corroboration; use `cross-checking-claims` for a load-bearing factual claim.

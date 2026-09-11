@@ -17,73 +17,61 @@ for s in "${LOCAL_SKILLS[@]}"; do
     assert_contains "$body" "description:" "skills/$s has a description"
 done
 
-# The dispatch-policy skills are only correct if they carry the specific
-# facts that make them correct. A skill that says "pick a good model" is
-# the advice that already failed.
-#
-# Each needle is anchored on the whole claim, not on a distinctive token.
-# A bare "clamped" would stay green if the thinking-level sentence were
-# deleted and "capped at 20" reworded to "clamped to 20"; a bare
-# "rlm.find_models" would stay green on a passing mention with the call
-# itself gone.
+# The dispatch-policy skills must preserve their decision contracts. Each
+# assertion uses a clause or command rather than an isolated keyword.
 routing=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")
+assert_contains "$routing" '`dispatching-parallel-agents` selects access mode, isolation, and the safe dispatch wave' \
+    "routing assigns access and isolation to the parallel-dispatch policy"
+assert_contains "$routing" '`subagent-driven-development` `## Role routing and recovery` selects roles and owns escalation' \
+    "routing assigns role selection and escalation to SDD"
 assert_contains "$routing" 'rlm.find_models("", limit=20)' \
-    "routing skill gives the model-menu call, with its capped limit"
+    "routing gives the Prime model-discovery call"
+assert_contains "$routing" '`limit` is capped at 20; a larger value raises' \
+    "routing preserves the Prime discovery limit"
 assert_contains "$routing" '`rlm()` accepts `name`, `model`, and optional `thinking`' \
-    "routing skill names the rlm keywords"
-assert_not_contains "$routing" "## Model Selection" \
-    "routing skill no longer points at the removed SDD section"
-assert_contains "$routing" '`## Role routing and recovery`' \
-    "routing skill points at the SDD role section"
-crosscheck=$(cat "$REPO_ROOT/skills/cross-checking-claims/SKILL.md")
-assert_not_contains "$crosscheck" "## Model Selection" \
-    "cross-checking skill no longer points at the removed SDD section"
-assert_contains "$crosscheck" '`## Role routing and recovery`' \
-    "cross-checking skill points at the SDD role section"
-assert_contains "$routing" "to the selected child's supported levels" \
-    "routing skill states how thinking level is set"
-# The list-vs-verdict table is what the skill exists to install. Deleting the
-# whole `## The Routing Test` section left every needle above green, so this
-# one is the light-tier row's own wording: one matching site, inside the table.
-assert_contains "$routing" "A list. Cataloguing licences" \
-    "routing skill keeps the list-vs-verdict routing table"
-assert_contains "$routing" "Choose access mode and isolation before model tier" \
-    "routing skill keeps isolation ahead of model choice"
-assert_contains "$routing" "Model choice does not change isolation requirements" \
-    "routing skill cannot buy out of a worktree"
-assert_contains "$routing" "read-only exploration dispatch" \
-    "routing skill uses exploration before uncertain writes"
-assert_contains "$routing" "largest safe wave" \
-    "routing skill points dispatch volume to the parallel policy"
+    "routing names Prime dispatch parameters"
+assert_contains "$routing" 'The system-prompt harness roster is not the role-to-model map: it truncates specs to 180 characters and shows only six roles' \
+    "routing prevents treating the truncated harness roster as the role-to-model map"
+assert_contains "$routing" 'Omitting `model` inherits the parent model' \
+    "routing preserves inherited-model behavior"
+assert_contains "$routing" "clamped to the selected child's supported levels" \
+    "routing preserves thinking inheritance and clamping"
+assert_contains "$routing" 'Choose access mode and isolation before model tier' \
+    "routing puts access and isolation before model choice"
+assert_contains "$routing" 'read-only exploration dispatch first' \
+    "routing explores before uncertain writes"
+assert_contains "$routing" 'A list: cataloguing licences' \
+    "routing sends enumeration to the light tier"
+assert_contains "$routing" 'A verdict: synthesis across sources' \
+    "routing separates verdicts from enumeration"
+assert_contains "$routing" 'The light tier has a one-pass floor' \
+    "routing preserves the one-pass light-tier floor"
+assert_contains "$routing" 'Agent-frontmatter models are fallbacks' \
+    "routing preserves Claude per-dispatch model selection"
+assert_contains "$routing" 'The model is fixed by the agent definition in `opencode.json`' \
+    "routing preserves OpenCode role-fixed model selection"
 
-# The needles here are whole clauses for the reason stated above, and this
-# skill makes the point sharply: a bare "primary source" matches the mandated
-# frontmatter, a bare "verification-before-completion" matches the section
-# heading, and a bare "cross-checker" matches a later aside. Gutting Step 2,
-# replacing the boundary section's body and deleting the dispatch sentence left
-# all three green. Each needle below has exactly one matching site, inside the
-# section that owns the rule.
 crosscheck=$(cat "$REPO_ROOT/skills/cross-checking-claims/SKILL.md")
-assert_contains "$crosscheck" 'to the `cross-checker`' \
-    "cross-check skill names its dispatch target"
-assert_contains "$crosscheck" "check it against a primary source" \
-    "cross-check skill requires a primary source"
-assert_contains "$crosscheck" "your own claims about your own work" \
-    "cross-check skill draws its boundary with the verification skill"
-assert_contains "$crosscheck" "change what gets built, bought or skipped" \
-    "cross-check skill gives the load-bearing gate routing-model-tiers leans on"
-assert_contains "$crosscheck" "the question, not the" \
-    "cross-check skill states the anchoring rule"
-assert_contains "$crosscheck" "dual-licensed" \
-    "cross-check skill keeps the licence error that primary sources caught"
-assert_contains "$crosscheck" "flagged as unconfirmed" \
-    "cross-check skill says what happens to a claim that survives neither step"
-# Deleting the whole `## Disagreement Is The Signal` section left every needle
-# above green, and that section is the other half of the skill's point: the
-# two-verdicts case is the outcome the second dispatch was paid for. This
-# needle is the rule that section owns, with one matching site.
-assert_contains "$crosscheck" "Do not average the two answers" \
-    "cross-check skill says how to settle two verdicts that differ"
+assert_contains "$crosscheck" 'change what gets built, bought, or skipped' \
+    "cross-checking keeps the load-bearing gate"
+assert_contains "$crosscheck" 'to the `cross-checker` role on a different model line when available' \
+    "cross-checking uses the cross-checker on another model line"
+assert_contains "$crosscheck" 'Give it the question, not the first agent' \
+    "cross-checking avoids answer anchoring"
+assert_contains "$crosscheck" 'Verify the claim against the artifact itself' \
+    "cross-checking requires source verification"
+assert_contains "$crosscheck" 'Accept primary sources such as the source repository' \
+    "cross-checking defines acceptable primary sources"
+assert_contains "$crosscheck" 'Do not accept a blog post' \
+    "cross-checking excludes secondary evidence"
+assert_contains "$crosscheck" 'Settle disagreement at the source' \
+    "cross-checking resolves disagreement at evidence"
+assert_contains "$crosscheck" 'Do not average the two answers' \
+    "cross-checking forbids averaging verdicts"
+assert_contains "$crosscheck" 'mark it as unconfirmed where it is used' \
+    "cross-checking preserves unconfirmed results"
+assert_contains "$crosscheck" '`verification-before-completion` covers completion claims about your own work' \
+    "cross-checking preserves the completion-verification boundary"
 
 # search-fu's claims are about a third party's bot detection, so the needles are
 # the specific mechanics that make the skill work. "use DuckDuckGo" is the
