@@ -29,32 +29,28 @@ Subagent (general-purpose):
     dispatch subagents. Commit only this task's changes in the supplied worker
     worktree.
 
-    Use TDD when the task requires it. While iterating, run the focused test
-    for the change. Run the full suite once before committing. Exercise a
-    runnable CLI, HTTP API, web UI, startup path, or migration per
-    `agentic-manual-testing`, and record each command and pasted output.
+    Add or strengthen a focused test. Run it before implementation and observe the expected RED failure. Implement the minimum change. Rerun the focused test and observe GREEN. While iterating, run the focused test for the change. Run the full suite once before committing. Exercise a runnable CLI, HTTP API, web UI, startup path, or migration per `agentic-manual-testing`, and record each command and pasted output.
 
     Stop and report BLOCKED or NEEDS_CONTEXT when the task needs an unplanned
     architectural decision, necessary code remains unclear after focused
     investigation, the planned structure no longer fits, or correctness is
     uncertain. State what is blocked, what was tried, and what help is needed.
 
-    Before reporting, review the diff for:
+    Before the initial commit and report, review the diff for:
     - completeness and task scope
     - clear naming and maintainable code
     - tests that verify intended behavior
     - relevant edge cases
     - clean test output
 
-    Fix review findings in this worker worktree. Re-run tests covering the
-    amended code. Append to [REPORT_FILE] what changed, the covering test
-    command, and its pasted output. Then use the same short response contract.
+    Before the initial commit and report, fix all self-review findings in this worker worktree and rerun tests covering the amended code. Then commit and write the initial report.
+
+    Only when resumed with controller review findings, append a fix report to [REPORT_FILE]. Record what changed, the covering test command, and its pasted output. Then use the same short response contract.
 
     The full report at [REPORT_FILE] includes:
     - what was implemented, or attempted if blocked
     - test commands and results
-    - TDD evidence when required: RED command, expected failing output, and
-      reason; GREEN command and passing output
+    - TDD evidence: RED command, expected failing output, and reason; GREEN command and passing output
     - manual-testing evidence for runnable surfaces: commands and pasted
       output, UI screenshots, or the exact unavailable command
     - actual files changed

@@ -37,7 +37,7 @@ Read the plan, its context, and Global Constraints once. Create a todo per task.
 
 Scan the plan for contradictions before dispatch. Record one ledger row per task comparing tests, implementation text, files, and Global Constraints. Check contradictions between tasks or Global Constraints and plan-mandated work that the review rubric treats as a defect. Each asserted test needle must be a whole sentence, unique in its target file, and on one unwrapped line in the plan insertion text. Fix the plan and rule on each contradiction before execution. Keep collision and namespace decisions in the separate parallel-policy inventory.
 
-## Role routing and ledger states
+## Role routing and recovery
 
 Route implementation and fix work to an implementer. Route task review and scoped re-review to read-only reviewers. Route final whole-branch review to the strongest final-review role available. A `BLOCKED` fix or fix round 4 or later uses the harness escalation role. Never retry an unchanged blocked dispatch. Implementers and reviewers do not dispatch nested subagents.
 
@@ -63,7 +63,7 @@ Use the largest safe wave. For each wave:
 1. Record `base=$(git rev-parse HEAD)` as the wave integration `HEAD`.
 2. Create writer worktrees sequentially from that base with `using-git-worktrees` writer mode and `worker-worktree create`. Record the verified path, branch, base, task ownership, and access mode before dispatch. Read-only tasks use stable inputs. Do not create writer worktrees concurrently.
 3. The task brief is the single source of task requirements. Give each writer a complete task brief. Include its worktree path, brief path, report path, relevant interfaces, Global Constraints, access mode, and ledger rulings. Run the suite at the wave base. Paste the failing files and assertion lines into the dispatch; never paraphrase the count. Record the worker identity from the dispatch result.
-4. Require TDD, applicable manual testing, a self-review, a commit, and a detailed report. The worker adds or strengthens focused tests, observes the expected failure, implements the minimum change, and records RED and GREEN evidence. A task may produce multiple commits. Workers do not manipulate worktrees or branches beyond task commits.
+4. Require TDD, applicable manual testing, a self-review, a commit, and a detailed report. The worker adds or strengthens a focused test, runs it before implementation, and observes the expected RED failure. The worker then implements the minimum change, reruns the focused test, and observes GREEN. A task may produce multiple commits. Workers do not manipulate worktrees or branches beyond task commits.
 5. Run the report, review, fix-loop, approval, and integration sequence below for each task. Freeze only affected integrations when unexpected overlap appears. Preserve worker branches, integrate the selected first task, revise or rerun the later task against the new integration `HEAD`, and update the graph and ledger.
 6. Recompute the graph after the wave and dispatch the next safe wave.
 
@@ -73,7 +73,7 @@ Batch small, independent, same-shape edits in one brief and review their diff as
 
 Handle implementer status as follows:
 
-- `DONE`: Verify the report and ordered commit range. Record `committed`. Create a range-based review package from recorded worker `BASE` through worker `HEAD`, then dispatch task review.
+- `DONE`: Verify the report and ordered commit range. Run `git diff --name-only "$base" "$commit"` and compare every actual file with the declared scope. If scope matches, record `committed`, create a range-based review package from recorded worker `BASE` through worker `HEAD`, and dispatch task review.
 - `DONE_WITH_CONCERNS`: Read concerns. Resolve correctness or scope concerns before review. Record observations and continue to review.
 - `NEEDS_CONTEXT`: Supply the missing context and re-dispatch.
 - `BLOCKED`: For a context problem, supply missing context and re-dispatch with the same model. For a reasoning problem, use a more capable model. Split an oversized task, or rule on a plan correction and carry the ruling into a changed dispatch.
@@ -110,7 +110,7 @@ After integration and verification, write one terminal cleanup authorization rec
 
 ## Final review and finish
 
-After every writer is cleaned, create the whole-branch package with `scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where MERGE_BASE is the branch start, such as `git merge-base main HEAD`. Dispatch the strongest final-review role after loading `routing-model-tiers`. Give it the printed package path and ledger deferred-minor and parked lines. Use superpowers:requesting-code-review's [code-reviewer.md](../requesting-code-review/code-reviewer.md).
+After every writer is cleaned, create the whole-branch package with `scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where MERGE_BASE is the branch start, such as `git merge-base main HEAD`. Dispatch the strongest final-review role after loading `routing-model-tiers`. Give it the printed package path and ledger deferred-minor and parked lines. Use `superpowers:requesting-code-review`.
 
 If final review reports findings, dispatch one fixer with the complete findings list. Run exactly one scoped re-review of `scripts/review-package PLAN_FILE FIX_BASE HEAD` with [re-review-prompt.md](re-review-prompt.md). Adjudicate residual findings as at the task-loop cap. Park findings with rulings, or rule on load-bearing findings and record the decision. Do not dispatch a second final fix wave. Integrate and verify approved final fixes before finish. Surface residual load-bearing findings to the human through finishing-a-development-branch.
 

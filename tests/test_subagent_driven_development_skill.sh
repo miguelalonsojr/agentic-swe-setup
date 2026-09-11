@@ -20,13 +20,13 @@ assert_contains "$body" "Consume its task inventory, collision edges, namespace 
 assert_contains "$body" "Consume its verified writer path, branch, and base"     "SDD consumes worktree policy outputs"
 assert_contains "$body" '`routing-model-tiers` selects the model'     "SDD delegates general tier choice"
 assert_not_contains "$body" "## Model Selection"     "SDD does not duplicate general model-tier policy"
-for item in "dependencies" "access mode" "expected files and interfaces" "generated artifacts"             "lockfiles" "migrations" "configuration" "external resources"             "controller-assigned namespaces" "collision edges" "rulings that add or remove edges"; do
-    assert_contains "$body" "$item" "SDD ledger retains $item"
-done
+assert_contains "$body" "For each task, retain dependencies; access mode; expected files and interfaces; generated artifacts; lockfiles; migrations; configuration; external resources; controller-assigned namespaces; collision edges; and rulings that add or remove edges." \
+    "SDD ledger retains the complete parallel inventory row"
 assert_contains "$body" "Never implement an eligible task in the controller"     "SDD controller delegates implementation"
 assert_contains "$body" "Dispatch a fresh implementer subagent for each distinct task, except a same-shape batch" "SDD gives each distinct task a fresh implementer"
 assert_contains "$body" "Review each worker commit before integration"     "SDD skill keeps the task review gate"
-assert_contains "$body" "TDD" "SDD retains task TDD"
+assert_contains "$body" "The worker adds or strengthens a focused test, runs it before implementation, and observes the expected RED failure. The worker then implements the minimum change, reruns the focused test, and observes GREEN." \
+    "SDD requires the complete TDD cycle"
 assert_contains "$body" "A task may produce multiple commits"     "SDD retains multi-commit tasks"
 assert_contains "$body" 'Never use `HEAD~1`'     "SDD reviews the full task range"
 assert_contains "$body" 'git diff --name-only "$base" "$commit"'     "SDD skill validates actual scope"
@@ -58,7 +58,6 @@ assert_contains "$body" "cleanup only after that exact task, path, and branch te
 assert_contains "$body" "strongest final-review role available"     "SDD retains strongest final review"
 
 assert_contains "$body" "scripts/test-summary" "SDD controller runs tests through test-summary"
-assert_contains "$body" "observes the expected failure" "SDD requires RED evidence"
 assert_contains "$body" "Implementers and reviewers do not dispatch nested subagents" "SDD prevents nested dispatch"
 assert_contains "$body" "one fixer with the complete findings list" "SDD has one final fix dispatch"
 assert_contains "$body" "Do not dispatch a second final fix wave" "SDD limits final fixes"
@@ -68,7 +67,19 @@ assert_contains "$body" "before deleting the workspace" "compound step precedes 
 assert_not_contains "$body" "superpowers:using-git-worktrees" "SDD names the forked worktree skill without the plugin prefix"
 assert_not_contains "$body" "superpowers:finishing-a-development-branch" "SDD names the forked finishing skill without the plugin prefix"
 assert_contains "$body" "superpowers:requesting-code-review" "SDD keeps the prefix for skills this repo does not fork"
-assert_contains "$body" "## Role routing and ledger states" "SDD keeps the role-routing section"
+role_heading="## Role routing and recovery"
+assert_eq "$(grep -Fxc "$role_heading" "$root/SKILL.md")" "1" \
+    "SDD keeps one stable role-routing heading"
+for referenced_file in \
+    "$REPO_ROOT/skills/routing-model-tiers/SKILL.md" \
+    "$REPO_ROOT/skills/cross-checking-claims/SKILL.md" \
+    "$root/implementer-prompt.md" \
+    "$root/task-reviewer-prompt.md" \
+    "$root/re-review-prompt.md"; do
+    referenced_body=$(cat "$referenced_file")
+    assert_contains "$referenced_body" "\`$role_heading\`" \
+        "$(basename "$referenced_file") role-routing reference resolves to the SDD heading"
+done
 for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
     assert_not_contains "$(cat "$root/$f.md")" "Model Selection" "$f no longer points at the removed section"
     assert_contains "$(cat "$root/$f.md")" 'choose per `routing-model-tiers`' "$f points at routing-model-tiers"
@@ -78,17 +89,31 @@ assert_contains "$body" "A ruling may not change text a Global Constraint pins a
 assert_contains "$body" "must be a whole sentence, unique in its target file, and on one unwrapped line" "SDD contradiction scan checks needles"
 assert_contains "$body" "Paste the failing files and assertion lines into the dispatch; never paraphrase the count" "SDD dispatch states the baseline red state verbatim"
 assert_contains "$body" "PLAN_FILE is the repo-relative plan path" "SDD names the review-package plan path rule"
+assert_contains "$body" '`DONE`: Verify the report and ordered commit range. Run `git diff --name-only "$base" "$commit"` and compare every actual file with the declared scope. If scope matches, record `committed`, create a range-based review package from recorded worker `BASE` through worker `HEAD`, and dispatch task review.' \
+    "SDD DONE path checks declared scope before task review"
+assert_contains "$body" "Use the original implementer for rounds 1 through 3 when possible." \
+    "SDD uses the original implementer for fix rounds 1 through 3"
+assert_contains "$body" "For rounds 4 and 5, dispatch a fresh, more capable implementer with those paths and open findings." \
+    "SDD escalates fix rounds 4 and 5"
+assert_contains "$body" "After round 5, stop dispatching. Adjudicate every open finding in the ledger." \
+    "SDD adjudicates only after fix round 5"
+assert_not_contains "$body" "../requesting-code-review/code-reviewer.md" \
+    "SDD does not contain a dangling local code-reviewer link"
 
 implementer=$(cat "$root/implementer-prompt.md")
 for clause in "[BRIEF_FILE]" "[CONTEXT]" "[WORKTREE_PATH]" "[REPORT_FILE]" \
     "Do not merge, rebase, cherry-pick, or create or remove worktrees" \
-    "dispatch subagents. Commit only this task's changes" "Use TDD when the task requires it" \
-    "run the focused test" "Run the full suite once before committing" \
+    "dispatch subagents. Commit only this task's changes" \
+    "Add or strengthen a focused test. Run it before implementation and observe the expected RED failure. Implement the minimum change. Rerun the focused test and observe GREEN." \
+    "Run the full suite once before committing" \
     "or unclear condition arises while working, ask and pause" \
     "grows beyond the plan's intent, stop and report" \
     "DONE_WITH_CONCERNS. Do not split it without plan guidance" \
     'runnable CLI, HTTP API, web UI, startup path, or migration per' \
-    "TDD evidence when required" "actual files changed" "self-review findings" \
+    "TDD evidence: RED command, expected failing output, and reason; GREEN command and passing output" \
+    "Before the initial commit and report, fix all self-review findings" \
+    "Only when resumed with controller review findings, append a fix report" \
+    "actual files changed" "self-review findings" \
     "Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT" \
     "Reply in under 15 lines"; do
     assert_contains "$implementer" "$clause" "implementer prompt preserves: $clause"

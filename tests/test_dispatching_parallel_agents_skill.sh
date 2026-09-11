@@ -10,8 +10,12 @@ assert_contains "$body" '`read-only` or `write-capable`' "parallel skill classif
 assert_contains "$body" "satisfied dependencies and resolved collision edges" "parallel skill requires satisfied dependencies"
 assert_contains "$body" "Dispatch the largest safe wave" "parallel skill maximizes safe concurrency"
 assert_contains "$body" "controller-created worktree" "parallel skill isolates every concurrent writer"
-for item in "dependencies" "files" "interfaces" "generated artifacts" "lockfiles" "migrations" "configuration" "external resources" "namespaces" "Collision edges" "rulings"; do
-    assert_contains "$body" "$item" "parallel skill inventories $item"
+for inventory_row in \
+    '| Dependencies and access mode | Prerequisites and `read-only` or `write-capable` |' \
+    '| Repository scope | Files, interfaces, generated artifacts, lockfiles, migrations, and configuration read or changed |' \
+    '| External scope | Resources such as ports, databases, services, and test fixtures; controller-assigned namespaces |' \
+    '| Graph | Collision edges, their producers and consumers, and rulings that add or remove edges |'; do
+    assert_contains "$body" "$inventory_row" "parallel skill retains complete inventory row: $inventory_row"
 done
 assert_contains "$body" "one task produces or writes shared state and another task consumes, produces, or writes it" "parallel skill detects writer-mediated shared-state collisions"
 assert_contains "$body" "different files or disjoint test files" "parallel skill rejects file-only independence"
