@@ -3,57 +3,42 @@ name: dispatching-parallel-agents
 description: Use when 2 or more subagent tasks may run concurrently and their dependencies, writes, or shared resources require a safe scheduling decision.
 ---
 
-# Dispatching Parallel Agents
+# Dispatching parallel agents
 
-## Purpose
+## Task inventory
 
-Map all dependencies and collision edges before parallel dispatch. A collision edge connects tasks that cannot run in one wave because one task changes state that another task reads or changes. A safe wave contains only tasks whose dependencies are satisfied and whose collision edges are resolved.
+Record one row for each task before selecting a wave.
 
-A different file does not prove independence. Tasks can collide through interfaces, generated state, repository-wide configuration, or external resources.
+| Field | Record |
+| --- | --- |
+| Dependencies and access mode | Prerequisites and `read-only` or `write-capable` |
+| Repository scope | Files, interfaces, generated artifacts, lockfiles, migrations, and configuration read or changed |
+| External scope | Resources such as ports, databases, services, and test fixtures; controller-assigned namespaces |
+| Graph | Collision edges, their producers and consumers, and rulings that add or remove edges |
 
-## Mandatory task inventory
+## Collision rules
 
-Record one row for every task before selecting a wave. Each row retains:
+Compare every task pair against the complete inventory. Add a collision edge only when one task produces or writes shared state and another task consumes, produces, or writes it. Treat interfaces, generated state, repository-wide configuration, and external resources as shared state. Do not treat different files or disjoint test files as proof of independence.
 
-- dependencies;
-- access mode, classified as `read-only` or `write-capable`;
-- expected files and interfaces read or changed;
-- generated artifacts and lockfiles;
-- migrations and configuration;
-- external resources, including ports, databases, services, and test fixtures;
-- controller-assigned namespaces;
-- collision edges;
-- rulings that add or remove edges.
+## Namespace rules
 
-Check every pair of tasks against the complete inventory. Check lockfiles, generated artifacts, migrations, and configuration. Record the producer and consumer for each edge. Do not define independence from disjoint test files.
+Remove an external-resource edge only when the controller assigns a namespace before dispatch and the namespace is unique in the wave, explicit, and testable. Record the namespace value and verification command with the ruling. Reject worker-selected, implicit, duplicated, or untestable namespaces. Retain repository-state edges for files, interfaces, generated artifacts, lockfiles, migrations, and configuration.
 
-## Namespace decisions
-
-A namespace removes an external-resource collision edge only when the controller assigns it before dispatch, the namespace is unique among tasks in the wave, and the namespace is explicit and testable. Record the concrete namespace value and its verification command. A worker-selected, implicit, duplicated, or untestable namespace does not remove an edge.
-
-Each namespace ruling adds or removes an identified collision edge. Keep the ruling in the inventory. Repository state such as files, interfaces, generated artifacts, lockfiles, migrations, and configuration does not become independent through an external-resource namespace.
-
-## Safe-wave decision
+## Wave selection
 
 Apply this order:
 
 1. Map dependencies.
 2. Classify every task as `read-only` or `write-capable`.
-3. Complete the file, interface, generated-artifact, lockfile, migration, configuration, and external-resource inventory.
-4. Add collision edges for each shared producer or consumer.
-5. Apply only valid controller-assigned namespace rulings.
-6. Dispatch the largest safe wave.
+3. Complete the repository and external-scope inventory.
+4. Add collision edges for shared producers and consumers.
+5. Apply valid controller-assigned namespace rulings.
+6. Dispatch the largest safe wave with satisfied dependencies and resolved collision edges.
 
-Read-only tasks use stable inputs. Every concurrent writer receives a separate controller-created worktree. Never dispatch concurrent write-capable agents into one worktree. If isolated worktrees are unavailable, keep writers sequential and continue to parallelize read-only tasks.
+Give read-only tasks stable inputs. Give each concurrent writer a separate controller-created worktree. Keep writers sequential when separate worktrees are unavailable. Parallelize read-only tasks when their edges permit it. Send a task with uncertain write scope to a read-only exploration dispatch. Update the inventory and graph from the result before scheduling implementation.
 
-A task with uncertain write scope first receives a read-only exploration dispatch. Update the inventory and graph from its result before scheduling implementation.
+## Dispatch and integration
 
-## Dispatch output
+Return the task inventory, namespace rulings, collision graph, and largest safe wave to the orchestration skill. Include the goal, acceptance criteria, scope, constraints, access mode, namespace values, relevant edges, and expected report in each prompt.
 
-Return the inventory, namespace rulings, collision graph, and largest safe wave to the orchestration skill. Prompts state the goal, acceptance criteria, scope, constraints, access mode, namespace values, relevant edges, and expected report.
-
-## Integration feedback
-
-Unexpected overlap stops integration of the affected tasks. Preserve their branches. Update the inventory and collision graph. Integrate the selected first task, then rerun or revise later work against the integrated state.
-
-After integration, run each focused check and the wave suite. Worker reports and disjoint paths do not prove safe integration.
+Stop integration for affected tasks when unexpected overlap appears. Preserve their branches. Update the inventory and collision graph. Integrate the selected first task, then rerun or revise later work against the integrated state. Run each focused check and the wave suite after integration. Do not use worker reports or disjoint paths as proof of safe integration.
