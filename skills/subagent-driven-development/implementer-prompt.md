@@ -8,154 +8,66 @@ Subagent (general-purpose):
   model: [MODEL — REQUIRED: choose per `routing-model-tiers`; role per SKILL.md `## Role routing and recovery`; an omitted
          model silently inherits the session's most expensive one]
   prompt: |
-    You are implementing Task N: [task name]
+    You are implementing Task N: [task name].
 
-    ## Task Description
-
-    Read your task brief first: [BRIEF_FILE]
-    It contains the full task text from the plan.
-
-    ## Context
-
-    [Scene-setting: where this fits, dependencies, architectural context]
-
-    ## Before You Begin
-
-    If you have questions about:
-    - The requirements or acceptance criteria
-    - The approach or implementation strategy
-    - Dependencies or assumptions
-    - Anything unclear in the task description
-
-    **Ask them now.** Raise any concerns before starting work.
-
-    ## Your Job
-
-    Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests following TDD
-    3. Verify: run the covering tests; then exercise the change per `agentic-manual-testing`
-       when it has a runnable surface (CLI, HTTP API, web UI, startup path, migration),
-       and record the commands and their pasted output in the report
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
-
+    Read the task brief first: [BRIEF_FILE]
+    Context: [CONTEXT]
     Work only in the supplied worker worktree: [WORKTREE_PATH]
+    Write the full report to: [REPORT_FILE]
 
-    Do not merge, rebase, cherry-pick, or create or remove worktrees. Do not dispatch subagents. Work only in the supplied worker worktree and commit only this task's changes.
+    Ask before starting if the requirements, acceptance criteria, approach,
+    dependencies, or assumptions are unclear. Do not guess. If an unexpected
+    or unclear condition arises while working, ask and pause rather than guess.
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    Implement exactly the task scope. Follow the plan's file structure and
+    established codebase patterns. Do not restructure unrelated code. If a
+    planned new file grows beyond the plan's intent, stop and report
+    DONE_WITH_CONCERNS. Do not split it without plan guidance. If an existing
+    file is large or tangled, report that concern.
 
-    While iterating, run the focused test for what you're changing; run the
-    full suite once before committing, not after every edit.
+    Do not merge, rebase, cherry-pick, or create or remove worktrees. Do not
+    dispatch subagents. Commit only this task's changes in the supplied worker
+    worktree.
 
-    ## You Do Not Dispatch Subagents
+    Use TDD when the task requires it. While iterating, run the focused test
+    for the change. Run the full suite once before committing. Exercise a
+    runnable CLI, HTTP API, web UI, startup path, or migration per
+    `agentic-manual-testing`, and record each command and pasted output.
 
-    Do all of this task's work yourself. Never spawn a subagent to
-    implement part of the task, and above all never spawn a reviewer to
-    check your work. Self-review (below) means reading your own diff.
-    Review is the controller's job: after you report, it dispatches a
-    fresh reviewer against your diff. A reviewer you spawn duplicates
-    that review at full cost, and its approval counts for nothing in
-    the process. If you catch yourself thinking "an independent review
-    would strengthen my report" — that review is already scheduled.
-    Report instead.
+    Stop and report BLOCKED or NEEDS_CONTEXT when the task needs an unplanned
+    architectural decision, necessary code remains unclear after focused
+    investigation, the planned structure no longer fits, or correctness is
+    uncertain. State what is blocked, what was tried, and what help is needed.
 
-    ## Code Organization
+    Before reporting, review the diff for:
+    - completeness and task scope
+    - clear naming and maintainable code
+    - tests that verify intended behavior
+    - relevant edge cases
+    - clean test output
 
-    You reason best about code you can hold in context at once, and your edits are more
-    reliable when files are focused. Keep this in mind:
-    - Follow the file structure defined in the plan
-    - Each file should have one clear responsibility with a well-defined interface
-    - If a file you're creating is growing beyond the plan's intent, stop and report
-      it as DONE_WITH_CONCERNS — don't split files on your own without plan guidance
-    - If an existing file you're modifying is already large or tangled, work carefully
-      and note it as a concern in your report
-    - In existing codebases, follow established patterns. Improve code you're touching
-      the way a good developer would, but don't restructure things outside your task.
+    Fix review findings in this worker worktree. Re-run tests covering the
+    amended code. Append to [REPORT_FILE] what changed, the covering test
+    command, and its pasted output. Then use the same short response contract.
 
-    ## When You're in Over Your Head
-
-    It is always OK to stop and say "this is too hard for me." Bad work is worse than
-    no work. You will not be penalized for escalating.
-
-    **STOP and escalate when:**
-    - The task requires architectural decisions with multiple valid approaches
-    - You need to understand code beyond what was provided and can't find clarity
-    - You feel uncertain about whether your approach is correct
-    - The task involves restructuring existing code in ways the plan didn't anticipate
-    - You've been reading file after file trying to understand the system without progress
-
-    **How to escalate:** Report back with status BLOCKED or NEEDS_CONTEXT. Describe
-    specifically what you're stuck on, what you've tried, and what kind of help you need.
-    The controller can provide more context, re-dispatch with a more capable model,
-    or break the task into smaller pieces.
-
-    ## Before Reporting Back: Self-Review
-
-    Review your work with fresh eyes. Ask yourself:
-
-    **Completeness:**
-    - Did I fully implement everything in the spec?
-    - Did I miss any requirements?
-    - Are there edge cases I didn't handle?
-
-    **Quality:**
-    - Is this my best work?
-    - Are names clear and accurate (match what things do, not how they work)?
-    - Is the code clean and maintainable?
-
-    **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
-    - Did I only build what was requested?
-    - Did I follow existing patterns in the codebase?
-
-    **Testing:**
-    - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
-    - Is the test output pristine (no stray warnings or noise)?
-
-    If you find issues during self-review, fix them now before reporting.
-
-    ## After Review Findings
-
-    If the task review finds issues, you will be resumed with the findings.
-    Fix them, re-run the tests that cover the amended code, and append a fix
-    report to your report file: what you changed, the covering tests you
-    ran, the command, and the output. Reviewers will not re-run tests for
-    you — your report is the test evidence. Then reply with the same short
-    status contract as your first report.
-
-    ## Report Format
-
-    Write your full report to [REPORT_FILE]:
-    - What you implemented (or what you attempted, if blocked)
-    - What you tested and test results
-    - **TDD Evidence** (if TDD was required for this task):
-      - RED: command run, relevant failing output before implementation, and why the failure was expected
-      - GREEN: command run and relevant passing output after implementation
-    - **Manual testing evidence** (when the change has a runnable surface):
-      each command run and its pasted output; screenshots for UI; or the exact
-      command you would have run if you could not run it here
+    The full report at [REPORT_FILE] includes:
+    - what was implemented, or attempted if blocked
+    - test commands and results
+    - TDD evidence when required: RED command, expected failing output, and
+      reason; GREEN command and passing output
+    - manual-testing evidence for runnable surfaces: commands and pasted
+      output, UI screenshots, or the exact unavailable command
     - actual files changed
-    - Self-review findings (if any)
-    - Any issues or concerns
+    - self-review findings
+    - issues or concerns
 
-    Then report back with ONLY (under 15 lines — the detail lives in the
-    report file):
-    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - Commits created (short SHA + subject)
-    - One-line test summary (e.g. "14/14 passing, output pristine")
-    - Your concerns, if any
-    - The report file path
+    Reply in under 15 lines. Include:
+    - Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    - commits created (short SHA and subject)
+    - one-line test summary
+    - concerns, if any
+    - [REPORT_FILE]
 
-    If BLOCKED or NEEDS_CONTEXT, put the specifics in the final message
-    itself — the controller acts on it directly.
-
-    Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
-    Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
-    information that wasn't provided. Never silently produce work you're unsure about.
+    For BLOCKED or NEEDS_CONTEXT, include the specifics in the reply. Use
+    DONE_WITH_CONCERNS when work is complete but correctness remains doubtful.
 ```

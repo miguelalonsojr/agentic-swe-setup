@@ -80,12 +80,47 @@ assert_contains "$body" "Paste the failing files and assertion lines into the di
 assert_contains "$body" "PLAN_FILE is the repo-relative plan path" "SDD names the review-package plan path rule"
 
 implementer=$(cat "$root/implementer-prompt.md")
-assert_contains "$implementer" "Do not merge, rebase, cherry-pick, or create or remove worktrees"     "implementer prompt limits Git authority"
-assert_contains "$implementer" "actual files changed"     "implementer reports its real scope"
-assert_contains "$implementer" 'exercise the change per `agentic-manual-testing`' "implementer prompt names the manual check"
-assert_contains "$implementer" "Manual testing evidence" "implementer report carries manual evidence"
+for clause in "[BRIEF_FILE]" "[CONTEXT]" "[WORKTREE_PATH]" "[REPORT_FILE]" \
+    "Do not merge, rebase, cherry-pick, or create or remove worktrees" \
+    "dispatch subagents. Commit only this task's changes" "Use TDD when the task requires it" \
+    "run the focused test" "Run the full suite once before committing" \
+    "or unclear condition arises while working, ask and pause" \
+    "grows beyond the plan's intent, stop and report" \
+    "DONE_WITH_CONCERNS. Do not split it without plan guidance" \
+    'runnable CLI, HTTP API, web UI, startup path, or migration per' \
+    "TDD evidence when required" "actual files changed" "self-review findings" \
+    "Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT" \
+    "Reply in under 15 lines"; do
+    assert_contains "$implementer" "$clause" "implementer prompt preserves: $clause"
+done
+
 reviewer=$(cat "$root/task-reviewer-prompt.md")
-assert_contains "$reviewer" "was the documentation updated?" "reviewer checks documentation"
+for clause in "[BRIEF_FILE]" "[GLOBAL_CONSTRAINTS]" "[REPORT_FILE]" \
+    "[BASE_SHA]" "[HEAD_SHA]" "[DIFF_FILE]" "Review the complete worker commit range" \
+    "This checkout is read-only" "Do not dispatch subagents" "Read [DIFF_FILE] first" \
+    "check per risk and name the risk and check" "Run only a focused test when a specific doubt remains" \
+    "If commands cannot run, name the focused test that would resolve that doubt" \
+    "check documentation when documented behavior changes" \
+    "use a warning verdict" "file:line evidence" "### Spec Compliance" \
+    "### Issues" "Task quality: Approved | Needs fixes"; do
+    assert_contains "$reviewer" "$clause" "task reviewer prompt preserves: $clause"
+done
+assert_not_contains "$reviewer" "otherwise name the test that would be run" \
+    "task reviewer names a hypothetical test only when commands cannot run"
+
+rereviewer=$(cat "$root/re-review-prompt.md")
+for clause in "[BRIEF_FILE]" "[FINDINGS]" "[REPORT_FILE]" "[FIX_BASE_SHA]" \
+    "[HEAD_SHA]" "[DIFF_FILE]" "This checkout is read-only" \
+    "Do not dispatch subagents" "Verdict each finding in order" \
+    "specific defect no longer exists. Do not re-review" "non-blocking" \
+    "covering tests and includes their output" "Run only a focused" \
+    "test when a specific doubt remains" "### Finding Verdicts" \
+    "ADDRESSED | NOT ADDRESSED" "### New Breakage in the Fix Diff" \
+    "### Out-of-Scope Observations" "All findings addressed, no new Critical/Important breakage"; do
+    assert_contains "$rereviewer" "$clause" "re-review prompt preserves: $clause"
+done
+assert_not_contains "$rereviewer" "otherwise name the test that would run" \
+    "re-review does not require a hypothetical test"
 
 workspace="$root/scripts/sdd-workspace"
 if [ -x "$workspace" ]; then
