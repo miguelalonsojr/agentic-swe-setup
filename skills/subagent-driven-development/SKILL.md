@@ -5,462 +5,113 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by dispatching a fresh implementer subagent per task, a task review (spec compliance + code quality) after each, and a broad whole-branch review at the end.
+## Preconditions and policy skills
 
-**Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+Use this skill to execute an approved implementation plan in the current session. Do not use it for tightly coupled work, a plan that needs brainstorming, or work assigned to a separate execution session.
 
-**Core principle:** Fresh subagent per task + task review (spec + quality) + broad final review = high quality, fast iteration
+**REQUIRED SUB-SKILL:** Use `dispatching-parallel-agents` before wave selection. Consume its task inventory, collision edges, namespace decisions, and largest safe wave. Do not recreate its collision policy.
 
-## Required policy skills
-
-**REQUIRED SUB-SKILL:** Use `dispatching-parallel-agents` before wave selection. SDD must consume its task inventory, collision edges, namespace decisions, and largest safe wave. Do not recreate its general collision policy here.
-
-**REQUIRED SUB-SKILL:** Use `using-git-worktrees` for writer provisioning and cleanup. SDD must consume its verified writer path, branch, and base. Do not use copied lifecycle commands.
+**REQUIRED SUB-SKILL:** Use `using-git-worktrees` for writer provisioning and cleanup. Consume its verified writer path, branch, and base. Do not copy its lifecycle commands.
 
 **REQUIRED SUB-SKILL:** Use `routing-model-tiers` before every dispatch. This includes exploration, implementation, task review, fixes, re-reviews, final review, and the final fix pass. `routing-model-tiers` selects the model. SDD selects the role and owns escalation.
 
-**Narration:** between tool calls, narrate at most one short line — the
-ledger and the tool results carry the record.
+Keep implementation out of the controller. Never implement an eligible task in the controller. Dispatch a fresh implementer subagent for each distinct task, except a same-shape batch under Safe-wave execution. The controller owns planning, dispatch, review coordination, integration, verification, and recovery. Do not pause for progress approval between tasks. Narrate at most one short line between tool calls.
 
-**Continuous execution:** Do not pause to check in with your human partner between tasks. Execute all tasks from the plan without stopping. The only reasons to stop are the four named below, or all tasks complete. "Should I continue?" prompts and progress summaries waste their time — they asked you to execute the plan, so execute it.
+## Stop conditions and rulings
 
-**Rulings, not stalls.** A running plan does not wait on a human. Conflicts,
-ambiguities, plan defects, a cap you would have asked to exceed — decide
-them. The spec is the binding authority, the plan is its argument, and your
-judgment settles what neither answers. Record every decision in the ledger as
-`Ruling: <what you decided> — <why> — <what it costs if wrong>`, and keep
-going. A wrong ruling costs rework your human partner can see and undo; a
-session parked on a question costs their whole day and buys nothing.
-A ruling may not change text a Global Constraint pins as verbatim; change
-the plan or the needle instead.
+Continue through the approved plan unless an irreversible or destructive operation, a security-sensitive action, an external side effect that requires approval (a merge, push to a shared branch, or publish), or a plan with no non-guesswork path requires a stop. Ask the human only for these conditions.
 
-Four things stop you, and only these: an irreversible or destructive
-operation; a security-sensitive action; a side effect outside this worktree
-that norms say you ask about first (a merge, a push to a shared branch, a
-publish); and a plan so broken that every path forward is a guess. For those,
-stop and ask.
+Resolve other conflicts, ambiguities, plan defects, and cap decisions with a ledger ruling. The spec is binding authority. The plan argues from the spec. Record `Ruling: <what you decided> — <why> — <what it costs if wrong>`. A ruling may not change text a Global Constraint pins as verbatim. Change the plan or the needle instead.
 
-## When to Use
+## Workspace, ledger, plan, and contradiction scan
 
-```dot
-digraph when_to_use {
-    "Have implementation plan?" [shape=diamond];
-    "Tasks mostly independent?" [shape=diamond];
-    "Stay in this session?" [shape=diamond];
-    "subagent-driven-development" [shape=box];
-    "executing-plans" [shape=box];
-    "Manual execution or brainstorm first" [shape=box];
+Use `using-git-worktrees` to create or verify an isolated workspace. Do not start implementation on `main` or `master` without explicit approval.
 
-    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
-    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
-    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
-    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
-}
-```
+At skill start, run `scripts/sdd-workspace PLAN_FILE`. It prints `<repo-root>/.superpowers/sdd/<readable-basename>-<path-hash>/`. The canonical repository-relative plan path supplies the hash. The workspace holds the ledger, briefs, reports, and review packages. Do not read or write another plan's directory.
 
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- Review after each task (spec compliance + code quality), broad review at the end
-- Faster iteration (no human-in-loop between tasks)
+Use `<workspace>/progress.md` as the plan-specific ledger. Its first line is `# SDD ledger — plan: <plan file path>`. A ledger for a different plan, including `.superpowers/sdd/progress.md`, belongs to another plan. Leave it in place. A `Task <N>: complete` line proves a terminal state, but reconcile pending cleanup. Resume implementation at the first nonterminal task. Resume a task whose last line is a fix round at its next round. Trust the ledger and `git log` after compaction. `git clean -fdx` can destroy this git-ignored workspace; recover commits from `git log`.
 
-## The Process
+For each task, retain dependencies; access mode; expected files and interfaces; generated artifacts; lockfiles; migrations; configuration; external resources; controller-assigned namespaces; collision edges; and rulings that add or remove edges. Also retain the worktree, branch, base, worker identity, report path, commit range, task-review status, source-to-integration commit mappings, cleanup state, and wave integration `HEAD`.
 
-```dot
-digraph process {
-    rankdir=TB;
-    "Setup: workspace, ledger, plan, dependency and collision graph" [shape=box];
-    "Largest safe wave" [shape=box];
-    "Create writer worktrees sequentially from recorded integration HEAD" [shape=box];
-    "Dispatch wave tasks" [shape=box];
-    "Implement, task review, and fix loop in each worker worktree" [shape=box];
-    "Review approved worker commits and compare declared scope" [shape=box];
-    "Cherry-pick commits one at a time; run focused tests after each commit" [shape=box];
-    "Run full suite after wave; clean up integrated workers" [shape=box];
-    "Tasks remain?" [shape=diamond];
-    "Final whole-branch review, one fix dispatch, scoped re-review" [shape=box];
-    "Use finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+Read the plan, its context, and Global Constraints once. Create a todo per task. Read its reachable spec. Record that no spec is reachable when applicable; rulings without one are provisional. Before Task 1, give every task to `dispatching-parallel-agents` and retain its inventory, edge rulings, graph, and largest safe wave in the ledger.
 
-    "Setup: workspace, ledger, plan, dependency and collision graph" -> "Largest safe wave";
-    "Largest safe wave" -> "Create writer worktrees sequentially from recorded integration HEAD";
-    "Create writer worktrees sequentially from recorded integration HEAD" -> "Dispatch wave tasks";
-    "Dispatch wave tasks" -> "Implement, task review, and fix loop in each worker worktree";
-    "Implement, task review, and fix loop in each worker worktree" -> "Review approved worker commits and compare declared scope";
-    "Review approved worker commits and compare declared scope" -> "Cherry-pick commits one at a time; run focused tests after each commit";
-    "Cherry-pick commits one at a time; run focused tests after each commit" -> "Run full suite after wave; clean up integrated workers";
-    "Run full suite after wave; clean up integrated workers" -> "Tasks remain?";
-    "Tasks remain?" -> "Largest safe wave" [label="yes"];
-    "Tasks remain?" -> "Final whole-branch review, one fix dispatch, scoped re-review" [label="no"];
-    "Final whole-branch review, one fix dispatch, scoped re-review" -> "Use finishing-a-development-branch";
-}
-```
+Scan the plan for contradictions before dispatch. Record one ledger row per task comparing tests, implementation text, files, and Global Constraints. Check contradictions between tasks or Global Constraints and plan-mandated work that the review rubric treats as a defect. Each asserted test needle must be a whole sentence, unique in its target file, and on one unwrapped line in the plan insertion text. Fix the plan and rule on each contradiction before execution. Keep collision and namespace decisions in the separate parallel-policy inventory.
 
-## Setup
+## Role routing and ledger states
 
-Ensure the work happens in an isolated workspace: use
-using-git-worktrees to create one or verify the existing one.
-Never start implementation on a main/master branch without your human
-partner's explicit consent.
+Route implementation and fix work to an implementer. Route task review and scoped re-review to read-only reviewers. Route final whole-branch review to the strongest final-review role available. A `BLOCKED` fix or fix round 4 or later uses the harness escalation role. Never retry an unchanged blocked dispatch. Implementers and reviewers do not dispatch nested subagents.
 
-Conversation memory does not survive compaction. In real sessions,
-controllers that lost their place have re-dispatched entire completed task
-sequences — the single most expensive failure observed. Track progress in
-a ledger file, not only in todos.
-
-- Each plan owns a workspace: at skill start, run this skill's
-  `scripts/sdd-workspace PLAN_FILE` — it prints the plan's git-ignored
-  directory (`<repo-root>/.superpowers/sdd/<readable-basename>-<path-hash>/`), home to
-  every artifact for THIS plan: ledger, briefs, reports, review packages. The
-  hash comes from the canonical repository-relative plan path, so plans with
-  the same basename in different directories remain separate.
-  Another plan's directory is never yours to read or write.
-- Check for this plan's ledger at `<workspace>/progress.md`. If its first
-  line names your plan file, a `Task <N>: complete` line proves a terminal
-  state. Do not redispatch implementation. Reconcile that task's state because
-  cleanup can still be pending. Resume implementation at the first nonterminal task. A task
-  whose last line is a fix round is mid-loop: resume the loop at the next
-  round. A ledger whose first line names a different plan file — or a stray
-  ledger at the old flat path `.superpowers/sdd/progress.md` — is another
-  plan's progress: leave it in place and start your own, fresh.
-- Create the ledger with its identity as the first line:
-  `# SDD ledger — plan: <plan file path>`.
-- The ledger is your recovery map: the commits it names exist in git even
-  when your context no longer remembers creating them. After compaction,
-  trust the ledger and `git log` over your own recollection.
-- For every task, retain the policy inventory: dependencies; access mode; expected files and interfaces; generated artifacts; lockfiles; migrations; configuration; external resources; controller-assigned namespaces; collision edges; and rulings that add or remove edges. Also record the worker worktree, branch, base, worker identity, report path, commit range, task review status, source-to-integration commit mappings, and cleanup state. Record each wave's integration `HEAD` before creating writers.
-- After a worker is integrated or explicitly abandoned, write exactly one terminal cleanup authorization record: `Task $task_id | state=integrated | worktree=$path | branch=$branch` or `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. Remove the worktree and branch only after this record and the checks in `using-git-worktrees`.
-- `git clean -fdx` will destroy the workspace (it's git-ignored scratch); if
-  that happens, recover from `git log`.
-
-Read the plan once, note its context and Global Constraints, and create a
-todo per task. If the plan names a Spec, read that too: the spec is the
-authority the plan argues from, and conflicts inside the plan resolve
-against it. A plan with no reachable spec gets a ledger note saying so —
-rulings made without one are provisional.
-
-Before dispatching Task 1, load `dispatching-parallel-agents`. Give it every plan task. Retain its complete inventory, edge rulings, graph, and largest safe wave in the ledger. SDD consumes that decision and does not redefine collision or namespace rules.
-
-Separately scan the plan once for internal contradictions, writing down what was checked:
-
-- tasks that contradict each other or the plan's Global Constraints
-- anything the plan explicitly mandates that the review rubric treats as a
-  defect (a test that asserts nothing, verbatim duplication of a logic block)
-
-The contradiction scan records one row per task. Each row compares its tests, implementation text, files, and Global Constraints. Check every test needle the plan asserts: it must be a whole sentence, unique in its target file, and on one unwrapped line in the plan's insertion text. Fix the plan before dispatch. Write the table to the ledger. Rule on each contradiction before execution. The spec remains the binding authority. Keep collision and namespace decisions in the separate policy inventory from `dispatching-parallel-agents`.
-
-## Role routing and recovery
-
-SDD owns orchestration role selection. Route implementation and fix work to an implementer role. Route task review and scoped re-review to read-only reviewer roles. Route final whole-branch review to the strongest final-review role available. Before each dispatch, load `routing-model-tiers` and use its per-dispatch tier choice. A fix that reports `BLOCKED`, or fix round 4 or later, uses the escalation role required by the harness. Never retry an unchanged blocked dispatch.
-
-Task implementation follows TDD. The worker adds or strengthens focused tests, observes the expected failure, implements the minimum change, and records RED and GREEN evidence in its report. A task review always covers the full recorded base-to-head range. A task may produce multiple commits.
-
-### Ledger state machine
-
-Each task has one current state and the data needed to reconcile it:
-
-| State | Required ledger data | Next action |
+| State | Required ledger data | Restart action |
 |---|---|---|
-| `planned` | task inventory, rulings, brief, report path, wave, base | provision access and dispatch |
-| `dispatched` | all planned data plus worker identity, access mode, worktree, branch, dispatch handle | reconcile execution |
-| `committed` | report and complete ordered source commit range | start task review |
-| `reviewed` | reviewed range, approval, parked rulings, focused evidence | begin integration |
-| `integrating` | ordered source range and source-to-integration commit mappings | integrate only unmapped commits |
-| `integrated` | exact task, path, and branch terminal record plus all mappings and wave verification | clean writer |
-| `abandoned` | abandonment ruling and exact task, path, and branch terminal record | clean writer |
-| `cleaned` | cleanup command result and time | no action |
+| `planned` | task inventory, rulings, brief, report path, wave, base | Verify these fields, provision access, and dispatch. |
+| `dispatched` | planned data, worker identity, access mode, worktree, branch, dispatch handle | Reconcile the live child, worktree, and report. Resume or recover the dispatch. Do not duplicate it. |
+| `committed` | report and complete ordered source commit range | Verify the recorded commit range and report. Recreate access to the recorded branch or commit if needed. Start task review rather than implementation. |
+| `reviewed` | reviewed range, approval, parked rulings, focused evidence | Verify approval and continue integration. Do not repeat implementation or review. |
+| `integrating` | ordered source range and source-to-integration commit mappings | Compare mappings with controller history and resume only the missing commits. |
+| `integrated` | exact task, path, and branch terminal record, mappings, wave verification | Use the terminal record as cleanup authority and clean the writer. |
+| `abandoned` | abandonment ruling and exact task, path, and branch terminal record | Use the terminal record as cleanup authority and clean the writer. |
+| `cleaned` | cleanup command result and time | Do nothing. |
 
-Transitions are `planned -> dispatched -> committed -> reviewed -> integrating -> integrated -> cleaned`. The abandonment transition can occur only through a recorded ruling and then continues `abandoned -> cleaned`. Append a state record at each transition. Do not infer a state from conversation memory.
+Transitions are `planned -> dispatched -> committed -> reviewed -> integrating -> integrated -> cleaned`. An abandonment ruling permits `abandoned -> cleaned`. Append each transition. Do not infer state from conversation memory. A missing worktree never erases a recorded commit. A dirty, missing, or ambiguous path changes reconciliation, not the recorded commit state.
 
-### Restart reconciliation
+On restart, inspect the ledger and Git before any redispatch. Reconcile every non-`cleaned` task from the table. Write `Task N: complete` only after `integrated` or `abandoned` is recorded. Cleanup can follow completion. Final review waits until every writer is `cleaned`.
 
-On restart, inspect the ledger and Git before any redispatch. Reconcile each non-cleaned task:
+## Safe-wave execution
 
-- For `planned`, verify its inventory, rulings, base, brief, and report path before first dispatch.
-- For `dispatched`, reconcile the live child, worktree, and report. Resume or recover the recorded dispatch. Do not start a duplicate.
-- For `committed`, verify the recorded commit range and report. If the worktree is missing, recreate access to the recorded branch or commit, then start task review rather than implementation.
-- For `reviewed`, verify approval and continue integration. Do not repeat implementation or review.
-- For `integrating`, compare the ordered source range with the source-to-integration commit mappings and controller history. resume only the missing commits in a multi-commit range.
-- For `integrated` or `abandoned`, use the exact task, path, and branch terminal record as cleanup authority and run the worktree helper.
-- For `cleaned`, do nothing.
+Use the largest safe wave. For each wave:
 
-A missing worktree never erases a recorded commit. A dirty, missing, or ambiguous path changes the reconciliation action, not the recorded commit state.
+1. Record `base=$(git rev-parse HEAD)` as the wave integration `HEAD`.
+2. Create writer worktrees sequentially from that base with `using-git-worktrees` writer mode and `worker-worktree create`. Record the verified path, branch, base, task ownership, and access mode before dispatch. Read-only tasks use stable inputs. Do not create writer worktrees concurrently.
+3. The task brief is the single source of task requirements. Give each writer a complete task brief. Include its worktree path, brief path, report path, relevant interfaces, Global Constraints, access mode, and ledger rulings. Run the suite at the wave base. Paste the failing files and assertion lines into the dispatch; never paraphrase the count. Record the worker identity from the dispatch result.
+4. Require TDD, applicable manual testing, a self-review, a commit, and a detailed report. The worker adds or strengthens focused tests, observes the expected failure, implements the minimum change, and records RED and GREEN evidence. A task may produce multiple commits. Workers do not manipulate worktrees or branches beyond task commits.
+5. Run the report, review, fix-loop, approval, and integration sequence below for each task. Freeze only affected integrations when unexpected overlap appears. Preserve worker branches, integrate the selected first task, revise or rerun the later task against the new integration `HEAD`, and update the graph and ledger.
+6. Recompute the graph after the wave and dispatch the next safe wave.
 
-Write `Task N: complete` only after `integrated` or `abandoned` is recorded. Cleanup can follow completion, but final review cannot start until every writer reaches `cleaned`.
+Batch small, independent, same-shape edits in one brief and review their diff as one unit. Keep tasks that need distinct judgment, tests, or review surfaces separate. Pass artifacts as files rather than copying their contents into controller context. While children run, update the ledger and package work. When idle, wait in bounded five-to-ten-minute stretches where supported, then record one status line and reconcile live children.
 
-## The Task Loop
+## Implementer reports
 
-**Batch small same-shape work.** When the plan lists several tasks that are
-each a small, independent edit of the same kind — the same one-line fix,
-constant change, or field addition repeated across files — do not dispatch
-one subagent per task. Compose ONE dispatch brief listing every file and
-its change, send the whole batch to a single subagent, and review its diff
-as one unit. Reserve one-dispatch-per-task for work that needs its own
-judgment, its own tests, or its own review surface.
+Handle implementer status as follows:
 
-Everything you paste into a dispatch prompt — and everything a subagent
-prints back — stays resident in your context for the rest of the session
-and is re-read on every later turn. Hand artifacts over as files.
+- `DONE`: Verify the report and ordered commit range. Record `committed`. Create a range-based review package from recorded worker `BASE` through worker `HEAD`, then dispatch task review.
+- `DONE_WITH_CONCERNS`: Read concerns. Resolve correctness or scope concerns before review. Record observations and continue to review.
+- `NEEDS_CONTEXT`: Supply the missing context and re-dispatch.
+- `BLOCKED`: For a context problem, supply missing context and re-dispatch with the same model. For a reasoning problem, use a more capable model. Split an oversized task, or rule on a plan correction and carry the ruling into a changed dispatch.
 
-**Waiting on dispatched subagents:** never poll a wait interface with
-short timeouts, and never sit in one silent, open-ended wait either.
-While you have local work — ledger updates, packaging the next review,
-reading reports — keep working; child results arrive on their own.
-When you are genuinely idle, wait in bounded stretches (five to ten
-minutes, where your platform allows), and between stretches post one
-line of status and reconcile your live children: list them, and chase
-any that finished without reporting. A bounded stretch keeps nearly
-all of a long wait's efficiency while guaranteeing a stuck or lost
-child is noticed within minutes, not at the end of the session.
+Answer implementer questions clearly and completely. Do not ignore escalation or retry the same model without a change.
 
-### 1. Run safe waves
+## Task review
 
-1. Load `dispatching-parallel-agents` and retain its inventory and graph.
-2. Consume its largest safe wave.
-3. Record the wave integration HEAD.
-4. Create and record one worker worktree for each write-capable task sequentially.
-5. Dispatch every task in the largest safe wave.
-6. Run each task's implementation, fix loop, and task review in its worker worktree.
-7. Review each worker commit before integration.
-8. Compare the actual diff with the declared scope.
-9. Cherry-pick approved commits into the controller branch one at a time in dependency order.
-10. Run focused tests after each integrated commit and the full suite after each wave, through this skill's `scripts/test-summary -- <command>`; read its summary, and open the log path only when something failed.
-11. Recompute the graph and dispatch the next wave.
+The required integration sequence is: scope check -> task review -> cherry-pick -> focused test -> wave suite -> terminal record -> completion -> cleanup. Before task review, compare the actual files with the declared scope by running `git diff --name-only "$base" "$commit"`. Review each worker commit before integration. Task review is a gate. It requires separate specification-compliance and task-quality verdicts. Implementer self-review does not replace task review. The task reviewer is read-only. Do not pre-judge findings, ask open-ended checks without a task-specific reason, or ask it to rerun tests already evidenced on the same code.
 
-Never implement an eligible task in the controller. The controller owns planning, dispatch, review coordination, integration, verification, and recovery.
+In the worker worktree, run `scripts/review-package PLAN_FILE BASE HEAD`. PLAN_FILE is the repo-relative plan path. An absolute path into another worktree fails with `plan is outside the repository`. Pass only the printed package path. It contains the commit list, stat summary, and full contextual diff. Use recorded worker `BASE` and `HEAD`. Never use `HEAD~1`; it truncates multi-commit tasks. Never dispatch a task reviewer without a diff file.
 
-For a wave, record `base=$(git rev-parse HEAD)` before creating any writers. Create all writer worktrees sequentially from this recorded integration `HEAD`, using `using-git-worktrees` writer mode and its `worker-worktree create` helper. Consume the helper's verified path, branch, and base. Read-only tasks use stable inputs. Record each writer's worktree, branch, base, task ownership, and access mode before dispatch. Do not create writer worktrees concurrently.
-
-A task brief remains the single source of task requirements. The dispatch includes the worker worktree path, the brief path, the report path, relevant interfaces, global constraints, access mode, and any ledger rulings. State the baseline test result verbatim: run the suite at the wave base and paste the failing files and assertion lines into the dispatch; never paraphrase the count. Record the worker identity from the dispatch result. Workers do not dispatch nested agents or manipulate worktrees or branches beyond task commits.
-
-Each task keeps the existing report-status handling, five-round fix loop, and task-review gate below. Generate range-based review packages from the recorded worker `base` through the worker commit range. A task may produce multiple commits. The reviewer remains read-only and reviews the worker commit range before integration.
-
-Review each worker commit before integration. Use `git diff --name-only "$base" "$commit"` to compare the actual files with the declared scope. Integrate an approved commit with `git cherry-pick "$commit"`.
-
-Integrate recorded commits one at a time and in order. Run focused tests after each integrated commit. Run the full suite after each wave. If an unexpected overlap appears, freeze only the affected integrations. Preserve the worker branches, integrate the selected first task, and revise or rerun the later task against the new integration HEAD. Update the graph and ledger before the next wave.
-
-### 2. Handle the report
-
-Implementer subagents report one of four statuses. Handle each appropriately:
-
-**DONE:** Verify the report and ordered commit range, then record state `committed`. In the worker worktree, generate the review package with the recorded worker `BASE` and worker `HEAD`. The range includes every task commit. Never use `HEAD~1`, which drops earlier commits. Dispatch the task reviewer with the printed path.
-
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
-
-**NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
-
-**BLOCKED:** The implementer cannot complete the task. Assess the blocker:
-1. If it's a context problem, provide more context and re-dispatch with the same model
-2. If the task requires more reasoning, re-dispatch with a more capable model
-3. If the task is too large, break it into smaller pieces
-4. If the plan itself is wrong, rule on the correction, ledger it, and re-dispatch with the ruling carried in the dispatch
-
-**Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
-
-If the implementer asks questions — before starting or mid-task — answer
-clearly and completely, provide additional context if needed, and don't
-rush it into implementation.
-
-### 3. Review the task
-
-Per-task reviews are task-scoped gates. The broad review happens once, at the
-final whole-branch review. Never skip the task review, and never accept a
-report missing either verdict — spec compliance AND task quality are both
-required. Implementer self-review never replaces the task review; both are
-needed.
-
-- Hand the reviewer its worker diff as a file: run this skill's `scripts/review-package PLAN_FILE BASE HEAD` in the worker worktree and pass the reviewer the file path it prints. PLAN_FILE is the repo-relative plan path; an absolute path into another worktree fails with `plan is outside the repository`. The output never enters the controller context. The reviewer sees the commit list, stat summary, and full diff with context in one Read call. Use the recorded worker BASE and worker HEAD. Never use `HEAD~1`, which silently truncates multi-commit tasks. Never dispatch a task reviewer without a diff file.
-- **Reviewer inputs:** the task reviewer gets three paths — the same brief
-  file, the report file, and the review package — plus the global
-  constraints that bind the task.
-- The global-constraints block you hand the reviewer is its attention
-  lens. Copy the binding requirements verbatim from the plan's Global
-  Constraints section or the spec: exact values, exact formats, and the
-  stated relationships between components ("same layout as X", "matches
-  Y"). The reviewer's template already carries the process rules (YAGNI,
-  test hygiene, review method) — the constraints block is for what THIS
-  project's spec demands.
-- Do not add open-ended directives like "check all uses" or "run race tests
-  if useful" without a concrete, task-specific reason
-- Do not ask a reviewer to re-run tests the implementer already ran on the
-  same code — the implementer's report carries the test evidence
-- Do not pre-judge findings for the reviewer — never instruct a reviewer to
-  ignore or not flag a specific issue. If you believe a finding would be a
-  false positive, let the reviewer raise it and adjudicate it in the review
-  loop. If the prompt you are writing contains "do not flag," "don't treat X
-  as a defect," "at most Minor," or "the plan chose" — stop: you are
-  pre-judging, usually to spare yourself a review loop.
-The task reviewer may report "⚠️ Cannot verify from diff" items — requirements
-that live in unchanged code or span tasks. These do not block the rest of the
-review, but you must resolve each one yourself before marking the task
-complete: you hold the plan and cross-task context the reviewer
-lacks. If you confirm an item is a real gap, treat it as a failed spec
-review — it enters the fix loop with the other findings.
+Give the reviewer the brief path, report path, review-package path, and Global Constraints. Copy binding values, formats, and component relationships verbatim from the plan or spec. Resolve each `⚠️ Cannot verify from diff` item before completion. A confirmed gap fails specification review and enters the fix loop.
 
 Template: [task-reviewer-prompt.md](task-reviewer-prompt.md)
 
-### 4. The fix loop
+## Five-round fix loop
 
-The loop triggers when the review reports spec ❌, any Critical or Important
-finding, or a ⚠️ item you confirmed as a real gap.
+Enter the loop for a failed specification verdict, a Critical or Important finding, or a confirmed `⚠️` gap. Record Minor findings as `Task <N>: minor (deferred): <one-liner>` and give them to final review. Minor findings never enter the loop. Rule on a plan-mandated finding against the spec before action. Do not dismiss it because the plan requires it or dispatch a contradictory fix without a ruling.
 
-Before the loop starts, two routes leave it immediately:
+Each round contains one fix dispatch and one scoped re-review. Use the original implementer for rounds 1 through 3 when possible. If the harness cannot resume it, dispatch a fresh implementer with the brief path, report path, and findings. For rounds 4 and 5, dispatch a fresh, more capable implementer with those paths and open findings. State that a prior implementer attempted the task `<N>` times and that the report records prior work.
 
-- Record Minor findings in the progress ledger as you go
-  (`Task <N>: minor (deferred): <one-liner>`), and point the final
-  whole-branch review at that list so it can triage which must be fixed
-  before merge. A roll-up nobody reads is a silent discard. Minor findings
-  never enter the loop.
-- A finding labeled plan-mandated — or any finding that conflicts with
-  what the plan's text requires — is yours to rule on: weigh the finding
-  against the plan text, decide with the spec as the binding authority, and
-  ledger the ruling before you act on it. Do not dismiss the finding because
-  the plan mandates it, and do not dispatch a fix that contradicts the plan
-  without a recorded ruling.
-Everything else enters the loop. A fix round is one fix dispatch plus one
-scoped re-review. Five rounds maximum per task:
+Each fixer reruns tests covering amended code, appends a fix report to the same report file, and returns the short contract. Confirm that the report names covering test files, command, and output before re-review. In the worker worktree, run `scripts/review-package PLAN_FILE FIX_BASE HEAD`, where FIX_BASE is the head seen by the prior review. Dispatch [re-review-prompt.md](re-review-prompt.md) with the findings, brief, report, and printed diff path. The re-reviewer marks each finding ADDRESSED or NOT ADDRESSED and reports new breakage in the fix diff only. New Critical or Important breakage joins the open list. Out-of-scope observations become deferred minors and do not extend the loop. Append `Task <N>: fix round <R>/5 (<X> addressed, <Y> open — <finding one-liners>; commits <a7>..<b7>)` after each round. Never fix findings in the controller.
 
-**Rounds 1-3 — resume the original implementer.** Send it the open findings
-verbatim. Its context is intact: it knows the task, the code, and its own
-choices. If your harness cannot send another message to a live subagent,
-dispatch a fresh implementer carrying the brief path, the report-file path,
-and the findings — the report file is the persistent memory either way.
+After round 5, stop dispatching. Adjudicate every open finding in the ledger. Park incorrect or contestable findings with a ruling. Park real findings with no downstream dependency with a ruling that says they are deferred. For a real load-bearing finding or plan defect, rule on the smallest unblocking change and carry it into the next task. Stop only when the defect leaves every path forward a guess. Do not adjudicate before the cap or silently discard a finding.
 
-**Rounds 4-5 — dispatch a fresh implementer on a more capable model** (after loading `routing-model-tiers`), with the brief path, the report-file path, the open
-findings, and this framing: "A prior implementer attempted this task
-[N] times; you own it now. Read the report file for what was tried." A loop
-that survives three resumes usually means the implementer cannot see its
-own problem — fresh eyes and a capability bump in one move.
+## Approval and integration
 
-**Every round, either way:** the implementer fixes, re-runs the tests
-covering the amended code, appends its fix report to the same report file,
-and returns the short contract. Before re-dispatching the reviewer, confirm
-the fix report contains the covering tests, the command run, and the
-output; dispatch the re-review once all three are present. Name the
-covering test files in the fix message — a one-line fix does not need the
-whole suite.
+When review is clean, or all open findings are parked with cap rulings, record the approved worker commit range and task-review status. Change state to `reviewed`. Keep the worker branch until integration. Never move an unreviewed commit to the controller branch.
 
-**The re-review is scoped.** In the worker worktree, run `scripts/review-package PLAN_FILE FIX_BASE HEAD` where FIX_BASE is the worker head the previous review saw, and dispatch
-[re-review-prompt.md](re-review-prompt.md) with the findings list, the
-brief, the report file, and the printed diff path. The re-reviewer verdicts
-each finding ADDRESSED or NOT ADDRESSED and flags new breakage in the fix
-diff only. New Critical/Important breakage in the fix diff joins the open
-findings list. Out-of-scope observations go to the ledger as deferred
-minors — they never extend the loop.
+Integrate recorded commits one at a time, in dependency order, with `git cherry-pick "$commit"`. Change state to `integrating`, record each source-to-integration mapping, and run focused tests after each integrated commit through `scripts/test-summary -- <command>`. Read its summary and open its log only after a failure. Run the full suite after each wave through the same command. Do not start the next wave while a task has open Critical or Important issues without a cap ruling.
 
-**After each round,** append to the ledger:
-`Task <N>: fix round <R>/5 (<X> addressed, <Y> open — <finding one-liners>; commits <a7>..<b7>)`
+After integration and verification, write one terminal cleanup authorization record: `Task $task_id | state=integrated | worktree=$path | branch=$branch`. For abandonment, record the ruling and `Task $task_id | state=abandoned | worktree=$path | branch=$branch`. Change to `integrated` or `abandoned`, then write `Task N: complete`. Run `using-git-worktrees` cleanup only after that exact task, path, and branch terminal record. Change to `cleaned` only after cleanup succeeds.
 
-Never fix findings yourself in the controller session — your context stays
-clean for coordination, and controller fixes skip review.
+## Final review and finish
 
-**The breaker.** When round 5's re-review still leaves findings open, stop
-dispatching. Adjudicate each open finding yourself — you hold the plan and
-the cross-task context the reviewer lacks:
+After every writer is cleaned, create the whole-branch package with `scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where MERGE_BASE is the branch start, such as `git merge-base main HEAD`. Dispatch the strongest final-review role after loading `routing-model-tiers`. Give it the printed package path and ledger deferred-minor and parked lines. Use superpowers:requesting-code-review's [code-reviewer.md](../requesting-code-review/code-reviewer.md).
 
-- **The reviewer is wrong, or the point is contestable:** park it —
-  `Task <N>: parked — <finding> — Ruling: <why the code stands>`. The final
-  review sees both sides.
-- **Real, but nothing downstream builds on it:** park it the same way, with
-  a ruling that says it's real and deferred.
-- **Real and load-bearing** — a later task builds on it, or it reveals a
-  plan defect: rule on the smallest change that unblocks the dependent work,
-  ledger it as `Task <N>: Ruling: <finding> — <what you decided and why>`,
-  and carry it into the next task's dispatch. Parking a structural failure
-  silently lets every dependent task build on it. Stop only when the defect
-  leaves every path forward a guess.
+If final review reports findings, dispatch one fixer with the complete findings list. Run exactly one scoped re-review of `scripts/review-package PLAN_FILE FIX_BASE HEAD` with [re-review-prompt.md](re-review-prompt.md). Adjudicate residual findings as at the task-loop cap. Park findings with rulings, or rule on load-bearing findings and record the decision. Do not dispatch a second final fix wave. Integrate and verify approved final fixes before finish. Surface residual load-bearing findings to the human through finishing-a-development-branch.
 
-Adjudicate only at the cap. Adjudicating earlier to end a loop is
-pre-judging with a different name. Every adjudication is a ledger entry —
-a silent discard is forbidden.
-
-### 5. Approve task commits for integration
-
-When the worker review comes back clean, or every open finding is parked with a ruling at the cap, record the approved worker commit range and task review status, then change state to `reviewed`. Keep the worker branch intact until the controller integrates the recorded commits in the wave integration order. Never move an unreviewed commit to the controller branch.
-
-After each approved commit is cherry-picked, record its source-to-integration mapping while the task is `integrating`. After the task's commits are integrated and verified, write the exact integrated terminal record, change state to `integrated`, then write `Task N: complete`. For an abandoned task, record the ruling and exact abandoned terminal record, change state to `abandoned`, then write the completion marker. Run `using-git-worktrees` cleanup only after the terminal record exists. Change state to `cleaned` only after cleanup succeeds. Never move to the next wave while the task review has open Critical or Important issues that are neither fixed nor parked with a ruling at the cap.
-
-## Final Review
-
-The final whole-branch review gets a package too: run
-`scripts/review-package PLAN_FILE MERGE_BASE HEAD` (MERGE_BASE = the commit the
-branch started from, e.g. `git merge-base main HEAD`) and include the
-printed path in the final review dispatch, so the final reviewer reads
-one file instead of re-deriving the branch diff with git commands. Dispatch
-on the most capable available model (after loading `routing-model-tiers`), using
-superpowers:requesting-code-review's
-[code-reviewer.md](../requesting-code-review/code-reviewer.md). Point it at
-the ledger's deferred-minor and parked lines so it can triage which must be
-fixed before merge.
-
-If the final whole-branch review returns findings, dispatch ONE fix subagent
-with the complete findings list — not one fixer per finding.
-Per-finding fixers each rebuild context and re-run suites; a real
-session's final-review fix wave cost more than all its tasks combined.
-Then run exactly one scoped re-review of the fix wave
-(`scripts/review-package PLAN_FILE FIX_BASE HEAD` over the fix range,
-[re-review-prompt.md](re-review-prompt.md)).
-Adjudicate any residual findings as in the task loop's breaker: park with
-rulings, or rule on the load-bearing ones and ledger what you decided. Only
-the four classes above stop you here. There is no second fix wave —
-residual load-bearing findings surface to your human partner when
-finishing-a-development-branch presents the options.
-
-## Finish
-
-Before you delete anything, collect every ledger line containing `Ruling:` —
-preflight rulings, parked findings, breaker adjudications, all of them — into
-your final message under "Rulings I made", in the order you made them, each
-with what it costs if wrong. The list is exhaustive: if the ledger holds a
-ruling, the list holds it. That list is the only place the decisions you
-took on your human partner's behalf reach them — they read it and rework
-whatever you got wrong. A ruling that dies with the workspace was a decision
-made in secret.
-
-When the final whole-branch review is clean and its fixes are merged, two
-steps remain. Run `compound-step` with the ledger path
-(`Ledger: <workspace>/progress.md`) before deleting the workspace. Then delete
-this plan's workspace (`rm -rf <workspace>`) — the git history is the record
-of the code, and the compound step is the record of the process. Sibling
-directories belong to other plans; leave them alone.
-
-Use finishing-a-development-branch.
-
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "Close enough on spec compliance" | Reviewer found spec gaps = not done. Fix or hit the cap and adjudicate — those are the only exits. |
-| "I'll fix it myself, dispatching is overhead" | Controller fixes pollute your context and skip review. Resume the implementer. |
-| "One more round will converge" | Past the cap, rounds don't converge — the failure is structural. Adjudicate and route. |
-| "The reviewer will just find something new anyway" | Scoped re-reviews verify fixes; they cannot wander. New findings on untouched code go to the ledger, not the loop. |
-| "This finding is obviously wrong, I'll drop it" | You adjudicate only at the cap, and every ruling is a ledger entry. Silent discards are forbidden. |
-| "The fix was small, skip the re-review" | Unreviewed fixes are how regressions land. Every round ends with a scoped re-review. |
-| "Reviews slow the loop down" | The loop without reviews is just unverified churn. Reviews are the loop's brakes and steering. |
-| "Ledger bookkeeping is overhead" | The ledger is what survives compaction. Controllers without one have re-dispatched entire completed task sequences. |
-| "The implementer spawned its own reviewer — free extra assurance" | It's a duplicate seat reviewing the same diff; the task review is the gate. A worker-spawned reviewer is a defect to flag, not rigor. |
-
-## Example Workflow
-
-The required task order is: scope check -> task review -> cherry-pick -> focused test -> wave suite -> terminal record -> completion -> cleanup.
-
-```text
-Controller: load dispatching-parallel-agents and retain its inventory, edges, namespace rulings, and largest safe wave.
-Controller: record wave base abc123 and state=planned.
-Controller: run worker-worktree create sequentially; record path, branch, base; state=dispatched.
-Worker: follow TDD, commit c1 and c2, and write RED/GREEN evidence to the report.
-Controller: record state=committed with range abc123..c2.
-Controller: compare git diff --name-only abc123 c2 with the declared scope.
-Task reviewer: review the complete abc123..c2 package; approve spec and quality.
-Controller: record state=reviewed.
-Controller: record state=integrating; cherry-pick c1 as i1; run its focused test; record c1 -> i1.
-Controller: cherry-pick c2 as i2; run its focused test; record c2 -> i2.
-Controller: run the wave suite.
-Controller: write the exact integrated terminal record; state=integrated.
-Controller: write Task N: complete.
-Controller: run worker-worktree cleanup; verify success; state=cleaned.
-Controller: after every writer is cleaned, package and dispatch the final whole-branch review to the strongest final-review role.
-```
-
-A restart at `committed` starts task review. A restart at `integrating` resumes only source commits without mappings. Neither restart repeats implementation.
+Before deleting the workspace, collect every `Ruling:` ledger line in order into the final message under `Rulings I made`, including what it costs if wrong. Run `compound-step` with `Ledger: <workspace>/progress.md` before deleting the workspace. Delete only this plan's workspace with `rm -rf <workspace>`. Leave sibling plan directories unchanged. Use finishing-a-development-branch.
