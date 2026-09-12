@@ -220,6 +220,13 @@ defaults:
 | `defaultModel` | `claude-opus-5` | `gpt-5.6-terra` |
 | `defaultThinkingLevel` | `high` | `medium` |
 
+Prime Agent's model catalog assigns a 272,000-token context window to
+`openai-codex/gpt-5.6-*`. The same GPT-5.6 models expose a 1,050,000-token
+window through the OpenAI API, with long-context API pricing above 272,000
+input tokens. This setup uses `openai-codex`. Its 22,000-token reserve triggers
+automatic compaction above 250,000 tokens and keeps the most recent 20,000
+tokens unsummarized.
+
 `defaultModel` is a bare model ID; `defaultProvider` supplies the prefix. The
 per-agent `model` fields use the `provider/id` selector that `rlm(model=...)`
 expects. Prime's OpenAI configuration emits `openai-codex/gpt-5.6-*`; OpenCode
