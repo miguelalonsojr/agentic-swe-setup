@@ -5,8 +5,8 @@ set -uo pipefail
 # shellcheck source=/dev/null
 . "$REPO_ROOT/scripts/lib.sh"
 
-# Prime Agent keeps OpenCode's model IDs per role, but provider selectors may
-# differ because Prime Agent authenticates OpenAI Codex as `openai-codex`.
+# Anthropic shares model IDs with OpenCode. Prime's OpenAI ladder is allowed
+# to advance independently while OpenCode's OAuth model catalog catches up.
 VALID_THINKING="off minimal low medium high xhigh max"
 
 assert_valid_thinking() {
@@ -40,9 +40,10 @@ for p in anthropic openai; do
         [ "$p" = "openai" ] && provider="openai-codex"
         assert_contains "$model" "$provider/" "$p agent $a uses the $provider provider"
 
-        # Same model ID as the OpenCode ladder for the same role.
-        assert_eq "${model#*/}" "$(jq -r --arg a "$a" '.agent[$a].model | split("/")[1]' "$o")" \
-            "$p agent $a matches the opencode model ID"
+        if [ "$p" = "anthropic" ]; then
+            assert_eq "${model#*/}" "$(jq -r --arg a "$a" '.agent[$a].model | split("/")[1]' "$o")" \
+                "$p agent $a matches the opencode model ID"
+        fi
 
         think=$(jq -r --arg a "$a" '.agent[$a].thinking // ""' "$f")
         assert_valid_thinking "$think" "$p agent $a has a valid thinking level"
@@ -123,18 +124,32 @@ for ag in implementer-strong reviewer-final; do
     assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].thinking' "$a")" "xhigh" "anthropic prime $ag runs at xhigh"
 done
 
-# --- OpenAI specifics: effort varies by tier ---
+# --- OpenAI specifics: Prime's three model tiers can differ from OpenCode ---
 o="$REPO_ROOT/prime/openai.json"
+for ag in explore implementer-light; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$o")" \
+        "openai-codex/gpt-6-luna" "openai prime $ag uses the light tier"
+done
+for ag in general implementer reviewer reviewer-lite; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$o")" \
+        "openai-codex/gpt-6-sol" "openai prime $ag uses the default tier"
+done
+for ag in implementer-strong reviewer-final cross-checker; do
+    assert_eq "$(jq -r --arg ag "$ag" '.agent[$ag].model' "$o")" \
+        "openai-codex/gpt-6-astra" "openai prime $ag uses the strong tier"
+done
+assert_eq "$(jq -r '.settings.defaultModel' "$o")" "gpt-6-sol" \
+    "openai prime defaults to the Sol tier"
 assert_eq "$(jq -r '.agent["implementer-light"].thinking' "$o")" "low" \
     "openai prime light tier thinks less"
 assert_eq "$(jq -r '.agent["implementer-strong"].thinking' "$o")" "high" \
     "openai prime strong tier thinks more"
 
 # --- Compaction: keep openai-codex sessions below its catalog limit ---
-# Prime Agent catalogs openai-codex gpt-5.6 models with a 272k context window.
+# Prime Agent catalogs openai-codex GPT-6 models with a 272k context window.
 # The same models expose 1.05M tokens through the OpenAI API, with premium API
 # pricing above 272k input tokens. reserveTokens: 22000 makes auto-compaction
-# fire at 250k (trigger = window - reserveTokens), leaving a one-turn margin.
+# fire above 250k (trigger = window - reserveTokens), leaving a one-turn margin.
 # Anthropic carries the Prime Agent defaults explicitly so switching providers
 # resets the OpenAI-tuned values: the merge
 # is a shallow right-biased object merge, so each block must name every key

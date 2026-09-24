@@ -209,19 +209,20 @@ This file also sets `provider.openai.options.store` to `false`.
 
 ### Prime Agent, `prime/anthropic.json` and `prime/openai.json`
 
-Same roles and model IDs per role as the OpenCode ladder; Prime uses the
-`openai-codex` provider selector for its OpenAI Codex authentication. OpenCode's
-`variant` becomes Prime Agent's `thinking`, and `settings` carries the session
-defaults:
+Prime uses the `openai-codex` provider selector for its OpenAI Codex
+authentication. The Anthropic model IDs match OpenCode's by role; Prime's OpenAI
+ladder advances independently while OpenCode's OAuth catalog catches up.
+OpenCode's `variant` becomes Prime Agent's `thinking`, and `settings` carries
+the session defaults:
 
 | Key | Anthropic | OpenAI |
 |---|---|---|
 | `defaultProvider` | `anthropic` | `openai-codex` |
-| `defaultModel` | `claude-opus-5` | `gpt-5.6-terra` |
+| `defaultModel` | `claude-opus-5` | `gpt-6-sol` |
 | `defaultThinkingLevel` | `high` | `medium` |
 
 Prime Agent's model catalog assigns a 272,000-token context window to
-`openai-codex/gpt-5.6-*`. The same GPT-5.6 models expose a 1,050,000-token
+`openai-codex/gpt-6-*`. The same GPT-6 models expose a 1,050,000-token
 window through the OpenAI API, with long-context API pricing above 272,000
 input tokens. This setup uses `openai-codex`. Its 22,000-token reserve triggers
 automatic compaction above 250,000 tokens and keeps the most recent 20,000
@@ -229,8 +230,21 @@ tokens unsummarized.
 
 `defaultModel` is a bare model ID; `defaultProvider` supplies the prefix. The
 per-agent `model` fields use the `provider/id` selector that `rlm(model=...)`
-expects. Prime's OpenAI configuration emits `openai-codex/gpt-5.6-*`; OpenCode
-continues to use `openai/gpt-5.6-*`.
+expects. Prime's OpenAI roles use Luna 6 for exploration and mechanical tasks,
+Sol 6 for general work and per-task reviews, and Astra for escalations, final
+reviews, and independent checks. OpenCode remains on its GPT-5.6 ladder.
+
+| Agent | Prime OpenAI model | Thinking |
+|---|---|---|
+| `general` | `openai-codex/gpt-6-sol` | `medium` |
+| `explore` | `openai-codex/gpt-6-luna` | `medium` |
+| `implementer-light` | `openai-codex/gpt-6-luna` | `low` |
+| `implementer` | `openai-codex/gpt-6-sol` | `medium` |
+| `implementer-strong` | `openai-codex/gpt-6-astra` | `high` |
+| `reviewer` | `openai-codex/gpt-6-sol` | `high` |
+| `reviewer-final` | `openai-codex/gpt-6-astra` | `high` |
+| `reviewer-lite` | `openai-codex/gpt-6-sol` | `medium` |
+| `cross-checker` | `openai-codex/gpt-6-astra` | `high` |
 
 ### Claude Code
 

@@ -64,10 +64,14 @@ assert_contains "$prime_openai" '| Role | Model | Thinking |' \
     "Prime renders a Markdown table header"
 assert_contains "$prime_openai" '|---|---|---|' \
     "Prime renders a Markdown table separator"
-assert_contains "$prime_openai" '| `reviewer` | `openai-codex/gpt-5.6-terra` | `high` |'     "OpenAI Prime table uses the selected model"
-assert_contains "$prime_openai" '| `implementer-light` | `openai-codex/gpt-5.6-luna` | `low` |' \
-    "OpenAI Prime table uses implementer-light thinking"
-assert_contains "$prime_openai" 'model="openai-codex/gpt-5.6-terra", thinking="high"'     "OpenAI Prime example uses the selected model"
+assert_contains "$prime_openai" '| `reviewer` | `openai-codex/gpt-6-sol` | `high` |' \
+    "OpenAI Prime table uses the default tier"
+assert_contains "$prime_openai" '| `implementer-light` | `openai-codex/gpt-6-luna` | `low` |' \
+    "OpenAI Prime table uses the light tier"
+assert_contains "$prime_openai" '| `reviewer-final` | `openai-codex/gpt-6-astra` | `high` |' \
+    "OpenAI Prime table uses the strong tier"
+assert_contains "$prime_openai" 'model="openai-codex/gpt-6-sol", thinking="high"' \
+    "OpenAI Prime reviewer example uses the default tier"
 assert_not_contains "$prime_openai" 'anthropic' "OpenAI Prime render has no Anthropic selector"
 assert_not_contains "$prime_openai" 'claude' "OpenAI Prime render has no Claude model name"
 assert_contains "$prime_anthropic" '| `reviewer` | `anthropic/claude-opus-5` | `high` |'     "Anthropic Prime table uses the selected model"
