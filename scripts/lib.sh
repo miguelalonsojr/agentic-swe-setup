@@ -59,9 +59,12 @@ links_into_repo() {
 
 # ensure_checkout NAME URL DIR — clone or fast-forward a shared checkout.
 ensure_checkout() {
-    local name=$1 url=$2 dir=$3
+    local name=$1 url=$2 dir=$3 changes
     have git || die "git is required to install $name"
     if [ -d "$dir/.git" ]; then
+        changes=$(git -C "$dir" status --porcelain --untracked-files=all) \
+            || die "cannot inspect $name checkout: $dir"
+        [ -z "$changes" ] || die "$dir has local changes; commit or stash them before updating $name"
         log "updating $name in $dir"
         git -C "$dir" pull --ff-only
     elif [ -e "$dir" ]; then

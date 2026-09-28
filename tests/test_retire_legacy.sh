@@ -161,6 +161,28 @@ assert_missing "$OC/skills/agentic-manual-testing" 'primary OpenCode skill link 
 assert_missing "$OC/skills/jira-fu" 'current-worktree skill link removed'
 [ -L "$(claude_dir)/skills/jira-fu" ] || fail 'foreign skill link removed'
 
+# Historical Claude installs used the Anthropic render, including deleted sources.
+for ownership_root in "$primary_root" "$linked_root"; do
+    for source_state in present dangling; do
+        source="$ownership_root/build/claude/anthropic/AGENTS.md"
+        mkdir -p "$(dirname "$source")"
+        if [ "$source_state" = present ]; then
+            printf '# Historical instructions\n' > "$source"
+        else
+            rm -f "$source"
+        fi
+        ln -s "$source" "$(claude_dir)/CLAUDE.md"
+        output=$(bash "$linked_root/scripts/retire-legacy.sh" 2>&1); status=$?
+        assert_eq "$status" 0 "$source_state historical Claude render retirement succeeds"
+        assert_missing "$(claude_dir)/CLAUDE.md" "$source_state historical Claude render removed from $ownership_root"
+        rm -f "$(claude_dir)/CLAUDE.md"
+    done
+done
+ln -s "$SANDBOX/foreign/build/claude/anthropic/AGENTS.md" "$(claude_dir)/CLAUDE.md"
+output=$(bash "$linked_root/scripts/retire-legacy.sh" 2>&1); status=$?
+assert_eq "$status" 0 'unrelated Claude instructions retained safely'
+assert_eq "$(readlink "$(claude_dir)/CLAUDE.md")" "$SANDBOX/foreign/build/claude/anthropic/AGENTS.md" 'unrelated Claude render link preserved'
+
 # Standalone command must run with lib path helpers deleted.
 mkdir -p "$SANDBOX/retire-copy/scripts"
 cp "$RETIRE" "$SANDBOX/retire-copy/scripts/retire-legacy.sh"

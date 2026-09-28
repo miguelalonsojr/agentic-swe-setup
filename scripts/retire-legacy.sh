@@ -159,7 +159,8 @@ unlink_repo_known() {
 for name in "${legacy_agents[@]}"; do
     unlink_repo_known "$claude_root/agents/$name.md" "agents/$name.md"
 done
-unlink_repo_known "$claude_root/CLAUDE.md" 'CLAUDE.md'
+unlink_repo_known "$claude_root/CLAUDE.md" 'CLAUDE.md' \
+    'build/claude/anthropic/AGENTS.md'
 unlink_repo_known "$dir/AGENTS.md" 'AGENTS.md' \
     'build/opencode/anthropic/AGENTS.md' \
     'build/opencode/openai/AGENTS.md'

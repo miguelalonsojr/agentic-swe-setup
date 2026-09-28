@@ -57,9 +57,52 @@ assert_contains "$body" 'then write `Task N: complete`' "SDD writes completion a
 assert_contains "$body" "cleanup only after that exact task, path, and branch terminal record" "SDD cleans only after terminal record"
 assert_contains "$body" "strongest final-review role available"     "SDD retains strongest final review"
 
-assert_contains "$body" 'skills/subagent-driven-development/scripts/sdd-workspace PLAN_FILE' "SDD resolves workspace script from repo root"
-assert_contains "$body" 'skills/subagent-driven-development/scripts/review-package PLAN_FILE BASE HEAD' "SDD resolves review script from repo root"
-assert_contains "$body" 'skills/subagent-driven-development/scripts/test-summary -- <command>' "SDD resolves test summary script from repo root"
+# Execute the documented helper commands from a project without setup-repo files.
+consumer="$SANDBOX/consumer project"
+mkdir -p "$consumer/plans" "$HOME/.prime/agent/skills"
+git -C "$consumer" init -q
+printf '# Consumer plan\n' > "$consumer/plans/consumer.md"
+git -C "$consumer" add plans/consumer.md
+git -C "$consumer" -c user.name=Test -c user.email=test@example.invalid commit -qm initial
+consumer_base=$(git -C "$consumer" rev-parse HEAD)
+printf 'consumer-only change\n' > "$consumer/feature.txt"
+git -C "$consumer" add feature.txt
+git -C "$consumer" -c user.name=Test -c user.email=test@example.invalid commit -qm feature
+consumer_head=$(git -C "$consumer" rev-parse HEAD)
+ln -s "$root" "$HOME/.prime/agent/skills/subagent-driven-development"
+export SDD_SKILL_FILE="$HOME/.prime/agent/skills/subagent-driven-development/SKILL.md"
+export SDD_TEST_LOG_DIR="$SANDBOX/test-logs"
+skill_setup=$(awk '/^```bash$/ { block=1; next } block && /^```$/ { exit } block { print }' "$SDD_SKILL_FILE")
+documented_command() {
+    printf '%s\n' "$body" | grep -oE "\`[^\`]*scripts/$1\"? $2\`" | head -n 1 | tr -d '`'
+}
+run_consumer_command() (
+    cd "$consumer" || exit 1
+    eval "$skill_setup"
+    eval "$1"
+)
+workspace_command=$(documented_command sdd-workspace PLAN_FILE)
+workspace_command=${workspace_command//PLAN_FILE/plans\/consumer.md}
+output=$(run_consumer_command "$workspace_command" 2>&1); status=$?
+assert_eq "$status" 0 'documented workspace command runs in consumer project'
+case "$output" in "$consumer"/.superpowers/sdd/consumer-*) ;; *) fail "workspace is not in consumer project: $output" ;; esac
+review_command=$(documented_command review-package 'PLAN_FILE BASE HEAD')
+review_command=${review_command//PLAN_FILE/plans\/consumer.md}
+review_command=${review_command//BASE/$consumer_base}
+review_command=${review_command//HEAD/$consumer_head}
+output=$(run_consumer_command "$review_command" 2>&1); status=$?
+assert_eq "$status" 0 'documented review command runs in consumer project'
+package=$(find "$consumer" -name '*.diff' -print -quit)
+assert_file "$package" 'consumer review package created'
+if [ -f "$package" ]; then
+    assert_contains "$(cat "$package")" '+consumer-only change' 'review package contains consumer diff'
+fi
+summary_command=$(documented_command test-summary '-- <command>')
+summary_command=${summary_command//<command>/pwd}
+output=$(run_consumer_command "$summary_command" 2>&1); status=$?
+assert_eq "$status" 0 'documented summary command runs in consumer project'
+assert_contains "$output" "$consumer" 'test-summary preserves consumer cwd'
+
 for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
     prompt=$(cat "$root/$f.md")
     assert_contains "$prompt" 'rlm.spawn(' "$f uses Prime-native dispatch"
@@ -79,7 +122,11 @@ assert_not_contains "$body" "superpowers:finishing-a-development-branch" "SDD na
 assert_contains "$body" "Use requesting-code-review." "SDD invokes the installed review skill"
 assert_not_contains "$body" "superpowers:requesting-code-review" "SDD avoids the plugin prefix"
 readme=$(cat "$root/README.md")
-assert_contains "$readme" "skills/subagent-driven-development/scripts/test-summary" "SDD README uses a root-relative script path"
+readme_summary=$(body="$readme" documented_command test-summary '-- <command>')
+readme_summary=${readme_summary//<command>/pwd}
+output=$(run_consumer_command "$readme_summary" 2>&1); status=$?
+assert_eq "$status" 0 'README summary command runs in consumer project'
+assert_contains "$output" "$consumer" 'README summary command preserves consumer cwd'
 assert_contains "$readme" "requesting-code-review" "SDD README names the bare installed review skill"
 assert_not_contains "$readme" "Skills the repository does not fork keep the prefix" "SDD README does not promise plugin invocation"
 role_heading="## Role routing and recovery"
