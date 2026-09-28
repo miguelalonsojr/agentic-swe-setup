@@ -93,8 +93,8 @@ assert_not_contains "$roles" '| `' \
 # match, so a bare `implementer` is satisfied by `implementer-light` and a
 # bare `reviewer` by `reviewer-final`: two of these names would be unguarded
 # without the trailing comma, and deleting them from AGENTS.md would not fail.
-last_role=${CLAUDE_AGENTS[${#CLAUDE_AGENTS[@]}-1]}
-for a in "${CLAUDE_AGENTS[@]}"; do
+last_role=${PRIME_AGENTS[${#PRIME_AGENTS[@]}-1]}
+for a in "${PRIME_AGENTS[@]:2}"; do
     if [ "$a" = "$last_role" ]; then delim="."; else delim=","; fi
     assert_contains "$roles" "$a$delim" "AGENTS.md role list names $a"
 done

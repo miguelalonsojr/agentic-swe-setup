@@ -6,12 +6,10 @@ set -uo pipefail
 . "$REPO_ROOT/scripts/lib.sh"
 
 SRC="$REPO_ROOT/AGENTS.md"
+assert_eq "${HARNESSES[*]}" "prime" "only Prime rendering supported"
 PROVIDERS=(anthropic openai)
 
-for h in "${HARNESSES[@]}"; do
-    heading=$(harness_heading "$h") || fail "no heading defined for $h"
-    grep -qxF "$heading" "$SRC" || fail "AGENTS.md has no section: $heading"
-done
+grep -qxF "$(harness_heading prime)" "$SRC" || fail "AGENTS.md has no Prime section"
 
 for h in "${HARNESSES[@]}"; do
     for provider in "${PROVIDERS[@]}"; do
@@ -33,14 +31,8 @@ for h in "${HARNESSES[@]}"; do
     done
 done
 
-claude_body=$(cat "$(rendered_agents_md claude anthropic)")
-opencode_body=$(cat "$(rendered_agents_md opencode anthropic)")
 prime_anthropic=$(cat "$(rendered_agents_md prime anthropic)")
 prime_openai=$(cat "$(rendered_agents_md prime openai)")
-assert_not_contains "$claude_body" 'rlm(model=' "claude drops Prime's selector form"
-assert_not_contains "$claude_body" "opencode.json" "claude drops OpenCode's config reference"
-assert_not_contains "$opencode_body" "agent frontmatter models are fallbacks"     "opencode drops Claude Code's frontmatter note"
-assert_not_contains "$prime_anthropic" "reasoning effort are fixed"     "prime drops OpenCode's fixed-model note"
 
 for h in "${HARNESSES[@]}"; do
     for provider in "${PROVIDERS[@]}"; do
@@ -79,7 +71,6 @@ assert_contains "$prime_anthropic" 'model="anthropic/claude-opus-5", thinking="h
 assert_not_contains "$prime_anthropic" 'openai' "Anthropic Prime render has no OpenAI selector"
 
 assert_contains "$prime_anthropic" '| `reviewer` |' "prime keeps the routing table"
-assert_not_contains "$claude_body" '| `reviewer` |' "claude drops the routing table"
 
 first=$(render_agents_md prime anthropic)
 a=$(wc -l < "$first")
@@ -152,10 +143,10 @@ done
 
 # A directory at the publication path makes mv succeed by moving a temporary
 # file into it. Treat that as a publication failure, not a successful render.
-blocked_out=$(rendered_agents_md opencode "$malformed_provider")
+blocked_out=$(rendered_agents_md prime "$malformed_provider")
 rm -rf "$blocked_out"
 mkdir -p "$blocked_out"
-assert_status 1 render_agents_md opencode "$malformed_provider"
+assert_status 1 render_agents_md prime "$malformed_provider"
 [ -d "$blocked_out" ] || fail "failed publication replaced the blocked output directory"
 rm -rf "$blocked_out" "$malformed_config" "$malformed_base"
 

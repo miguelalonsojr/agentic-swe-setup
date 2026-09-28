@@ -2,11 +2,7 @@
 # Install Superpowers, swe-skills, subagent specs, and global instructions for
 # Prime Agent. Exits 0 without doing anything when prime-agent or jq is absent.
 #
-# Prime Agent differs from the other two harnesses in three ways:
-#   - no plugin system, so Superpowers is consumed as a plain skills checkout;
-#   - swe-skills' install.sh has no --tool=prime, so we link its skills here;
-#   - no agent-definition files, so roles become harness subagent specs.
-#
+# Shared skills are linked from checkouts; roles become harness subagent specs.
 # Usage: install-prime.sh [provider]   (default: anthropic)
 set -euo pipefail
 # shellcheck source=/dev/null

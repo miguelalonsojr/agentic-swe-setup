@@ -5,8 +5,7 @@ set -uo pipefail
 # shellcheck source=/dev/null
 . "$REPO_ROOT/scripts/lib.sh"
 
-# Anthropic shares model IDs with OpenCode. Prime's OpenAI ladder is allowed
-# to advance independently while OpenCode's OAuth model catalog catches up.
+# Both Prime providers define complete role ladders.
 VALID_THINKING="off minimal low medium high xhigh max"
 
 assert_valid_thinking() {
@@ -27,7 +26,6 @@ rm -f "$max_config"
 
 for p in anthropic openai; do
     f="$REPO_ROOT/prime/$p.json"
-    o="$REPO_ROOT/opencode/$p.json"
     assert_file "$f" "$p prime config exists"
     [ -f "$f" ] || continue
 
@@ -39,11 +37,6 @@ for p in anthropic openai; do
         provider=$p
         [ "$p" = "openai" ] && provider="openai-codex"
         assert_contains "$model" "$provider/" "$p agent $a uses the $provider provider"
-
-        if [ "$p" = "anthropic" ]; then
-            assert_eq "${model#*/}" "$(jq -r --arg a "$a" '.agent[$a].model | split("/")[1]' "$o")" \
-                "$p agent $a matches the opencode model ID"
-        fi
 
         think=$(jq -r --arg a "$a" '.agent[$a].thinking // ""' "$f")
         assert_valid_thinking "$think" "$p agent $a has a valid thinking level"

@@ -8,18 +8,17 @@ assert_file "$R" "README exists"
 body=$(cat "$R")
 
 # Every recipe in the justfile must be documented.
-for r in install install-claude install-opencode install-prime install-skills doctor update uninstall test; do
+for r in install install-prime install-skills doctor update uninstall test; do
     assert_contains "$body" "just $r" "README documents 'just $r'"
 done
 
 # The provider knob and its default must be stated.
-assert_contains "$body" "provider=openai" "README shows the provider override"
+assert_contains "$body" "just --set provider openai install" "README shows the provider override"
 assert_contains "$body" "anthropic" "README names the default provider"
 
-# The two prerequisites the repo does not install.
-assert_contains "$body" "Claude Code" "README names Claude Code"
-assert_contains "$body" "OpenCode" "README names OpenCode"
 assert_contains "$body" "Prime Agent" "README names Prime Agent"
+assert_not_contains "$body" 'just install-claude' 'README omits retired recipe'
+assert_not_contains "$body" 'just install-opencode' 'README omits retired recipe'
 
 # Prime Agent's two structural differences must be stated, not glossed over.
 assert_contains "$body" "harness_state.json" "README names the harness store"
@@ -42,25 +41,7 @@ assert_contains "$body" "180 characters and shows six per kind" \
     "README states the content render cap"
 assert_contains "$body" "cross-checker" "README documents the cross-checker role"
 
-# Role counts in prose drift silently: five of them were already wrong
-# before cross-checker was added. Derive every count from the arrays that
-# define it, so the next role added breaks a test instead of a sentence.
-assert_contains "$body" "Claude Code gets ${#CLAUDE_AGENTS[@]} subagents" \
-    "README states the Claude Code subagent count"
-assert_contains "$body" "receive all ${#MANAGED_AGENTS[@]}" \
-    "README states the OpenCode and Prime subagent count"
-assert_contains "$body" "for the ${#MANAGED_AGENTS[@]} managed agent names" \
-    "README states the managed agent count for the OpenCode merge"
-assert_contains "$body" "for the ${#PRIME_AGENTS[@]} managed roles" \
-    "README states the managed role count for the Prime merge"
-assert_contains "$body" "removes the ${#CLAUDE_AGENTS[@]} agent symlinks" \
-    "README states how many agent symlinks uninstall removes"
-# Needles are left-anchored: a bare "8 book-grounded" is satisfied by
-# "18 book-grounded", so array drift would be caught but a prose typo that
-# prefixes a digit would not.
-assert_contains "$body" "the ${#SKILL_NAMES[@]} book-grounded" \
-    "README states the book-skill count"
-assert_contains "$body" " ${#PRIME_AGENTS[@]} roles are installed" \
-    "README states the installed role count"
-
+assert_contains "$body" "${#PRIME_AGENTS[@]} roles are installed"     "README states the Prime role count"
+assert_contains "$body" 'bash scripts/retire-legacy.sh'     "README names the separate retirement command"
+assert_contains "$body" 'Normal install, update, doctor, and uninstall do not touch Claude Code or'     "README separates legacy retirement from routine commands"
 exit "$ASSERT_FAILURES"

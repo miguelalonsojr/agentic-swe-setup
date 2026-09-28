@@ -46,10 +46,6 @@ assert_contains "$routing" 'A verdict: synthesis across sources' \
     "routing separates verdicts from enumeration"
 assert_contains "$routing" 'The light tier has a one-pass floor' \
     "routing preserves the one-pass light-tier floor"
-assert_contains "$routing" 'Agent-frontmatter models are fallbacks' \
-    "routing preserves Claude per-dispatch model selection"
-assert_contains "$routing" 'The model is fixed by the agent definition in `opencode.json`' \
-    "routing preserves OpenCode role-fixed model selection"
 
 crosscheck=$(cat "$REPO_ROOT/skills/cross-checking-claims/SKILL.md")
 assert_contains "$crosscheck" 'change what gets built, bought, or skipped' \
@@ -339,58 +335,32 @@ out=$("$REPO_ROOT/scripts/install-skills.sh" 2>&1)
 assert_eq "$?" 0 "install-skills exits 0 with no harness"
 assert_contains "$out" "nothing to do" "install-skills said it had nothing to do"
 
-# --- claude: linked by install-claude ---
-stub_cmd claude
+# --- standalone Prime skill relinking ---
+stub_cmd prime-agent
 stub_cmd git
 stub_swe_skills
-"$REPO_ROOT/scripts/install-claude.sh" >/dev/null 2>&1 || fail "install-claude failed"
-for s in "${LOCAL_SKILLS[@]}"; do
-    assert_symlink_to "$(claude_dir)/skills/$s" "$REPO_ROOT/skills/$s" \
-        "claude skill $s links into the repo"
-done
-
-# --- doctor reports them ---
-out=$("$REPO_ROOT/scripts/doctor.sh" 2>&1)
-for s in "${LOCAL_SKILLS[@]}"; do
-    assert_contains "$out" "[ok]   local skill $s" "doctor sees claude skill $s"
-done
-
-# --- opencode: linked by install-skills, which is the standalone path ---
-stub_cmd opencode
+stub_superpowers
 "$REPO_ROOT/scripts/install-skills.sh" >/dev/null 2>&1 || fail "install-skills failed"
 for s in "${LOCAL_SKILLS[@]}"; do
-    assert_symlink_to "$(opencode_dir)/skills/$s" "$REPO_ROOT/skills/$s" \
-        "opencode skill $s links into the repo"
+    assert_symlink_to "$(prime_dir)/skills/$s" "$REPO_ROOT/skills/$s"         "Prime skill $s linked"
 done
-
-# --- relinking is idempotent ---
-"$REPO_ROOT/scripts/install-skills.sh" >/dev/null 2>&1 || fail "second install-skills failed"
+out=$("$REPO_ROOT/scripts/doctor.sh" 2>&1)
 for s in "${LOCAL_SKILLS[@]}"; do
-    assert_symlink_to "$(claude_dir)/skills/$s" "$REPO_ROOT/skills/$s" \
-        "claude skill $s still linked after a second run"
+    assert_contains "$out" "[ok]   local skill $s" "doctor sees Prime skill $s"
 done
-
-# --- a real directory the user owns is backed up, never destroyed ---
+"$REPO_ROOT/scripts/install-skills.sh" >/dev/null 2>&1 || fail "second install-skills failed"
 first=${LOCAL_SKILLS[0]}
-rm -f "$(claude_dir)/skills/$first"
-mkdir -p "$(claude_dir)/skills/$first"
-printf 'mine\n' > "$(claude_dir)/skills/$first/SKILL.md"
-"$REPO_ROOT/scripts/install-skills.sh" >/dev/null 2>&1 || fail "install over a real dir failed"
-n=$(find "$(claude_dir)/skills" -maxdepth 1 -name "$first.bak.*" | wc -l)
-assert_eq "$n" 1 "a user-owned skill directory was backed up, not overwritten"
-
-# --- uninstall removes only our links ---
+rm -f "$(prime_dir)/skills/$first"
+mkdir -p "$(prime_dir)/skills/$first"
+printf 'mine\n' > "$(prime_dir)/skills/$first/SKILL.md"
+"$REPO_ROOT/scripts/install-skills.sh" >/dev/null 2>&1 || fail "install over real skill failed"
+n=$(find "$(prime_dir)/skills" -maxdepth 1 -name "$first.bak.*" | wc -l)
+assert_eq "$n" 1 "user-owned skill directory backed up"
 "$REPO_ROOT/scripts/uninstall.sh" >/dev/null 2>&1 || fail "uninstall failed"
 for s in "${LOCAL_SKILLS[@]}"; do
-    [ -L "$(claude_dir)/skills/$s" ] && fail "uninstall left the claude link for $s"
-    [ -L "$(opencode_dir)/skills/$s" ] && fail "uninstall left the opencode link for $s"
+    [ -L "$(prime_dir)/skills/$s" ] && fail "uninstall left Prime link for $s"
 done
-
-# --- uninstall leaves a directory it does not own ---
-rm -rf "$(claude_dir)/skills/$first"
-mkdir -p "$(claude_dir)/skills/$first"
-"$REPO_ROOT/scripts/uninstall.sh" >/dev/null 2>&1 || fail "second uninstall failed"
-[ -d "$(claude_dir)/skills/$first" ] || fail "uninstall removed a directory it did not create"
+[ -d "$(prime_dir)/skills/$first.bak."* ] || fail "uninstall removed backed-up skill"
 
 # --- the skills this audit added are registered and documented ---
 # Registration is what makes a skill directory reachable: install, doctor and

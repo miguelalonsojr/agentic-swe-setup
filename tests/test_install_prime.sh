@@ -6,6 +6,7 @@ set -uo pipefail
 . "$REPO_ROOT/scripts/lib.sh"
 
 IP="$REPO_ROOT/scripts/install-prime.sh"
+assert_contains "$(cat "$REPO_ROOT/justfile")" "install: install-prime" "only Prime installed"
 PDIR="$(prime_dir)"
 SETTINGS="$PDIR/settings.json"
 HARNESS="$PDIR/harness/harness_state.json"
@@ -127,7 +128,7 @@ assert_symlink_to "$PDIR/skills/de-slop" \
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime anthropic)" "instructions linked"
 installed=$(cat "$PDIR/AGENTS.md")
 assert_contains "$installed" "$(harness_heading prime)" "Prime Agent section installed"
-assert_not_contains "$installed" "$(harness_heading opencode)" "OpenCode section not installed"
+assert_not_contains "$installed" "#### When running under OpenCode" "OpenCode section not installed"
 assert_eq "$(jq -r '.provider' "$MANIFEST")" "anthropic" "manifest records provider"
 
 # --- idempotent, and created_at is preserved across re-runs ---
@@ -162,6 +163,14 @@ assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime anthropic)" \
     "Prime instructions use the Anthropic render"
 installed=$(cat "$PDIR/AGENTS.md")
 assert_not_contains "$installed" 'openai' "Anthropic Prime instructions have no OpenAI selector"
+
+# --- update preserves the installed OpenAI provider ---
+bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail "update failed"
+assert_eq "$(jq -r .provider "$MANIFEST")" "anthropic" "update kept current provider"
+"$IP" openai >/dev/null 2>&1 || fail "reinstall-prime openai failed"
+bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail "OpenAI update failed"
+assert_eq "$(jq -r .provider "$MANIFEST")" "openai" "update kept OpenAI provider"
+assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime openai)" "update kept OpenAI render"
 
 # --- unmanaged state survives a merge ---
 tmp=$(mktemp)

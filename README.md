@@ -1,114 +1,53 @@
 # agentic-swe-setup
 
-A `just`-driven installer that reproduces one agentic SWE environment across
-three harnesses. It sets up the Superpowers workflow skills, the 8 book-grounded
-swe-skills, model-tiered subagent roles, and a per-harness rendering of one
-global `AGENTS.md`, into
-Claude Code, OpenCode, Prime Agent, or any combination. The repo configures
-harnesses; it does not install them.
+`just` installs Superpowers, swe-skills, local skills, model-tiered roles, and
+rendered instructions for Prime Agent. Prime Agent must already be installed.
 
 ## Prerequisites
 
-- Claude Code, OpenCode, and/or Prime Agent, already installed and authenticated.
+- Prime Agent, installed and authenticated.
 - `just`, `git`, and `jq` on `PATH`.
-
-Installing with only one harness is supported. A missing `claude`, `opencode`,
-or `prime-agent` is warned about and skipped, and the run still exits 0. A
-missing `jq` skips the OpenCode and Prime Agent halves the same way. A missing
-`git` is fatal, because the skills checkout cannot proceed without it.
 
 ## Quick start
 
 ```bash
-git clone <this repo>
-cd agentic-swe-setup
-just install                      # every harness, provider=anthropic
-just install provider=openai      # every harness, OpenAI ladder
-just doctor                       # what is and is not installed
+just install                      # Prime Agent, provider=anthropic
+just --set provider openai install  # Prime Agent, OpenAI provider
+just doctor
 ```
 
 ## Recipes
 
 | Recipe | What it does |
 |---|---|
-| `just` | Lists the recipes. |
-| `just install` | Runs all three installs, then prints the doctor report. |
-| `just install-claude` | Superpowers, swe-skills, subagents, and instructions for Claude Code. |
-| `just install-opencode` | Superpowers, swe-skills, agents, and instructions for OpenCode. |
-| `just install-prime` | Superpowers, swe-skills, subagent specs, and instructions for Prime Agent. |
-| `just install-skills` | Relinks only this repo's own skills, into whichever harnesses are present. |
-| `just doctor` | Reports what is and is not installed. Writes nothing, always exits 0. |
-| `just update` | Refreshes the plugin, skills, and links in place. |
-| `just uninstall` | Removes this repo's symlinks and managed config keys. |
-| `just test` | Runs the test suite. |
+| `just` | Lists recipes. |
+| `just install` | Installs Prime and prints the doctor report. |
+| `just install-prime` | Installs Superpowers, swe-skills, roles, and instructions for Prime Agent. |
+| `just install-skills` | Relinks repository-owned skills into Prime Agent. |
+| `just doctor` | Reports Prime installation state without writing. |
+| `just update` | Refreshes shared checkouts and Prime links, retaining the installed provider. |
+| `just uninstall` | Removes Prime-managed links, settings, and role specs. |
+| `just test` | Runs the tests. |
 
-`provider` is the only knob. It defaults to `anthropic` and accepts `openai`. It
-applies to the OpenCode and Prime Agent ladders; Claude Code tiers live in
-`agents/*.md`.
+`provider` defaults to `anthropic` and accepts `openai`. For OpenAI, Prime uses
+`openai-codex/...` model selectors. `just update` reads the installed provider
+from `~/.prime/agent/.agentic-swe-setup.json`.
 
-## What gets installed where
+## Installed files
 
-| Component | Claude Code | OpenCode | Prime Agent |
-|---|---|---|---|
-| Superpowers | `claude plugin marketplace add anthropics/claude-plugins-official`, then `claude plugin install superpowers@claude-plugins-official` | jq-merge `"plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]` | symlink `~/.superpowers/skills/*` into `~/.prime/agent/skills/` |
-| swe-skills | `~/.swe-skills/install.sh --scope=user --tool=claude` | `~/.swe-skills/install.sh --scope=user --tool=opencode` | symlink `~/.swe-skills/{skills,book-skills}/*` into `~/.prime/agent/skills/` |
-| Global instructions | render `AGENTS.md`, symlink it to `~/.claude/CLAUDE.md` | render `AGENTS.md`, symlink it to `~/.config/opencode/AGENTS.md` | render `AGENTS.md`, symlink it to `~/.prime/agent/AGENTS.md` |
-| Subagents | symlink `agents/*.md` into `~/.claude/agents/` | jq-merge `agent.*` into `~/.config/opencode/opencode.jsonc` | jq-merge subagent specs into `~/.prime/agent/harness/harness_state.json` |
-| Model defaults | agent frontmatter | same `opencode.jsonc` merge | jq-merge into `~/.prime/agent/settings.json` |
-| Local skills | symlink `skills/*` into `~/.claude/skills/` | symlink `skills/*` into `~/.config/opencode/skills/` | symlink `skills/*` into `~/.prime/agent/skills/` |
-
-`~/.swe-skills` is a single shared checkout that every harness symlinks into.
-Everything is user-scoped. Nothing is written per-project.
-
-### Rendered instructions
-
-`AGENTS.md` carries a `When running under ...` section for each harness, and
-they contradict each other: Claude Code picks a model per dispatch, OpenCode
-takes it from `opencode.json`, Prime Agent passes an `rlm(model=...)` selector.
-Install writes `build/<harness>/AGENTS.md` — the shared body plus that
-harness's section, without the other two — and symlinks it into place. `build/`
-is generated and gitignored.
-
-Edit `AGENTS.md`, not the renderings. They are rewritten by any install recipe
-and by `just update`; until one of those runs, the installed instructions are
-the previous render.
-
-Claude Code gets 7 subagents. `general` and `explore` are built in there, so
-only OpenCode and Prime Agent receive all 9.
-
-### Adaptive workflow
-
-The rendered instructions scale process by change risk. Trivial low-risk changes use a fast path with a surgical edit and focused verification. Localized changes that need more care use a short in-chat approval flow. Architectural, unclear, cross-component, and high-risk changes retain the full design, planning, isolation, delegation, review, and verification workflow.
-
-`AGENTS.md` defines the eligibility rules and precedence. The installer renders the same shared policy for Claude Code, OpenCode, and Prime Agent.
-
-### Why Prime Agent is different
-
-Prime Agent has no plugin system and no agent-definition files, which changes
-what gets installed and how much of it the agent can see:
-
-- **Superpowers** is cloned to `~/.superpowers` and its `skills/*` are
-  symlinked in. They are ordinary `SKILL.md` directories, so Prime Agent loads
-  them natively; only the plugin wrapper is missing, not the skills.
-- **Roles** become continual-harness subagent specs in
-  `harness/harness_state.json`, keyed with underscores (`reviewer_final`). Each
-  spec records the model and thinking level for its tier, and the agent passes
-  that model to `rlm(..., model=...)` when it dispatches.
-- **Role specs are summarised.** Prime Agent renders each harness entry to
-  180 characters and shows six per kind, and neither limit is settable.
-  9 roles are installed, so the roster is incomplete by construction. Each
-  spec leads with its dispatch form so truncation costs only the hint,
-  and the full role-to-model map lives in `AGENTS.md`.
-
-Prime Agent also cannot restrict a child's tools, so read-only reviewers are
-enforced by instruction in the spec text rather than by permission. This is a
-real weakening compared to the other two harnesses, where a reviewer physically
-cannot write.
+Superpowers skills link from `~/.superpowers/skills/`; swe-skills link from
+`~/.swe-skills/{skills,book-skills}/`; repository-owned skills link last, so
+`systematic-debugging` and `finishing-a-development-branch` override the
+upstream versions. The rendered `build/prime/<provider>/AGENTS.md` links to
+`~/.prime/agent/AGENTS.md`. The 9 roles are installed as specs in
+`~/.prime/agent/harness/harness_state.json`. Prime renders entries to
+180 characters and shows six per kind; the full role/model table in the
+rendered instructions is authoritative.
 
 ## Skills this repo ships
 
 Most skills come from the shared `~/.swe-skills` checkout. A few live here,
-under `skills/`, and are symlinked into every harness:
+under `skills/`, and are symlinked into Prime Agent:
 
 | Skill | Use it when |
 |---|---|
@@ -126,7 +65,9 @@ under `skills/`, and are symlinked into every harness:
 | `finishing-a-development-branch` | Implementation is complete: tidy history, size report, PR description contract, compound step, then merge or PR. Forked from Superpowers at commit `b36e082`. |
 | `systematic-debugging` | Any bug or unexpected behavior, before proposing a fix. Forked from Superpowers at commit `b36e082`; adds `git bisect` and recovery. |
 
-Repository-owned skills link after Superpowers and `agentic-swe-skills`. A repository-owned skill therefore replaces an installed skill with the same name. On Claude Code, Superpowers is a plugin, so a forked skill coexists with `superpowers:<name>`; the rendered instructions name forks without the prefix so the fork is the one loaded. Skills with other names remain linked from their shared checkout.
+Repository-owned skills link after the shared checkouts, so the local
+`systematic-debugging` and `finishing-a-development-branch` forks take
+precedence. Other skills stay linked from their shared checkout.
 
 Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. `jira-fu`
 and `search-fu` ship a script, and their `README.md` covers running it by hand.
@@ -135,85 +76,13 @@ instead. Add one by dropping a directory into `skills/` and adding its
 name to `LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the
 tests all read from that array.
 
-`just install-skills` relinks them without touching plugins or re-cloning
-swe-skills, which is the fast path while editing one.
+`just install-skills` relinks them without re-cloning swe-skills.
 
-Install also retires agent filenames this project shipped under previously. The
-one case today is `~/.claude/agents/reviewer-light.md`, which declared
-`name: reviewer-lite` and would otherwise sit alongside the current
-`reviewer-lite.md` with both claiming that name. A real file is moved to
-`reviewer-light.md.bak.<timestamp>` rather than deleted.
-
-## The model ladder
-
-### Anthropic (default), `opencode/anthropic.json`
-
-Three tiers, distinguished by model and by thinking level. The light tier runs
-at `medium` because its work is one pass over a known target; the default tier
-runs at `high`; the strong tier runs at `xhigh` because it is dispatched rarely
-and its judgment gates an outcome. `cross-checker` stays at `high`: it reads
-primary sources, which does not need deeper reasoning.
-
-| Tier | Agent | Model | Variant |
-|---|---|---|---|
-| light | `explore` | `anthropic/claude-sonnet-5` | `medium` |
-| light | `implementer-light` | `anthropic/claude-sonnet-5` | `medium` |
-| light | `reviewer-lite` | `anthropic/claude-sonnet-5` | `medium` |
-| default | `general` | `anthropic/claude-opus-5` | `high` |
-| default | `implementer` | `anthropic/claude-opus-5` | `high` |
-| default | `reviewer` | `anthropic/claude-opus-5` | `high` |
-| strong | `implementer-strong` | `anthropic/claude-fable-5` | `xhigh` |
-| strong | `reviewer-final` | `anthropic/claude-fable-5` | `xhigh` |
-| strong | `cross-checker` | `anthropic/claude-fable-5` | `high` |
-
-The per-task reviewer sits on the default tier: reviews run twice per task
-(spec compliance plus code quality), so they dominate strong-tier spend if
-routed there. The strong model is spent on the two places where its judgment
-gates an outcome: escalated implementations and the final whole-branch
-review before merge.
-
-`cross-checker` is on the strong tier for a different reason. Its job is to
-disagree with whatever the default tier produced, and a model that shares that
-tier's blind spots will confirm them instead. The work is not harder; the
-errors have to be less correlated, which means a different model from the one
-that made the claim. Both ladders decorrelate within one vendor, which is the
-weaker form of it; `cross-checking-claims` covers what that is worth.
-
-All three models also accept `max` if you want to raise the strong tier
-further.
-
-All three models expose the full `low` through `max` variant range. Haiku, which
-earlier versions used for the light tier, exposed only `high` and `max` because
-OpenCode builds its variants from a thinking-token budget rather than an effort
-scale, so `implementer-light` could not carry a variant at all. Dropping it
-removes that special case. The variant tables are recorded in
-`docs/verification/opencode-variant.md`.
-
-No `provider` block is needed for Anthropic.
-
-### OpenAI, `opencode/openai.json`
-
-| Agent | Model | Variant |
-|---|---|---|
-| `general` | `openai/gpt-5.6-terra` | `medium` |
-| `explore` | `openai/gpt-5.6-luna` | `medium` |
-| `implementer-light` | `openai/gpt-5.6-luna` | `low` |
-| `implementer` | `openai/gpt-5.6-terra` | `medium` |
-| `implementer-strong` | `openai/gpt-5.6-sol` | `high` |
-| `reviewer` | `openai/gpt-5.6-terra` | `high` |
-| `reviewer-final` | `openai/gpt-5.6-sol` | `high` |
-| `reviewer-lite` | `openai/gpt-5.6-terra` | `medium` |
-| `cross-checker` | `openai/gpt-5.6-sol` | `high` |
-
-This file also sets `provider.openai.options.store` to `false`.
-
-### Prime Agent, `prime/anthropic.json` and `prime/openai.json`
+## Model ladder: `prime/anthropic.json` and `prime/openai.json`
 
 Prime uses the `openai-codex` provider selector for its OpenAI Codex
-authentication. The Anthropic model IDs match OpenCode's by role; Prime's OpenAI
-ladder advances independently while OpenCode's OAuth catalog catches up.
-OpenCode's `variant` becomes Prime Agent's `thinking`, and `settings` carries
-the session defaults:
+authentication. Both provider files define each role's model and thinking level.
+`settings` carries the session defaults:
 
 | Key | Anthropic | OpenAI |
 |---|---|---|
@@ -232,7 +101,7 @@ tokens unsummarized.
 per-agent `model` fields use the `provider/id` selector that `rlm(model=...)`
 expects. Prime's OpenAI roles use Luna 6 for exploration and mechanical tasks,
 Sol 6 for general work and per-task reviews, and Astra for escalations, final
-reviews, and independent checks. OpenCode remains on its GPT-5.6 ladder.
+reviews, and independent checks.
 
 | Agent | Prime OpenAI model | Thinking |
 |---|---|---|
@@ -245,56 +114,6 @@ reviews, and independent checks. OpenCode remains on its GPT-5.6 ladder.
 | `reviewer-final` | `openai-codex/gpt-6-astra` | `high` |
 | `reviewer-lite` | `openai-codex/gpt-6-sol` | `medium` |
 | `cross-checker` | `openai-codex/gpt-6-astra` | `high` |
-
-### Claude Code
-
-Tiers live in the frontmatter of each `agents/*.md`.
-
-| Agent | Model | Effort |
-|---|---|---|
-| `implementer-light` | `sonnet` | `medium` |
-| `implementer` | `opus` | `high` |
-| `implementer-strong` | `fable` | `xhigh` |
-| `reviewer` | `opus` | `high` |
-| `reviewer-final` | `fable` | `xhigh` |
-| `reviewer-lite` | `sonnet` | `medium` |
-| `cross-checker` | `fable` | `high` |
-
-The reviewers restrict `tools` to `Read, Grep, Glob, Bash`, so a review
-dispatch cannot write files. `cross-checker` is read-only the same way, plus
-`WebFetch` and `WebSearch`, because it has to reach primary sources.
-
-## Changing models
-
-Edit `opencode/<provider>.json` for OpenCode, `prime/<provider>.json` for Prime
-Agent, or the frontmatter in `agents/*.md` for Claude Code, then re-run
-`just install`.
-
-They take effect differently. Agent files are symlinked, so an edit to
-`agents/*.md` applies with no reinstall. OpenCode and Prime Agent config lives
-in a merged copy, so a change to either needs `just install` or `just update`
-to re-merge.
-
-OpenCode does not validate variant names. A typo applies no variant instead of
-raising an error, so check spelling against the tables above.
-
-## What the OpenCode merge touches
-
-The merge owns a fixed key set and rewrites only that:
-
-- `agent.*` for the 9 managed agent names.
-- `plugin`, appended and de-duplicated. Other plugins keep their order.
-- `provider.openai`, added for the OpenAI ladder and removed when switching away.
-- `$schema`, set only when absent.
-
-Every other key is preserved, including `theme`, `mcp`, unmanaged agents, and
-other `provider.*` entries. A timestamped `opencode.jsonc.bak.*` is written
-before each merge, and `~/.config/opencode/.agentic-swe-setup.json` records what
-was installed so `uninstall` knows what to take back out.
-
-A config containing JSONC comments is refused rather than rewritten. `jq` cannot
-round-trip comments, so the merge exits 2, changes nothing, and prints the keys
-to add by hand.
 
 ## What the Prime Agent merge touches
 
@@ -313,23 +132,15 @@ A timestamped `settings.json.bak.*` is written before each merge, and the same
 comment guard applies: a `settings.json` that is not strict JSON is refused
 with exit 2 rather than rewritten.
 
+## Legacy retirement
+
+Normal install, update, doctor, and uninstall do not touch Claude Code or
+OpenCode. To retire this repository's old installations separately, run
+`bash scripts/retire-legacy.sh` after reviewing its ownership checks and
+warnings. It leaves unrelated files and modified config entries alone.
+
 ## Uninstall
 
-```bash
-just uninstall
-```
-
-It removes the 7 agent symlinks, all three global instruction symlinks, the
-skill symlinks, the managed keys from `opencode.jsonc`, and the managed
-settings keys and subagent specs from Prime Agent. A symlink that does not
-resolve into this repo is left alone and reported.
-
-Some things survive on purpose, because other tooling may depend on them:
-
-| Left behind | Remove with |
-|---|---|
-| the `~/.swe-skills` checkout | `rm -rf ~/.swe-skills` |
-| the `~/.superpowers` checkout | `rm -rf ~/.superpowers` |
-| the Superpowers plugin | `claude plugin uninstall superpowers` |
-| `opencode.jsonc.bak.*` backups | `rm ~/.config/opencode/opencode.jsonc.bak.*` |
-| `settings.json.bak.*` backups | `rm ~/.prime/agent/settings.json.bak.*` |
+`just uninstall` removes Prime-managed links, settings keys, and role specs.
+It leaves `~/.superpowers` and `~/.swe-skills` checkouts in place. It does not
+remove the Claude Superpowers plugin or change OpenCode configuration.

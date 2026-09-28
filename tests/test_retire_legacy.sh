@@ -4,7 +4,8 @@ set -uo pipefail
 . "$REPO_ROOT/scripts/lib.sh"
 assert_missing() { [ ! -e "$1" ] && [ ! -L "$1" ] || fail "$2: $1"; }
 RETIRE="$REPO_ROOT/scripts/retire-legacy.sh"
-OC=$(opencode_dir)
+OC="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+claude_dir() { printf '%s\n' "$HOME/.claude"; }
 CFG="$OC/opencode.jsonc"
 MAN="$OC/.agentic-swe-setup.json"
 mkdir -p "$OC/skills" "$(claude_dir)/agents" "$(claude_dir)/skills" "$(prime_dir)"
