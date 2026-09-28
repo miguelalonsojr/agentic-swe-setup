@@ -22,26 +22,31 @@ for s in "${LOCAL_SKILLS[@]}"; do
     unlink_ours "$(prime_dir)/skills/$s"
 done
 unlink_ours "$(prime_dir)/AGENTS.md"
+# Compare lexical targets so removed shared sources still count as ours.
+unlink_shared_skill() {
+    local p=$1 source=$2 target
+    [ -L "$p" ] || return 0
+    target=$(readlink "$p")
+    case "$target" in
+        /*) ;;
+        *) target="$(dirname "$p")/$target" ;;
+    esac
+    if [ "$(realpath -ms -- "$target")" = "$(realpath -ms -- "$source")" ]; then
+        rm -f "$p"
+        log "removed $p"
+    fi
+}
+
 for s in "${SKILL_NAMES[@]}"; do
     p="$(prime_dir)/skills/$s"
-    for source in "$(swe_skills_dir)/skills/$s" "$(swe_skills_dir)/book-skills/$s"; do
-        if [ -L "$p" ] && [ -d "$source" ] \
-            && [ "$(readlink -f "$p")" = "$(readlink -f "$source")" ]; then
-            rm -f "$p"
-            log "removed $p"
-        fi
-    done
+    unlink_shared_skill "$p" "$(swe_skills_dir)/skills/$s"
+    unlink_shared_skill "$p" "$(swe_skills_dir)/book-skills/$s"
 done
-if [ -d "$(superpowers_dir)/skills" ]; then
-    for d in "$(superpowers_dir)"/skills/*/; do
-        [ -f "$d/SKILL.md" ] || continue
-        p="$(prime_dir)/skills/$(basename "$d")"
-        if [ -L "$p" ] && [ "$(readlink -f "$p")" = "$(readlink -f "${d%/}")" ]; then
-            rm -f "$p"
-            log "removed $p"
-        fi
-    done
-fi
+# Inspect installed links, not the checkout: a skill may have been removed upstream.
+for p in "$(prime_dir)"/skills/*; do
+    [ -L "$p" ] || continue
+    unlink_shared_skill "$p" "$(superpowers_dir)/skills/$(basename "$p")"
+done
 
 # --- Prime Agent: managed settings keys and harness subagent specs ---------
 prime_manifest="$(prime_dir)/.agentic-swe-setup.json"

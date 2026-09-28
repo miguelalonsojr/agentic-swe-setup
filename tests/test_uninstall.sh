@@ -28,7 +28,19 @@ bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail 'update failed'
 assert_eq "$(jq -r .provider "$pdir/.agentic-swe-setup.json")" openai 'update kept OpenAI provider'
 assert_eq "$(jq -r .defaultProvider "$pdir/settings.json")" openai-codex 'update kept Prime selector'
 assert_eq "$(cksum "$legacy" "$legacy_manifest" "$claude_instructions")" "$legacy_before" 'update left legacy files untouched'
+# Missing source trees must not leave dangling managed links behind.
+rm -rf "$SWE_SKILLS_DIR/skills" "$SWE_SKILLS_DIR/book-skills" "$SUPERPOWERS_DIR/skills"
+# Equivalent relative targets are owned too, but foreign and mismatched links are not.
+ln -sfn "$(realpath -ms --relative-to="$pdir/skills" "$SUPERPOWERS_DIR/skills/writing-plans")" \
+    "$pdir/skills/writing-plans"
+ln -s "$SANDBOX/missing-foreign" "$pdir/skills/foreign"
+ln -s "$SUPERPOWERS_DIR/skills/another-name" "$pdir/skills/mismatched"
 bash "$REPO_ROOT/scripts/uninstall.sh" >/dev/null 2>&1 || fail 'uninstall failed'
+for s in de-slop clean-coding brainstorming writing-plans; do
+    [ ! -L "$pdir/skills/$s" ] || fail "dangling managed skill $s survived uninstall"
+done
+[ -L "$pdir/skills/foreign" ] || fail 'dangling foreign skill removed'
+[ -L "$pdir/skills/mismatched" ] || fail 'mismatched shared skill removed'
 assert_eq "$(cksum "$legacy" "$legacy_manifest" "$claude_instructions")" "$legacy_before" 'uninstall left legacy files untouched'
 [ ! -e "$pdir/AGENTS.md" ] || fail 'Prime instructions survived uninstall'
 [ ! -e "$pdir/.agentic-swe-setup.json" ] || fail 'Prime manifest survived uninstall'
@@ -46,7 +58,7 @@ assert_contains "$out" "$SUPERPOWERS_DIR" 'shared superpowers retained'
 [ -d "$SWE_SKILLS_DIR" ] || fail 'shared skills checkout removed'
 [ -d "$SUPERPOWERS_DIR" ] || fail 'shared Superpowers checkout removed'
 ln -s /etc/hostname "$pdir/AGENTS.md"
-ln -s /etc/hostname "$pdir/skills/de-slop"
+ln -sfn /etc/hostname "$pdir/skills/de-slop"
 bash "$REPO_ROOT/scripts/uninstall.sh" >/dev/null 2>&1 || fail 'second uninstall failed'
 assert_symlink_to "$pdir/AGENTS.md" /etc/hostname 'foreign link preserved'
 assert_symlink_to "$pdir/skills/de-slop" /etc/hostname 'foreign shared skill preserved'

@@ -10,6 +10,12 @@ read_provider() {
         printf 'anthropic\n'
     fi
 }
+for prerequisite in prime-agent jq; do
+    if ! have "$prerequisite"; then
+        warn "$prerequisite not on PATH; skipping update"
+        exit 0
+    fi
+done
 provider=$(read_provider "$(prime_dir)/.agentic-swe-setup.json")
 if have prime-agent && have git; then
     ensure_swe_skills

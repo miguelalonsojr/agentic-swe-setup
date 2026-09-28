@@ -172,6 +172,20 @@ bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail "OpenAI update faile
 assert_eq "$(jq -r .provider "$MANIFEST")" "openai" "update kept OpenAI provider"
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime openai)" "update kept OpenAI render"
 
+# --- skipped updates report missing prerequisites and preserve installed state ---
+installed_before=$(cksum "$SETTINGS" "$MANIFEST" "$HARNESS")
+for missing in prime-agent jq; do
+    [ "$missing" != prime-agent ] || rm -f "$SANDBOX/bin/prime-agent"
+    out=$(PATH="$(path_without "$missing")" bash "$REPO_ROOT/scripts/update.sh" 2>&1)
+    assert_eq "$?" 0 "update skips without $missing"
+    assert_contains "$out" "$missing not on PATH" "update identifies missing $missing"
+    assert_contains "$out" "skipping update" "update reports skip without $missing"
+    assert_not_contains "$out" "update complete" "skipped update is not complete"
+    assert_eq "$(cksum "$SETTINGS" "$MANIFEST" "$HARNESS")" "$installed_before" \
+        "update without $missing leaves installed state untouched"
+    [ "$missing" != prime-agent ] || stub_cmd prime-agent
+done
+
 # --- unmanaged state survives a merge ---
 tmp=$(mktemp)
 jq '.theme = "tokyonight"' "$SETTINGS" > "$tmp" && mv "$tmp" "$SETTINGS"
