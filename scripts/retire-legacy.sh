@@ -102,6 +102,28 @@ elif [ -f "$manifest" ]; then
     warn "OpenCode config absent: $config"
 fi
 
+# Git's common directory identifies the primary checkout of a linked worktree.
+# Reject bare or unrelated Git directories rather than guessing from a path prefix.
+repo_roots=("$REPO_ROOT")
+primary_known=true
+common_dir=$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || primary_known=false
+if [ "$primary_known" = true ]; then
+    common_dir=$(readlink -f -- "$common_dir") || primary_known=false
+fi
+if [ "$primary_known" = true ]; then
+    primary_root=$(readlink -f -- "$common_dir/..") || primary_known=false
+fi
+if [ "$primary_known" = true ] && [ -d "$primary_root/.git" ] &&
+   [ "$primary_root/.git" -ef "$common_dir" ] &&
+   [ "$(git -C "$primary_root" rev-parse --show-toplevel 2>/dev/null)" = "$primary_root" ]; then
+    if [ "$primary_root" != "$REPO_ROOT" ]; then
+        repo_roots+=("$primary_root")
+    fi
+else
+    primary_known=false
+    warn 'cannot verify Git primary checkout; only current-worktree links will be removed'
+fi
+
 # Normalize the link text, not its target inode: owned sources can be deleted.
 unlink_known() {
     local dest=$1 target expected link
@@ -122,16 +144,28 @@ unlink_known() {
     done
     warn "retaining unrelated link: $dest"
 }
+# Only explicitly listed paths below may be owned by either checkout root.
+unlink_repo_known() {
+    local dest=$1 root path
+    local expected=()
+    shift
+    for root in "${repo_roots[@]}"; do
+        for path in "$@"; do
+            expected+=("$root/$path")
+        done
+    done
+    unlink_known "$dest" "${expected[@]}"
+}
 for name in "${legacy_agents[@]}"; do
-    unlink_known "$claude_root/agents/$name.md" "$REPO_ROOT/agents/$name.md"
+    unlink_repo_known "$claude_root/agents/$name.md" "agents/$name.md"
 done
-unlink_known "$claude_root/CLAUDE.md" "$REPO_ROOT/CLAUDE.md"
-unlink_known "$dir/AGENTS.md" "$REPO_ROOT/AGENTS.md" \
-    "$REPO_ROOT/build/opencode/anthropic/AGENTS.md" \
-    "$REPO_ROOT/build/opencode/openai/AGENTS.md"
+unlink_repo_known "$claude_root/CLAUDE.md" 'CLAUDE.md'
+unlink_repo_known "$dir/AGENTS.md" 'AGENTS.md' \
+    'build/opencode/anthropic/AGENTS.md' \
+    'build/opencode/openai/AGENTS.md'
 for skill in "${legacy_local_skills[@]}"; do
     for root in "$claude_root/skills" "$dir/skills"; do
-        unlink_known "$root/$skill" "$REPO_ROOT/skills/$skill"
+        unlink_repo_known "$root/$skill" "skills/$skill"
     done
 done
 for skill in "${legacy_shared_skills[@]}"; do
@@ -158,3 +192,4 @@ if [ -f "$manifest" ]; then
     rm -f "$manifest"
     log "removed legacy manifest $manifest"
 fi
+[ "$primary_known" = true ] || die 'legacy cleanup incomplete: Git primary checkout could not be verified'

@@ -134,6 +134,33 @@ assert_missing "$(claude_dir)/agents/reviewer.md" 'dangling agent link removed'
 assert_missing "$(claude_dir)/skills/clean-coding" 'dangling shared skill link removed'
 [ -L "$OC/skills/superpowers" ] || fail 'unrelated dangling link removed'
 
+# Make independent Git metadata in the sandbox; do not depend on the test runner's checkout.
+primary_root="$SANDBOX/primary-repo"
+linked_root="$SANDBOX/linked-repo"
+git init -q "$primary_root"
+mkdir -p "$linked_root/scripts" "$primary_root/.git/worktrees/linked"
+printf 'gitdir: %s\n' "$primary_root/.git/worktrees/linked" > "$linked_root/.git"
+printf '../..\n' > "$primary_root/.git/worktrees/linked/commondir"
+printf '%s\n' "$linked_root/.git" > "$primary_root/.git/worktrees/linked/gitdir"
+printf 'ref: refs/heads/main\n' > "$primary_root/.git/worktrees/linked/HEAD"
+cp "$RETIRE" "$REPO_ROOT/scripts/lib.sh" "$REPO_ROOT/scripts/retire-legacy-managed.json" "$linked_root/scripts/"
+ln -s "$primary_root/CLAUDE.md" "$(claude_dir)/CLAUDE.md"
+ln -s "$primary_root/AGENTS.md" "$OC/AGENTS.md"
+ln -sfn "$primary_root/agents/reviewer.md" "$(claude_dir)/agents/reviewer.md"
+ln -s "$primary_root/skills/routing-model-tiers" "$(claude_dir)/skills/routing-model-tiers"
+ln -s "$primary_root/skills/agentic-manual-testing" "$OC/skills/agentic-manual-testing"
+ln -s "$linked_root/skills/jira-fu" "$OC/skills/jira-fu"
+ln -s "$SANDBOX/foreign/skills/jira-fu" "$(claude_dir)/skills/jira-fu"
+output=$(bash "$linked_root/scripts/retire-legacy.sh" 2>&1); status=$?
+assert_eq "$status" '0' 'linked-worktree primary retirement succeeds'
+assert_missing "$(claude_dir)/CLAUDE.md" 'primary Claude instructions link removed'
+assert_missing "$OC/AGENTS.md" 'primary OpenCode instructions link removed'
+assert_missing "$(claude_dir)/agents/reviewer.md" 'primary agent link removed'
+assert_missing "$(claude_dir)/skills/routing-model-tiers" 'primary Claude skill link removed'
+assert_missing "$OC/skills/agentic-manual-testing" 'primary OpenCode skill link removed'
+assert_missing "$OC/skills/jira-fu" 'current-worktree skill link removed'
+[ -L "$(claude_dir)/skills/jira-fu" ] || fail 'foreign skill link removed'
+
 # Standalone command must run with lib path helpers deleted.
 mkdir -p "$SANDBOX/retire-copy/scripts"
 cp "$RETIRE" "$SANDBOX/retire-copy/scripts/retire-legacy.sh"
