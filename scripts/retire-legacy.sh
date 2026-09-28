@@ -5,7 +5,10 @@ set -euo pipefail
 
 have jq || die 'jq is required for legacy retirement'
 managed="$REPO_ROOT/scripts/retire-legacy-managed.json"
-dir=$(opencode_dir)
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+claude_root="$HOME/.claude"
+swe_root="${SWE_SKILLS_DIR:-$HOME/.swe-skills}"
+superpowers_root="${SUPERPOWERS_DIR:-$HOME/.superpowers}"
 manifest="$dir/.agentic-swe-setup.json"
 config="$dir/opencode.jsonc"
 plugin_id="superpowers@git+https://github.com/obra/superpowers.git"
@@ -47,11 +50,12 @@ if have claude; then
     if ! plugin_list=$(claude plugin list --json 2>&1); then
         die "cannot inspect Claude plugins: $plugin_list"
     fi
-    if ! printf '%s\n' "$plugin_list" | jq -e . >/dev/null 2>&1; then
+    if ! printf '%s\n' "$plugin_list" | jq -e 'type == "array" and all(.[]; type == "object" and (.id | type == "string" and length > 0))
+        and ([.[].id] | length == (unique | length))' >/dev/null 2>&1; then
         die 'cannot inspect Claude plugins: invalid JSON list'
     fi
     if printf '%s\n' "$plugin_list" | jq -e '
-        [.. | objects | select(.name? == "superpowers" or .id? == "superpowers" or .id? == "superpowers@claude-plugins-official") ] | length > 0
+        any(.[]; .id == "superpowers@claude-plugins-official")
     ' >/dev/null; then
         plugin_installed=true
     fi
@@ -97,43 +101,49 @@ elif [ -f "$manifest" ]; then
     warn "OpenCode config absent: $config"
 fi
 
-# Ownership requires both a known destination and its matching source path.
+# Normalize the link text, not its target inode: owned sources can be deleted.
 unlink_known() {
-    local dest=$1 expected=$2 target
+    local dest=$1 target expected link
+    shift
     [ -L "$dest" ] || { [ ! -e "$dest" ] || warn "retaining non-link: $dest"; return 0; }
-    target=$(readlink -f "$dest") || { warn "retaining unresolved link: $dest"; return 0; }
-    case "$target" in
-        "$expected"|"$expected"/*) rm -f "$dest"; log "removed owned link $dest" ;;
-        *) warn "retaining unrelated link: $dest" ;;
-    esac
+    link=$(readlink -- "$dest")
+    if [[ $link = /* ]]; then
+        target=$(readlink -m -- "$link")
+    else
+        target=$(readlink -m -- "$(dirname "$dest")/$link")
+    fi
+    for expected in "$@"; do
+        if [ "$target" = "$expected" ]; then
+            rm -f "$dest"
+            log "removed owned link $dest"
+            return 0
+        fi
+    done
+    warn "retaining unrelated link: $dest"
 }
 for name in "${legacy_agents[@]}"; do
-    unlink_known "$(claude_dir)/agents/$name.md" "$REPO_ROOT/agents/$name.md"
+    unlink_known "$claude_root/agents/$name.md" "$REPO_ROOT/agents/$name.md"
 done
-unlink_known "$(claude_dir)/CLAUDE.md" "$REPO_ROOT/CLAUDE.md"
-# Older installations could point straight at the source file.
-if [ -L "$dir/AGENTS.md" ] &&
-   [[ $(readlink -f "$dir/AGENTS.md") == "$REPO_ROOT/build/opencode/"* ]]; then
-    unlink_known "$dir/AGENTS.md" "$REPO_ROOT/build/opencode"
-else
-    unlink_known "$dir/AGENTS.md" "$REPO_ROOT/AGENTS.md"
-fi
+unlink_known "$claude_root/CLAUDE.md" "$REPO_ROOT/CLAUDE.md"
+unlink_known "$dir/AGENTS.md" "$REPO_ROOT/AGENTS.md" \
+    "$REPO_ROOT/build/opencode/anthropic/AGENTS.md" \
+    "$REPO_ROOT/build/opencode/openai/AGENTS.md"
 for skill in "${legacy_local_skills[@]}"; do
-    for root in "$(claude_dir)/skills" "$dir/skills"; do
+    for root in "$claude_root/skills" "$dir/skills"; do
         unlink_known "$root/$skill" "$REPO_ROOT/skills/$skill"
     done
 done
 for skill in "${legacy_shared_skills[@]}"; do
-    for root in "$(claude_dir)/skills" "$dir/skills"; do
-        unlink_known "$root/$skill" "$(swe_skills_dir)/book-skills/$skill"
-        unlink_known "$root/$skill" "$(swe_skills_dir)/skills/$skill"
+    for root in "$claude_root/skills" "$dir/skills"; do
+        unlink_known "$root/$skill" "$swe_root/book-skills/$skill" "$swe_root/skills/$skill"
     done
 done
-for root in "$(claude_dir)/skills" "$dir/skills"; do
-    for source in "$(superpowers_dir)/skills"/*/; do
-        [ -d "$source" ] || continue
-        skill=$(basename "$source")
-        unlink_known "$root/$skill" "${source%/}"
+for root in "$claude_root/skills" "$dir/skills"; do
+    [ -d "$root" ] || continue
+    for dest in "$root"/*; do
+        [ -L "$dest" ] || continue
+        skill=$(basename "$dest")
+        unlink_known "$dest" "$superpowers_root/skills/$skill"
     done
 done
 
