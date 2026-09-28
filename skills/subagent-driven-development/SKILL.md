@@ -110,7 +110,7 @@ After integration and verification, write one terminal cleanup authorization rec
 
 ## Final review and finish
 
-After every writer is cleaned, create the whole-branch package with `skills/subagent-driven-development/scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where MERGE_BASE is the branch start, such as `git merge-base main HEAD`. Dispatch the strongest final-review role after loading `routing-model-tiers`. Give it the printed package path and ledger deferred-minor and parked lines. Use `superpowers:requesting-code-review`.
+After every writer is cleaned, create the whole-branch package with `skills/subagent-driven-development/scripts/review-package PLAN_FILE MERGE_BASE HEAD`, where MERGE_BASE is the branch start, such as `git merge-base main HEAD`. Dispatch the strongest final-review role after loading `routing-model-tiers`. Give it the printed package path and ledger deferred-minor and parked lines. Use requesting-code-review.
 
 If final review reports findings, dispatch one fixer with the complete findings list. Run exactly one scoped re-review of `skills/subagent-driven-development/scripts/review-package PLAN_FILE FIX_BASE HEAD` with [re-review-prompt.md](re-review-prompt.md). Adjudicate residual findings as at the task-loop cap. Park findings with rulings, or rule on load-bearing findings and record the decision. Do not dispatch a second final fix wave. Integrate and verify approved final fixes before finish. Surface residual load-bearing findings to the human through finishing-a-development-branch.
 

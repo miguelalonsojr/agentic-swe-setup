@@ -20,6 +20,8 @@ assert_contains "$body" "Prime Agent" "README names Prime Agent"
 assert_contains "$body" 'prime/anthropic.json' "README names Anthropic Prime config"
 assert_contains "$body" 'prime/openai.json' "README names OpenAI Prime config"
 assert_contains "$body" 'openai-codex/' "README keeps the Prime OpenAI selector"
+assert_contains "$body" 'rlm.spawn(task, ..., model=...)' "README shows Prime native model dispatch"
+assert_not_contains "$body" 'rlm(model=...)' "README avoids the non-native dispatch spelling"
 assert_not_contains "$body" 'Claude Code must already be installed' "README has no legacy prerequisite"
 assert_contains "$body" 'just install-skills' "README documents Prime skill installation"
 assert_not_contains "$body" 'just install-claude' 'README omits retired recipe'

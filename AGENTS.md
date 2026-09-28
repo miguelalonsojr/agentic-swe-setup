@@ -204,43 +204,16 @@ for humans):
 
 ### Subagent-driven development routing
 
-The following roles are installed as Prime Agent subagent specs:
-implementer-light, implementer, implementer-strong, reviewer,
-reviewer-final, reviewer-lite, cross-checker. When executing superpowers
-subagent-driven-development:
-
-- Implementation dispatches go to `implementer` (or `implementer-light`
-  for mechanical 1-2 file tasks with complete specs).
-- Per-task spec-compliance and code-quality review dispatches go to
-  `reviewer`.
-- The final whole-branch review goes to `reviewer-final` (the strong
-  model - reserved for this one merge-gating pass).
-- Scoped re-reviews of small fix diffs go to `reviewer-lite`.
-- A load-bearing claim that needs an independent check goes to
-  `cross-checker`, which runs on a different model from the tier that
-  produced the claim. Both installed ladders stay inside one vendor;
-  `cross-checking-claims` covers what that decorrelation is worth.
-- Never retry the same agent unchanged after BLOCKED.
-- Before dispatching a subagent, and especially before a batch, load the
-  `routing-model-tiers` skill and pick a tier per task. Enumeration and
-  lookup go to the light tier; synthesis and judgement go to the default
-  or strong tier.
-- Before a subagent's finding goes into a design doc, plan, or decision
-  log, load the `cross-checking-claims` skill. It applies only to claims
-  that would change the work if they were wrong.
+Use `subagent-driven-development` for role routing and fix handling.
+Use `routing-model-tiers` for model selection before each dispatch.
+Use `cross-checking-claims` before recording decision-changing findings.
 
 #### When running under Prime Agent
 
-Prime Agent has no agent-definition files. The roles above are installed as
-continual-harness subagent specs. Dispatch each role with `rlm.spawn(...)` and
-its configured model and thinking level.
-
-The harness roster is a hint, not a lookup. Prime Agent summarises each
-subagent spec to 180 characters and shows only six of them, so some roles
-are missing from it. This table is authoritative. Its model strings are Prime
-Agent `rlm.spawn(model=...)` selectors and are not valid elsewhere. Installed
-roles use the configured thinking level shown in the table. A direct `rlm.spawn()` call that omits
-`thinking` inherits the parent session's thinking level.
+Prime Agent installs roles as continual-harness subagent specs. The roster
+shows only six entries per kind and limits summaries to 180 characters. The
+provider-rendered table below is authoritative for model and thinking levels.
+Use these model strings only as Prime Agent `rlm.spawn(model=...)` selectors.
 
 <!-- PRIME_AGENT_ROLE_ROUTING_TABLE -->
 
@@ -263,10 +236,6 @@ roles use the configured thinking level shown in the table. A direct `rlm.spawn(
 - Prime Agent cannot enforce read-only tools per child. A spec marked
   read-only must say so in the dispatch text: tell the reviewer to
   report findings only and to make no edits.
-- Escalation ladder: DONE_WITH_CONCERNS or
-  NEEDS_CONTEXT -> re-dispatch `implementer` with better scoping;
-  BLOCKED or fix round 4 -> `implementer-strong`; still BLOCKED ->
-  escalate to the human.
 - Delete a child with `await rlm.delete_subagent(handle.rlm_child_id)` once its
   context is no longer needed.
 

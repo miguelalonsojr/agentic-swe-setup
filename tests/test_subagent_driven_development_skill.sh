@@ -76,7 +76,12 @@ assert_contains "$body" 'Run `compound-step`' "SDD Finish runs the compound step
 assert_contains "$body" "before deleting the workspace" "compound step precedes workspace deletion"
 assert_not_contains "$body" "superpowers:using-git-worktrees" "SDD names the forked worktree skill without the plugin prefix"
 assert_not_contains "$body" "superpowers:finishing-a-development-branch" "SDD names the forked finishing skill without the plugin prefix"
-assert_contains "$body" "superpowers:requesting-code-review" "SDD keeps the prefix for skills this repo does not fork"
+assert_contains "$body" "Use requesting-code-review." "SDD invokes the installed review skill"
+assert_not_contains "$body" "superpowers:requesting-code-review" "SDD avoids the plugin prefix"
+readme=$(cat "$root/README.md")
+assert_contains "$readme" "skills/subagent-driven-development/scripts/test-summary" "SDD README uses a root-relative script path"
+assert_contains "$readme" "requesting-code-review" "SDD README names the bare installed review skill"
+assert_not_contains "$readme" "Skills the repository does not fork keep the prefix" "SDD README does not promise plugin invocation"
 role_heading="## Role routing and recovery"
 assert_eq "$(grep -Fxc "$role_heading" "$root/SKILL.md")" "1" \
     "SDD keeps one stable role-routing heading"

@@ -98,8 +98,8 @@ automatic compaction above 250,000 tokens and keeps the most recent 20,000
 tokens unsummarized.
 
 `defaultModel` is a bare model ID; `defaultProvider` supplies the prefix. The
-per-agent `model` fields use the `provider/id` selector that `rlm(model=...)`
-expects. Prime's OpenAI roles use Luna 6 for exploration and mechanical tasks,
+per-agent `model` fields use the `provider/id` selector that
+`rlm.spawn(task, ..., model=...)` expects. Prime's OpenAI roles use Luna 6 for exploration and mechanical tasks,
 Sol 6 for general work and per-task reviews, and Astra for escalations, final
 reviews, and independent checks.
 

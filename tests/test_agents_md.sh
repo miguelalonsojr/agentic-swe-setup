@@ -69,42 +69,22 @@ assert_not_contains "$body" '| `reviewer` | `anthropic/' \
 assert_not_contains "$body" "Look the role up in" \
     "the old rlm.harness roster lookup is gone"
 
-# The render limits must be stated, or the table looks like duplication.
-# Anchored on the whole render-cap clause, not a bare "180" or "six". Either
-# alone would be satisfied by any unrelated number or word elsewhere in the
-# file — including a role count written back into this section, which is
-# exactly the drift the assertions below exist to catch.
-assert_contains "$body" "180 characters and shows only six" \
+# The render limits explain why the provider-rendered table is needed.
+assert_contains "$body" "shows only six entries per kind and limits summaries to 180 characters" \
     "AGENTS.md states the render caps (180 chars, six entries)"
 
-# Prime Agent's selector format must be named as Prime's, so a Claude Code
-# session reading the wrong subsection does not copy it into a Task dispatch.
+# Prime Agent's selector format must be scoped to Prime dispatch.
 assert_contains "$body" 'rlm.spawn(model=' "AGENTS.md names the selector format"
 
-# AGENTS.md used to open this section with a hard-coded role count that
-# nothing checked. A list can be verified against the array; a numeral in
-# prose cannot, so the numeral is gone and the list is what gets asserted.
-#
-# The extract stops at the first blank line rather than at a second prose
-# phrase. A range bounded by prose runs to EOF the moment its closing phrase
-# is reworded, and $roles would then swallow the routing table below, where
-# every role name appears — so the check would pass with the role list
-# deleted. Verify the slice is a slice before trusting anything in it.
-roles=$(awk '/installed as Prime Agent subagent specs:/{found = 1} found && /^$/{exit} found' "$A")
-[ -n "$roles" ] || fail "AGENTS.md role list is missing"
-assert_not_contains "$roles" '| `' \
-    "the role list extract stops short of the routing table"
-
-# Needles carry the list's own delimiter. assert_contains is a substring
-# match, so a bare `implementer` is satisfied by `implementer-light` and a
-# bare `reviewer` by `reviewer-final`: two of these names would be unguarded
-# without the trailing comma, and deleting them from AGENTS.md would not fail.
-last_role=${PRIME_AGENTS[${#PRIME_AGENTS[@]}-1]}
-for a in "${PRIME_AGENTS[@]:2}"; do
-    if [ "$a" = "$last_role" ]; then delim="."; else delim=","; fi
-    assert_contains "$roles" "$a$delim" "AGENTS.md role list names $a"
-done
-assert_not_contains "$body" "Six role agents" "the stale role count is gone"
-assert_not_contains "$body" "The same six roles" "the stale Prime role count is gone"
+# Keep provider-rendered dispatch mechanics here, and let SDD own role routing
+# and fix handling rather than freezing a second policy in AGENTS.md.
+assert_contains "$body" 'subagent-driven-development` for role routing and fix handling' "AGENTS.md points to SDD policy"
+assert_contains "$body" '`routing-model-tiers` for model selection' "AGENTS.md points to model policy"
+assert_contains "$body" '`cross-checking-claims` before recording decision-changing findings' "AGENTS.md points to claim policy"
+assert_contains "$body" 'receiver_role=' "AGENTS.md retains explicit child reply"
+assert_contains "$body" 'read-only tools per child' "AGENTS.md retains read-only warning"
+assert_not_contains "$body" 'Escalation ladder:' "AGENTS.md does not duplicate fix escalation"
+assert_not_contains "$body" 'Implementation dispatches go to' "AGENTS.md does not duplicate role routing"
+assert_not_contains "$body" 'Never retry the same agent unchanged after BLOCKED' "SDD owns blocked handling"
 
 exit "$ASSERT_FAILURES"

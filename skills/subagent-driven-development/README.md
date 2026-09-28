@@ -8,4 +8,4 @@ The task ledger uses `planned`, `dispatched`, `committed`, `reviewed`, `integrat
 
 Each plan workspace uses a readable basename and a stable hash of its canonical repository-relative path. Plans with the same basename do not share artifacts.
 
-The controller runs integration tests through `scripts/test-summary`, which keeps the full output in a log file and prints a summary instead. Finish runs `compound-step` with the ledger path before the workspace is deleted, so the process record outlives the workspace. Skills this repository forks are named without the `superpowers:` prefix, because that prefix loads the plugin copy rather than the fork. Skills the repository does not fork keep the prefix.
+The controller runs integration tests through `skills/subagent-driven-development/scripts/test-summary`, which keeps the full output in a log file and prints a summary instead. Finish runs `compound-step` with the ledger path before the workspace is deleted, so the process record outlives the workspace. Use bare installed skill names, including `requesting-code-review`. The `superpowers:` prefix loads the plugin copy instead of a local fork.
