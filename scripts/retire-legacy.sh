@@ -50,12 +50,13 @@ if have claude; then
     if ! plugin_list=$(claude plugin list --json 2>&1); then
         die "cannot inspect Claude plugins: $plugin_list"
     fi
-    if ! printf '%s\n' "$plugin_list" | jq -e 'type == "array" and all(.[]; type == "object" and (.id | type == "string" and length > 0))
-        and ([.[].id] | length == (unique | length))' >/dev/null 2>&1; then
+    if ! printf '%s\n' "$plugin_list" | jq -se 'length == 1 and (.[0] | type == "array"
+        and all(.[]; type == "object" and (.id | type == "string" and length > 0))
+        and ([.[].id] | length == (unique | length)))' >/dev/null 2>&1; then
         die 'cannot inspect Claude plugins: invalid JSON list'
     fi
-    if printf '%s\n' "$plugin_list" | jq -e '
-        any(.[]; .id == "superpowers@claude-plugins-official")
+    if printf '%s\n' "$plugin_list" | jq -se '
+        any(.[0][]; .id == "superpowers@claude-plugins-official")
     ' >/dev/null; then
         plugin_installed=true
     fi

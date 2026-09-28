@@ -106,7 +106,7 @@ cat > "$MAN" <<'EOF'
 EOF
 jq -n --slurpfile owned "$REPO_ROOT/scripts/retire-legacy-managed.json" '{theme:"tokyonight",agent:{general:$owned[0].openai.agent.general}}' > "$CFG"
 # Unknown plugin-list shapes must fail before editing any owned item.
-for invalid in '{"installed":[],"available":[{"name":"superpowers"}]}' '42' '[{"id":"superpowers@claude-plugins-official"},{"id":"superpowers@claude-plugins-official"}]'; do
+for invalid in '{"installed":[],"available":[{"name":"superpowers"}]}' '42' '[{"id":"superpowers@claude-plugins-official"},{"id":"superpowers@claude-plugins-official"}]' $'{"installed":[]}\n[]' $'[{"id":"superpowers@claude-plugins-official"}]\n[]'; do
     printf '%s\n' "$invalid" > "$SANDBOX/plugins.json"
     ln -sfn "$REPO_ROOT/AGENTS.md" "$OC/AGENTS.md"
     before=$(cksum < "$CFG")
