@@ -7,19 +7,8 @@ by hand.
 
 ## Install
 
-Drop the directory where your agent looks for skills, or symlink it so edits
-take effect without copying again:
-
-```bash
-# Claude Code
-ln -sfn "$PWD/search-fu" ~/.claude/skills/search-fu
-
-# OpenCode
-ln -sfn "$PWD/search-fu" ~/.config/opencode/skills/search-fu
-```
-
-`~/.agents/skills/` also works as a cross-runtime location on Codex, Copilot CLI
-and Gemini CLI.
+Run `just install-skills` from the repository root. It links this skill to
+`~/.prime/agent/skills/search-fu` after the shared skill checkouts.
 
 The script stands on its own. If you only want the tooling and not the skill,
 run `websearch.py` directly from wherever you cloned it.

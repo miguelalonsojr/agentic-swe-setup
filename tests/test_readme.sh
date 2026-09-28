@@ -17,6 +17,11 @@ assert_contains "$body" "just --set provider openai install" "README shows the p
 assert_contains "$body" "anthropic" "README names the default provider"
 
 assert_contains "$body" "Prime Agent" "README names Prime Agent"
+assert_contains "$body" 'prime/anthropic.json' "README names Anthropic Prime config"
+assert_contains "$body" 'prime/openai.json' "README names OpenAI Prime config"
+assert_contains "$body" 'openai-codex/' "README keeps the Prime OpenAI selector"
+assert_not_contains "$body" 'Claude Code must already be installed' "README has no legacy prerequisite"
+assert_contains "$body" 'just install-skills' "README documents Prime skill installation"
 assert_not_contains "$body" 'just install-claude' 'README omits retired recipe'
 assert_not_contains "$body" 'just install-opencode' 'README omits retired recipe'
 
@@ -42,6 +47,7 @@ assert_contains "$body" "180 characters and shows six per kind" \
 assert_contains "$body" "cross-checker" "README documents the cross-checker role"
 
 assert_contains "$body" "${#PRIME_AGENTS[@]} roles are installed"     "README states the Prime role count"
+assert_contains "$body" 'retirement uninstalls the Claude Code Superpowers plugin' 'README states plugin retirement'
 assert_contains "$body" 'bash scripts/retire-legacy.sh'     "README names the separate retirement command"
 assert_contains "$body" 'Normal install, update, doctor, and uninstall do not touch Claude Code or'     "README separates legacy retirement from routine commands"
 exit "$ASSERT_FAILURES"

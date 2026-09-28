@@ -2,68 +2,71 @@
 
 Use this template when dispatching an implementer subagent.
 
+Select `[MODEL]` and `[THINKING]` from the provider-specific `AGENTS.md` table per `routing-model-tiers`; select `[ROLE]` per `SKILL.md` `## Role routing and recovery`. Dispatch in the Prime Agent REPL:
+
+```python
+handle = await rlm.spawn(task, name="[ROLE]", model="[MODEL]", thinking="[THINKING]")
 ```
-Subagent (general-purpose):
-  description: "Implement Task N: [task name]"
-  model: [MODEL — REQUIRED: choose per `routing-model-tiers`; role per SKILL.md `## Role routing and recovery`; an omitted
-         model silently inherits the session's most expensive one]
-  prompt: |
-    You are implementing Task N: [task name].
 
-    Read the task brief first: [BRIEF_FILE]
-    Context: [CONTEXT]
-    Work only in the supplied worker worktree: [WORKTREE_PATH]
-    Write the full report to: [REPORT_FILE]
+Set `task` to the prompt below. The handle confirms admission, not completion. The child must reply explicitly with `await agent_message.send(message, receiver_role="parent")`. Await any nonblocking `bash(...)` test or commit handle before reporting output or an exact SHA.
 
-    Ask before starting if the requirements, acceptance criteria, approach,
-    dependencies, or assumptions are unclear. Do not guess. If an unexpected
-    or unclear condition arises while working, ask and pause rather than guess.
+```text
+You are implementing Task N: [task name].
 
-    Implement exactly the task scope. Follow the plan's file structure and
-    established codebase patterns. Do not restructure unrelated code. If a
-    planned new file grows beyond the plan's intent, stop and report
-    DONE_WITH_CONCERNS. Do not split it without plan guidance. If an existing
-    file is large or tangled, report that concern.
+Read the task brief first: [BRIEF_FILE]
+Context: [CONTEXT]
+Work only in the supplied worker worktree: [WORKTREE_PATH]
+Write the full report to: [REPORT_FILE]
 
-    Do not merge, rebase, cherry-pick, or create or remove worktrees. Do not
-    dispatch subagents. Commit only this task's changes in the supplied worker
-    worktree.
+Ask before starting if the requirements, acceptance criteria, approach,
+dependencies, or assumptions are unclear. Do not guess. If an unexpected
+or unclear condition arises while working, ask and pause rather than guess.
 
-    Add or strengthen a focused test. Run it before implementation and observe the expected RED failure. Implement the minimum change. Rerun the focused test and observe GREEN. While iterating, run the focused test for the change. Run the full suite once before committing. Exercise a runnable CLI, HTTP API, web UI, startup path, or migration per `agentic-manual-testing`, and record each command and pasted output.
+Implement exactly the task scope. Follow the plan's file structure and
+established codebase patterns. Do not restructure unrelated code. If a
+planned new file grows beyond the plan's intent, stop and report
+DONE_WITH_CONCERNS. Do not split it without plan guidance. If an existing
+file is large or tangled, report that concern.
 
-    Stop and report BLOCKED or NEEDS_CONTEXT when the task needs an unplanned
-    architectural decision, necessary code remains unclear after focused
-    investigation, the planned structure no longer fits, or correctness is
-    uncertain. State what is blocked, what was tried, and what help is needed.
+Do not merge, rebase, cherry-pick, or create or remove worktrees. Do not
+dispatch subagents. Commit only this task's changes in the supplied worker
+worktree.
 
-    Before the initial commit and report, review the diff for:
-    - completeness and task scope
-    - clear naming and maintainable code
-    - tests that verify intended behavior
-    - relevant edge cases
-    - clean test output
+Add or strengthen a focused test. Run it before implementation and observe the expected RED failure. Implement the minimum change. Rerun the focused test and observe GREEN. While iterating, run the focused test for the change. Run the full suite once before committing. Exercise a runnable CLI, HTTP API, web UI, startup path, or migration per `agentic-manual-testing`, and record each command and pasted output.
 
-    Before the initial commit and report, fix all self-review findings in this worker worktree and rerun tests covering the amended code. Then commit and write the initial report.
+Stop and report BLOCKED or NEEDS_CONTEXT when the task needs an unplanned
+architectural decision, necessary code remains unclear after focused
+investigation, the planned structure no longer fits, or correctness is
+uncertain. State what is blocked, what was tried, and what help is needed.
 
-    Only when resumed with controller review findings, append a fix report to [REPORT_FILE]. Record what changed, the covering test command, and its pasted output. Then use the same short response contract.
+Before the initial commit and report, review the diff for:
+- completeness and task scope
+- clear naming and maintainable code
+- tests that verify intended behavior
+- relevant edge cases
+- clean test output
 
-    The full report at [REPORT_FILE] includes:
-    - what was implemented, or attempted if blocked
-    - test commands and results
-    - TDD evidence: RED command, expected failing output, and reason; GREEN command and passing output
-    - manual-testing evidence for runnable surfaces: commands and pasted
-      output, UI screenshots, or the exact unavailable command
-    - actual files changed
-    - self-review findings
-    - issues or concerns
+Before the initial commit and report, fix all self-review findings in this worker worktree and rerun tests covering the amended code. Then commit and write the initial report.
 
-    Reply in under 15 lines. Include:
-    - Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - commits created (short SHA and subject)
-    - one-line test summary
-    - concerns, if any
-    - [REPORT_FILE]
+Only when resumed with controller review findings, append a fix report to [REPORT_FILE]. Record what changed, the covering test command, and its pasted output. Then use the same short response contract.
 
-    For BLOCKED or NEEDS_CONTEXT, include the specifics in the reply. Use
-    DONE_WITH_CONCERNS when work is complete but correctness remains doubtful.
+The full report at [REPORT_FILE] includes:
+- what was implemented, or attempted if blocked
+- test commands and results
+- TDD evidence: RED command, expected failing output, and reason; GREEN command and passing output
+- manual-testing evidence for runnable surfaces: commands and pasted
+  output, UI screenshots, or the exact unavailable command
+- actual files changed
+- self-review findings
+- issues or concerns
+
+Send the short reply with `await agent_message.send(message, receiver_role="parent")`. Keep it under 15 lines. Include:
+- Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+- commits created (exact awaited SHA and subject)
+- one-line test summary with exit code and output
+- concerns, if any
+- [REPORT_FILE]
+
+For BLOCKED or NEEDS_CONTEXT, include the specifics in the reply. Use
+DONE_WITH_CONCERNS when work is complete but correctness remains doubtful.
 ```

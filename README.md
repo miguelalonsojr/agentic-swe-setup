@@ -137,7 +137,7 @@ with exit 2 rather than rewritten.
 Normal install, update, doctor, and uninstall do not touch Claude Code or
 OpenCode. To retire this repository's old installations separately, run
 `bash scripts/retire-legacy.sh` after reviewing its ownership checks and
-warnings. It leaves unrelated files and modified config entries alone.
+warnings. The retirement uninstalls the Claude Code Superpowers plugin. It leaves unrelated files and modified config entries alone.
 
 ## Uninstall
 

@@ -26,11 +26,11 @@ assert_contains "$routing" '`subagent-driven-development` `## Role routing and r
     "routing assigns role selection and escalation to SDD"
 assert_contains "$routing" 'rlm.find_models("", limit=20)' \
     "routing gives the Prime model-discovery call"
-assert_contains "$routing" '`limit` is capped at 20; a larger value raises' \
+assert_contains "$routing" 'The limit is capped at 20.' \
     "routing preserves the Prime discovery limit"
-assert_contains "$routing" '`rlm()` accepts `name`, `model`, and optional `thinking`' \
+assert_contains "$routing" '`rlm.spawn()` returns a child handle at admission, not an answer' \
     "routing names Prime dispatch parameters"
-assert_contains "$routing" 'The system-prompt harness roster is not the role-to-model map: it truncates specs to 180 characters and shows only six roles' \
+assert_contains "$routing" 'The system-prompt harness roster truncates specs to 180 characters and shows only six roles' \
     "routing prevents treating the truncated harness roster as the role-to-model map"
 assert_contains "$routing" 'Omitting `model` inherits the parent model' \
     "routing preserves inherited-model behavior"

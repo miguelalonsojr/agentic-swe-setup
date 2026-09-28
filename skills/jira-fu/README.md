@@ -7,19 +7,8 @@ the hierarchy landed.
 
 ## Install
 
-Drop the directory where your agent looks for skills, or symlink it so edits
-take effect without copying again:
-
-```bash
-# Claude Code
-ln -sfn "$PWD/jira-fu" ~/.claude/skills/jira-fu
-
-# OpenCode
-ln -sfn "$PWD/jira-fu" ~/.config/opencode/skills/jira-fu
-```
-
-`~/.agents/skills/` also works as a cross-runtime location on Codex, Copilot CLI
-and Gemini CLI.
+Run `just install-skills` from the repository root. It links this skill to
+`~/.prime/agent/skills/jira-fu` after the shared skill checkouts.
 
 The script stands on its own. If you only want the tooling and not the skill,
 run `jira_backlog.py` directly from wherever you cloned it.

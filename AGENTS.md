@@ -80,7 +80,7 @@ An explicit user request for more process selects the heavier requested path. A 
 
 ## Coding Discipline
 
-These checks apply before and during code changes in every supported harness.
+These checks apply before and during code changes in Prime Agent.
 They bias toward caution over speed; use judgment for trivial tasks.
 
 ### First run the tests
@@ -150,7 +150,8 @@ it.
 In addition to the Superpowers workflow skills, this environment has book-grounded
 craft skills installed: `ddd-expert`, `clean-architecture`, `design-patterns-expert`,
 `clean-coding`, `pragmatic-engineer`, `system-designing`, `de-slop`,
-`generating-design-doc`. Load them with the `skill` tool at the phases below.
+`generating-design-doc`. Read each skill's `SKILL.md` at the phases below.
+Call Python-backed skills through their documented module API in the Prime Agent REPL.
 They are advisory references, not workflows — the Superpowers process always
 governs sequencing, and YAGNI wins any conflict: never add layers, patterns, or
 abstractions a craft skill suggests unless the current task requires them.
@@ -203,7 +204,7 @@ for humans):
 
 ### Subagent-driven development routing
 
-The same role agents are defined in all three harnesses:
+The following roles are installed as Prime Agent subagent specs:
 implementer-light, implementer, implementer-strong, reviewer,
 reviewer-final, reviewer-lite, cross-checker. When executing superpowers
 subagent-driven-development:
@@ -228,37 +229,17 @@ subagent-driven-development:
   log, load the `cross-checking-claims` skill. It applies only to claims
   that would change the work if they were wrong.
 
-#### When running under OpenCode
-
-- Ignore the skill's instructions to pass a `model:` parameter when
-  dispatching - model and reasoning effort are fixed by the agent
-  definitions in opencode.json.
-- Escalation ladder: DONE_WITH_CONCERNS or NEEDS_CONTEXT ->
-  re-dispatch `implementer` with better scoping; BLOCKED or fix
-  round 4 -> `implementer-strong`; if implementer-strong reports
-  BLOCKED -> re-dispatch it on its `max` variant; still BLOCKED ->
-  escalate to the human.
-
-#### When running under Claude Code
-
-- Follow the skill's native model-selection guidance: pass a model
-  per dispatch and escalate per the skill's status protocol. The
-  agent frontmatter models are fallbacks, not mandates.
-- Exception: all review dispatches MUST go to the `reviewer` /
-  `reviewer-final` / `reviewer-lite` agents regardless of model
-  choice, so the read-only tool restriction applies.
-
 #### When running under Prime Agent
 
-Prime Agent has no agent-definition files. The same roles are
-installed as continual-harness subagent specs, and every dispatch is
-an `rlm(...)` call that names its model explicitly.
+Prime Agent has no agent-definition files. The roles above are installed as
+continual-harness subagent specs. Dispatch each role with `rlm.spawn(...)` and
+its configured model and thinking level.
 
 The harness roster is a hint, not a lookup. Prime Agent summarises each
 subagent spec to 180 characters and shows only six of them, so some roles
 are missing from it. This table is authoritative. Its model strings are Prime
-Agent `rlm(model=...)` selectors and are not valid anywhere else. Installed roles must use the
-configured thinking level shown in the table. A direct `rlm()` call that omits
+Agent `rlm.spawn(model=...)` selectors and are not valid elsewhere. Installed
+roles use the configured thinking level shown in the table. A direct `rlm.spawn()` call that omits
 `thinking` inherits the parent session's thinking level.
 
 <!-- PRIME_AGENT_ROLE_ROUTING_TABLE -->
@@ -267,10 +248,10 @@ configured thinking level shown in the table. A direct `rlm()` call that omits
   you are running on:
 
   ```python
-  handle = await rlm(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->", thinking="<!-- PRIME_AGENT_REVIEWER_THINKING -->")
+  handle = await rlm.spawn(task, name="reviewer", model="<!-- PRIME_AGENT_REVIEWER_MODEL -->", thinking="<!-- PRIME_AGENT_REVIEWER_THINKING -->")
   ```
 
-- `rlm()` accepts `name`, `model`, and optional `thinking`. An explicit model
+- `rlm.spawn()` accepts `name`, `model`, and optional `thinking`. An explicit model
   is preserved; if unavailable, admission fails without fallback. Omitting
   `model` inherits the parent model.
 - An explicit `thinking` level must be supported by the selected model or
@@ -282,12 +263,16 @@ configured thinking level shown in the table. A direct `rlm()` call that omits
 - Prime Agent cannot enforce read-only tools per child. A spec marked
   read-only must say so in the dispatch text: tell the reviewer to
   report findings only and to make no edits.
-- Escalation ladder matches OpenCode: DONE_WITH_CONCERNS or
+- Escalation ladder: DONE_WITH_CONCERNS or
   NEEDS_CONTEXT -> re-dispatch `implementer` with better scoping;
   BLOCKED or fix round 4 -> `implementer-strong`; still BLOCKED ->
   escalate to the human.
 - Delete a child with `await rlm.delete_subagent(handle.rlm_child_id)` once its
   context is no longer needed.
+
+The repository-owned `systematic-debugging` and `finishing-a-development-branch`
+skills link after upstream skills. Their forked instructions take precedence over
+the upstream versions.
 
 ### Precedence
 

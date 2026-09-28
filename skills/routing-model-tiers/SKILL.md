@@ -1,6 +1,6 @@
 ---
 name: routing-model-tiers
-description: Use when about to dispatch one or more subagents, especially a batch, before choosing which model each one runs on. Covers routing task types to model tiers, discovering the real model menu, and the per-harness dispatch mechanics.
+description: Use when about to dispatch one or more subagents, especially a batch, before choosing which model each one runs on. Covers routing task types to model tiers, discovering the real model menu, and the Prime Agent dispatch mechanics.
 ---
 
 # Routing Model Tiers
@@ -32,33 +32,17 @@ The light tier has a one-pass floor. Use it only for one pass over a known targe
 
 ## Model discovery
 
-The role roster is not the model menu. Ask the harness what it can address before a batch.
+The role roster is not the model menu. Before a batch, run `await rlm.find_models("", limit=20)` in the Prime Agent REPL. The limit is capped at 20. For installed roles, use the provider-specific model and thinking level in the rendered `AGENTS.md` table.
 
-| Harness | Command |
-|---|---|
-| Prime Agent | `await rlm.find_models("", limit=20)`. `limit` is capped at 20; a larger value raises. |
-| Claude Code | `/model` in-session. `--model` and agent frontmatter accept an alias or full name. |
-| OpenCode | `opencode models`, or `opencode models <provider>` for one provider. |
-
-## Harness dispatch
-
-### Prime Agent
+## Dispatch
 
 ```python
-handle = await rlm(task, name="reviewer", model="anthropic/claude-opus-5", thinking="high")
+handle = await rlm.spawn(task, name="reviewer", model="anthropic/claude-opus-5", thinking="high")
 ```
 
-`rlm()` accepts `name`, `model`, and optional `thinking`. For installed roles, pass the model and thinking level from the `AGENTS.md` table explicitly. The system-prompt harness roster is not the role-to-model map: it truncates specs to 180 characters and shows only six roles. An explicit model is preserved; unavailable models fail admission without fallback. Omitting `model` inherits the parent model.
+The example uses the Anthropic provider. For OpenAI Prime, use the `openai-codex/...` selector from the installed `AGENTS.md` table. `rlm.spawn()` returns a child handle at admission, not an answer. Require the child to send its result with `await agent_message.send(message, receiver_role="parent")`. The system-prompt harness roster truncates specs to 180 characters and shows only six roles.
 
-An explicit `thinking` level must be supported by the selected model or admission fails. Omitting `thinking` inherits the parent's current effective level, clamped to the selected child's supported levels.
-
-### Claude Code
-
-Pass a model per dispatch. Agent-frontmatter models are fallbacks when no model is selected.
-
-### OpenCode
-
-The model is fixed by the agent definition in `opencode.json`. Do not pass a model; choose the agent whose tier fits the task.
+An explicit model is preserved; unavailable models fail admission without fallback. Omitting `model` inherits the parent model. An explicit `thinking` level must be supported by the selected model or admission fails. Omitting `thinking` inherits the parent's current effective level, clamped to the selected child's supported levels.
 
 ## Failure prevention
 

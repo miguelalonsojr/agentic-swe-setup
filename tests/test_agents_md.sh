@@ -47,6 +47,12 @@ assert_contains "$body" 'Clone repos to `/tmp`' "AGENTS.md reads reference code 
 assert_contains "$body" "never commit reference copies" "reference copies stay out of commits"
 assert_contains "$body" "update the documentation that describes it" "AGENTS.md keeps docs current"
 
+assert_not_contains "$body" '#### When running under OpenCode' "no active OpenCode dispatch policy"
+assert_not_contains "$body" '#### When running under Claude Code' "no active Claude dispatch policy"
+assert_not_contains "$body" 'Load them with the `skill` tool' "skills use Prime-native loading"
+assert_contains "$body" "Read each skill's \`SKILL.md\`" "Prime skill loading names the skill file"
+assert_contains "$body" 'The repository-owned `systematic-debugging` and `finishing-a-development-branch`' "local forks take precedence"
+
 # Provider-selected renders populate this marker from the ladder; keeping only
 # the marker in the source prevents one provider's selectors leaking into
 # another provider's installed instructions.
@@ -73,7 +79,7 @@ assert_contains "$body" "180 characters and shows only six" \
 
 # Prime Agent's selector format must be named as Prime's, so a Claude Code
 # session reading the wrong subsection does not copy it into a Task dispatch.
-assert_contains "$body" 'rlm(model=' "AGENTS.md names the selector format"
+assert_contains "$body" 'rlm.spawn(model=' "AGENTS.md names the selector format"
 
 # AGENTS.md used to open this section with a hard-coded role count that
 # nothing checked. A list can be verified against the array; a numeral in
@@ -84,7 +90,7 @@ assert_contains "$body" 'rlm(model=' "AGENTS.md names the selector format"
 # is reworded, and $roles would then swallow the routing table below, where
 # every role name appears — so the check would pass with the role list
 # deleted. Verify the slice is a slice before trusting anything in it.
-roles=$(awk '/defined in all three harnesses:/{found = 1} found && /^$/{exit} found' "$A")
+roles=$(awk '/installed as Prime Agent subagent specs:/{found = 1} found && /^$/{exit} found' "$A")
 [ -n "$roles" ] || fail "AGENTS.md role list is missing"
 assert_not_contains "$roles" '| `' \
     "the role list extract stops short of the routing table"

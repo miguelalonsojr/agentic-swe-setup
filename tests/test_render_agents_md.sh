@@ -31,6 +31,13 @@ for h in "${HARNESSES[@]}"; do
     done
 done
 
+for provider in "${PROVIDERS[@]}"; do
+    rendered=$(cat "$(rendered_agents_md prime "$provider")")
+    assert_not_contains "$rendered" '#### When running under Claude Code' "Prime $provider render excludes Claude policy"
+    assert_not_contains "$rendered" '#### When running under OpenCode' "Prime $provider render excludes OpenCode policy"
+    assert_contains "$rendered" 'rlm.spawn(' "Prime $provider render uses native spawn"
+done
+
 prime_anthropic=$(cat "$(rendered_agents_md prime anthropic)")
 prime_openai=$(cat "$(rendered_agents_md prime openai)")
 

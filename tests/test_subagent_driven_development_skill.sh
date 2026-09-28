@@ -57,6 +57,16 @@ assert_contains "$body" 'then write `Task N: complete`' "SDD writes completion a
 assert_contains "$body" "cleanup only after that exact task, path, and branch terminal record" "SDD cleans only after terminal record"
 assert_contains "$body" "strongest final-review role available"     "SDD retains strongest final review"
 
+assert_contains "$body" 'skills/subagent-driven-development/scripts/sdd-workspace PLAN_FILE' "SDD resolves workspace script from repo root"
+assert_contains "$body" 'skills/subagent-driven-development/scripts/review-package PLAN_FILE BASE HEAD' "SDD resolves review script from repo root"
+assert_contains "$body" 'skills/subagent-driven-development/scripts/test-summary -- <command>' "SDD resolves test summary script from repo root"
+for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
+    prompt=$(cat "$root/$f.md")
+    assert_contains "$prompt" 'rlm.spawn(' "$f uses Prime-native dispatch"
+    assert_contains "$prompt" 'agent_message.send(' "$f requires explicit Prime reply"
+    assert_not_contains "$prompt" 'Subagent (general-purpose):' "$f removes foreign dispatch header"
+done
+
 assert_contains "$body" "scripts/test-summary" "SDD controller runs tests through test-summary"
 assert_contains "$body" "Implementers and reviewers do not dispatch nested subagents" "SDD prevents nested dispatch"
 assert_contains "$body" "one fixer with the complete findings list" "SDD has one final fix dispatch"
@@ -82,7 +92,7 @@ for referenced_file in \
 done
 for f in implementer-prompt task-reviewer-prompt re-review-prompt; do
     assert_not_contains "$(cat "$root/$f.md")" "Model Selection" "$f no longer points at the removed section"
-    assert_contains "$(cat "$root/$f.md")" 'choose per `routing-model-tiers`' "$f points at routing-model-tiers"
+    assert_contains "$(cat "$root/$f.md")" 'per `routing-model-tiers`' "$f points at routing-model-tiers"
 done
 
 assert_contains "$body" "A ruling may not change text a Global Constraint pins as verbatim" "SDD rulings cannot alter verbatim-pinned text"
@@ -115,7 +125,7 @@ for clause in "[BRIEF_FILE]" "[CONTEXT]" "[WORKTREE_PATH]" "[REPORT_FILE]" \
     "Only when resumed with controller review findings, append a fix report" \
     "actual files changed" "self-review findings" \
     "Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT" \
-    "Reply in under 15 lines"; do
+    "Keep it under 15 lines"; do
     assert_contains "$implementer" "$clause" "implementer prompt preserves: $clause"
 done
 
