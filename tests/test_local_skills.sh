@@ -17,6 +17,21 @@ for s in "${LOCAL_SKILLS[@]}"; do
     assert_contains "$body" "description:" "skills/$s has a description"
 done
 
+# The debugging fork keeps upstream v7's presence-only secret checks and
+# runnable polluter example without exposing the value in diagnostic output.
+debugging=$(cat "$REPO_ROOT/skills/systematic-debugging/SKILL.md")
+assert_contains "$debugging" 'echo "IDENTITY: $([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)"' \
+    "debugging reports secret presence without printing its value"
+assert_contains "$debugging" 'printenv IDENTITY >/dev/null 2>&1 && echo "IDENTITY in environment" || echo "IDENTITY not in environment"' \
+    "debugging checks exported secret presence without printing its value"
+assert_not_contains "$debugging" 'env | grep IDENTITY' \
+    "debugging does not print secret values from env"
+assert_not_contains "$debugging" '${IDENTITY:+SET}${IDENTITY:-UNSET}' \
+    "debugging does not use the broken set/unset expansion"
+tracing=$(cat "$REPO_ROOT/skills/systematic-debugging/root-cause-tracing.md")
+assert_contains "$tracing" "bash ./find-polluter.sh '.git' 'src/**/*.test.ts'" \
+    "debugging invokes the polluter script with bash"
+
 # The dispatch-policy skills must preserve their decision contracts. Each
 # assertion uses a clause or command rather than an isolated keyword.
 routing=$(cat "$REPO_ROOT/skills/routing-model-tiers/SKILL.md")

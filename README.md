@@ -38,7 +38,9 @@ from `~/.prime/agent/.agentic-swe-setup.json`.
 Superpowers skills link from `~/.superpowers/skills/`; swe-skills link from
 `~/.swe-skills/{skills,book-skills}/`; repository-owned skills link last, so
 `systematic-debugging` and `finishing-a-development-branch` override the
-upstream versions. The rendered `build/prime/<provider>/AGENTS.md` links to
+upstream versions. `brainstorming` links from the upstream shared
+`~/.superpowers/skills/brainstorming` checkout; there is no local fork.
+The rendered `build/prime/<provider>/AGENTS.md` links to
 `~/.prime/agent/AGENTS.md`. The 9 roles are installed as specs in
 `~/.prime/agent/harness/harness_state.json`. Prime renders entries to
 180 characters and shows six per kind; the full role/model table in the
@@ -63,7 +65,7 @@ under `skills/`, and are symlinked into Prime Agent:
 | `compound-step` | A branch or plan finishes: turn rulings, recurring findings, and corrections into small updates to instructions, skills, or memory. |
 | `codebase-walkthrough` | A human needs to understand code they did not write: a reading-order walkthrough with real snippets, and an interactive explanation on request. |
 | `finishing-a-development-branch` | Implementation is complete: tidy history, size report, PR description contract, compound step, then merge or PR. Forked from Superpowers at commit `b36e082`. |
-| `systematic-debugging` | Any bug or unexpected behavior, before proposing a fix. Forked from Superpowers at commit `b36e082`; adds `git bisect` and recovery. |
+| `systematic-debugging` | Any bug or unexpected behavior, before proposing a fix. Forked from Superpowers at commit `b36e082`; adds `git bisect` and recovery. Its secret-safe `IDENTITY` checks and polluter-script command match v7.0.0. |
 
 Repository-owned skills link after the shared checkouts, so the local
 `systematic-debugging` and `finishing-a-development-branch` forks take
