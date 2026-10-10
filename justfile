@@ -14,7 +14,7 @@ install: install-prime
     @echo
     @{{ _scripts }}/doctor.sh
 
-# Install Superpowers, swe-skills, subagent specs, and instructions for Prime Agent
+# Install Superpowers, repository-owned skills, subagent specs, and instructions for Prime Agent
 install-prime:
     @{{ _scripts }}/install-prime.sh {{ provider }}
 
