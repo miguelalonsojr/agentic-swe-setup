@@ -11,7 +11,7 @@ PRIME_AGENTS=(general explore implementer-light implementer implementer-strong r
 # Repository-owned skills override same-name Superpowers skills.
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu
               plain-technical-prose dispatching-parallel-agents
-              subagent-driven-development using-git-worktrees
+              subagent-driven-development using-git-worktrees using-superpowers
               agentic-manual-testing compound-step codebase-walkthrough
               finishing-a-development-branch systematic-debugging
               confluence-diagrams de-slop generating-design-doc low-level-design

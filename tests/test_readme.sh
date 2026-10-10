@@ -34,7 +34,7 @@ assert_contains "$body" "harness_state.json" "README names the harness store"
 assert_contains "$body" "/.superpowers" "README names the superpowers checkout"
 
 # Local ownership has no install-time dependency on the old checkout.
-assert_contains "$body" "All 23 skills" "README states local ownership"
+assert_contains "$body" "All 24 skills" "README states local ownership"
 assert_contains "$body" 'checkout is not needed' "README excludes old checkout dependency"
 assert_contains "$body" 'local-only branch' "README warns about the local branch"
 assert_contains "$body" 'must remain checked out' "README warns about live link targets"

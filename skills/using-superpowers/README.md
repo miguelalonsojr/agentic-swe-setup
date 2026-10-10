@@ -1,0 +1,1 @@
+Fork of `~/.superpowers/skills/using-superpowers` at upstream commit `bb92a77` (v7.0.0). The announcement rule yields to another skill’s exact first-message format, such as `brainstorming`. This repository-owned skill overrides the upstream guide on install.

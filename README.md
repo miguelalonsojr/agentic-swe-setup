@@ -36,9 +36,9 @@ from `~/.prime/agent/.agentic-swe-setup.json`.
 ## Installed files
 
 Superpowers skills link from `~/.superpowers/skills/`; repository-owned skills
-link from this checkout last, so
-`systematic-debugging` and `finishing-a-development-branch` override the
-upstream versions. `brainstorming` links from the upstream shared
+link from this checkout last, so `using-superpowers`, `systematic-debugging`,
+and `finishing-a-development-branch` override the upstream versions.
+`brainstorming` links from the upstream shared
 `~/.superpowers/skills/brainstorming` checkout; there is no local fork.
 The rendered `build/prime/<provider>/AGENTS.md` links to
 `~/.prime/agent/AGENTS.md`. The 9 roles are installed as specs in
@@ -48,7 +48,7 @@ rendered instructions is authoritative.
 
 ## Skills this repo ships
 
-All 23 skills listed below live under this repository’s `skills/` directory and
+All 24 skills listed below live under this repository’s `skills/` directory and
 are symlinked into Prime Agent. The old `~/.swe-skills` checkout is not needed
 for installation or update. These commands do not clone or fetch `swe-skills`.
 
@@ -66,6 +66,7 @@ checkout can break those links.
 | `dispatching-parallel-agents` | Dispatching two or more independent tasks in parallel. |
 | `subagent-driven-development` | Executing an implementation plan with independent tasks in the current session. |
 | `using-git-worktrees` | Starting isolated feature work or executing an implementation plan. |
+| `using-superpowers` | Starting a conversation and choosing applicable skills. Its announcement yields to another skill’s exact first-message format. |
 | `agentic-manual-testing` | Tests pass and a change has a runnable surface: run it as a user would and record the evidence before claiming it works. |
 | `compound-step` | A branch or plan finishes: turn rulings, recurring findings, and corrections into small updates to instructions, skills, or memory. |
 | `codebase-walkthrough` | A human needs to understand code they did not write: a reading-order walkthrough with real snippets, and an interactive explanation on request. |
@@ -83,8 +84,9 @@ checkout can break those links.
 | `system-designing` | Designing distributed services around traffic, storage, consistency, and failure. |
 
 Repository-owned skills link after Superpowers, so the local
-`systematic-debugging` and `finishing-a-development-branch` forks take
-precedence. A same-name repository skill also wins a Superpowers collision.
+`using-superpowers`, `systematic-debugging`, and
+`finishing-a-development-branch` forks take precedence. A same-name
+repository skill also wins a Superpowers collision.
 
 Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. `jira-fu`
 and `search-fu` ship a script, and their `README.md` covers running it by hand.

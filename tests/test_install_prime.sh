@@ -123,6 +123,11 @@ for s in confluence-diagrams de-slop generating-design-doc low-level-design \
 done
 assert_symlink_to "$PDIR/skills/de-slop" "$REPO_ROOT/skills/de-slop" \
     "repository-owned skill wins Superpowers collision"
+assert_symlink_to "$PDIR/skills/using-superpowers" \
+    "$REPO_ROOT/skills/using-superpowers" "local usage guide wins Superpowers collision"
+assert_contains "$(cat "$PDIR/skills/using-superpowers/SKILL.md")" \
+    'If another skill prescribes an exact first-message format, follow that format instead of adding an announcement.' \
+    "usage guide respects a skill's exact first-message format"
 assert_symlink_to "$PDIR/skills/jira-fu" \
     "$REPO_ROOT/skills/jira-fu" "existing local skill linked"
 for s in dispatching-parallel-agents routing-model-tiers \
