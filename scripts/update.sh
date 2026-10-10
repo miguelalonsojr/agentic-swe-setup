@@ -18,7 +18,6 @@ for prerequisite in prime-agent jq; do
 done
 provider=$(read_provider "$(prime_dir)/.agentic-swe-setup.json")
 if have prime-agent && have git; then
-    ensure_swe_skills
     ensure_superpowers
 elif ! have git; then
     warn "git not on PATH; skipping shared skills refresh"

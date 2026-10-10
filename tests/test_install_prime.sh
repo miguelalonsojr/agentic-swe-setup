@@ -26,9 +26,14 @@ assert_contains "$out" "jq not on PATH" "warned about missing jq"
 
 # --- full install ---
 stub_cmd git
-stub_swe_skills
 stub_superpowers
+mkdir -p "$SUPERPOWERS_DIR/skills/de-slop"
+printf '%s\n' '---' 'name: de-slop' 'description: collision stub' '---' > "$SUPERPOWERS_DIR/skills/de-slop/SKILL.md"
+[ ! -e "$SWE_SKILLS_DIR" ] || fail "shared checkout exists before install"
 "$IP" >/dev/null 2>&1 || fail "install-prime failed"
+[ ! -e "$SWE_SKILLS_DIR" ] || fail "install created a shared checkout"
+[ -f "$SANDBOX/git.log" ] || fail "git stub was not called for Superpowers"
+assert_not_contains "$(cat "$SANDBOX/git.log")" 'swe-skills' "install git never uses the shared URL or path"
 
 # Settings carry the model defaults.
 assert_eq "$(jq -r '.defaultProvider' "$SETTINGS")" "anthropic" "default provider"
@@ -107,22 +112,24 @@ assert_render_cap_and_read_only() {
 }
 assert_render_cap_and_read_only anthropic
 
-# Skills: superpowers, swe-skills, and this repo's own, all in one directory.
+# Superpowers links first; the ten repository-owned guides win collisions.
 assert_symlink_to "$PDIR/skills/brainstorming" \
     "$SUPERPOWERS_DIR/skills/brainstorming" "superpowers skill linked"
-assert_symlink_to "$PDIR/skills/de-slop" \
-    "$SWE_SKILLS_DIR/skills/de-slop" "swe-skill linked"
-assert_symlink_to "$PDIR/skills/clean-coding" \
-    "$SWE_SKILLS_DIR/book-skills/clean-coding" "book-skill linked"
+for s in confluence-diagrams de-slop generating-design-doc low-level-design \
+         clean-architecture clean-coding ddd-expert design-patterns-expert \
+         pragmatic-engineer system-designing; do
+    assert_symlink_to "$PDIR/skills/$s" \
+        "$REPO_ROOT/skills/$s" "repository-owned skill $s linked"
+done
+assert_symlink_to "$PDIR/skills/de-slop" "$REPO_ROOT/skills/de-slop" \
+    "repository-owned skill wins Superpowers collision"
 assert_symlink_to "$PDIR/skills/jira-fu" \
-    "$REPO_ROOT/skills/jira-fu" "local skill linked"
+    "$REPO_ROOT/skills/jira-fu" "existing local skill linked"
 for s in dispatching-parallel-agents routing-model-tiers \
          subagent-driven-development using-git-worktrees; do
     assert_symlink_to "$PDIR/skills/$s" \
-        "$REPO_ROOT/skills/$s" "local skill $s overrides shared skills for Prime"
+        "$REPO_ROOT/skills/$s" "local skill $s overrides Superpowers for Prime"
 done
-assert_symlink_to "$PDIR/skills/de-slop" \
-    "$SWE_SKILLS_DIR/skills/de-slop" "non-overlapping Prime skill remains shared"
 [ -e "$PDIR/skills/not-a-skill" ] && fail "linked a directory with no SKILL.md"
 
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime anthropic)" "instructions linked"
@@ -171,6 +178,15 @@ assert_eq "$(jq -r .provider "$MANIFEST")" "anthropic" "update kept current prov
 bash "$REPO_ROOT/scripts/update.sh" >/dev/null 2>&1 || fail "OpenAI update failed"
 assert_eq "$(jq -r .provider "$MANIFEST")" "openai" "update kept OpenAI provider"
 assert_symlink_to "$PDIR/AGENTS.md" "$(rendered_agents_md prime openai)" "update kept OpenAI render"
+for s in confluence-diagrams de-slop generating-design-doc low-level-design \
+         clean-architecture clean-coding ddd-expert design-patterns-expert \
+         pragmatic-engineer system-designing; do
+    assert_symlink_to "$PDIR/skills/$s" "$REPO_ROOT/skills/$s" \
+        "OpenAI update keeps repository-owned $s"
+done
+[ ! -e "$SWE_SKILLS_DIR" ] || fail "update created a shared checkout"
+assert_not_contains "$(cat "$SANDBOX/git.log")" 'swe-skills' \
+    "install and update git never use the shared URL or path"
 
 # --- skipped updates report missing prerequisites and preserve installed state ---
 installed_before=$(cksum "$SETTINGS" "$MANIFEST" "$HARNESS")

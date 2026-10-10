@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Install Superpowers, swe-skills, subagent specs, and global instructions for
-# Prime Agent. Exits 0 without doing anything when prime-agent or jq is absent.
+# Install Superpowers, repository skills, subagent specs, and global instructions
+# for Prime Agent. Exits 0 without doing anything when prime-agent or jq is absent.
 #
-# Shared skills are linked from checkouts; roles become harness subagent specs.
+# Superpowers skills link from its checkout; roles become harness subagent specs.
 # Usage: install-prime.sh [provider]   (default: anthropic)
 set -euo pipefail
 # shellcheck source=/dev/null
@@ -28,11 +28,6 @@ skills_dir="$(prime_dir)/skills"
 ensure_superpowers
 log "linking superpowers skills into $skills_dir"
 link_skill_tree "$(superpowers_dir)/skills" "$skills_dir"
-
-ensure_swe_skills
-log "linking swe-skills into $skills_dir"
-link_skill_tree "$(swe_skills_dir)/skills" "$skills_dir"
-link_skill_tree "$(swe_skills_dir)/book-skills" "$skills_dir"
 
 log "linking local skills into $skills_dir"
 link_local_skills "$skills_dir"

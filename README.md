@@ -1,6 +1,6 @@
 # agentic-swe-setup
 
-`just` installs Superpowers, swe-skills, local skills, model-tiered roles, and
+`just` installs Superpowers, repository-owned skills, model-tiered roles, and
 rendered instructions for Prime Agent. Prime Agent must already be installed.
 
 ## Prerequisites
@@ -22,10 +22,10 @@ just doctor
 |---|---|
 | `just` | Lists recipes. |
 | `just install` | Installs Prime and prints the doctor report. |
-| `just install-prime` | Installs Superpowers, swe-skills, roles, and instructions for Prime Agent. |
+| `just install-prime` | Installs Superpowers, repository-owned skills, roles, and instructions for Prime Agent. |
 | `just install-skills` | Relinks repository-owned skills into Prime Agent. |
 | `just doctor` | Reports Prime installation state without writing. |
-| `just update` | Refreshes shared checkouts and Prime links, retaining the installed provider. |
+| `just update` | Refreshes Superpowers and Prime links, retaining the installed provider. |
 | `just uninstall` | Removes Prime-managed links, settings, and role specs. |
 | `just test` | Runs the tests. |
 
@@ -35,8 +35,8 @@ from `~/.prime/agent/.agentic-swe-setup.json`.
 
 ## Installed files
 
-Superpowers skills link from `~/.superpowers/skills/`; swe-skills link from
-`~/.swe-skills/{skills,book-skills}/`; repository-owned skills link last, so
+Superpowers skills link from `~/.superpowers/skills/`; repository-owned skills
+link from this checkout last, so
 `systematic-debugging` and `finishing-a-development-branch` override the
 upstream versions. `brainstorming` links from the upstream shared
 `~/.superpowers/skills/brainstorming` checkout; there is no local fork.
@@ -48,8 +48,9 @@ rendered instructions is authoritative.
 
 ## Skills this repo ships
 
-Most skills come from the shared `~/.swe-skills` checkout. A few live here,
-under `skills/`, and are symlinked into Prime Agent:
+All 23 skills listed below live under this repository’s `skills/` directory and
+are symlinked into Prime Agent. The old `~/.swe-skills` checkout is not needed
+for installation or update:
 
 | Skill | Use it when |
 |---|---|
@@ -66,19 +67,30 @@ under `skills/`, and are symlinked into Prime Agent:
 | `codebase-walkthrough` | A human needs to understand code they did not write: a reading-order walkthrough with real snippets, and an interactive explanation on request. |
 | `finishing-a-development-branch` | Implementation is complete: tidy history, size report, PR description contract, compound step, then merge or PR. Forked from Superpowers at commit `b36e082`. |
 | `systematic-debugging` | Any bug or unexpected behavior, before proposing a fix. Forked from Superpowers at commit `b36e082`; adds `git bisect` and recovery. Its secret-safe `IDENTITY` checks and polluter-script command match v7.0.0. |
+| `confluence-diagrams` | Rendering Mermaid diagrams as images on Confluence Cloud and checking the published page. |
+| `de-slop` | Revising formulaic prose while preserving its facts and intended voice. |
+| `generating-design-doc` | Documenting an existing codebase’s architecture from source evidence. |
+| `low-level-design` | Designing object responsibilities and interactions for a bounded system. |
+| `clean-architecture` | Reviewing module boundaries and dependency direction. |
+| `clean-coding` | Reviewing names, functions, error paths, comments, and tests in a local change. |
+| `ddd-expert` | Clarifying domain terms and business rules before choosing a model. |
+| `design-patterns-expert` | Checking whether a named pattern fits a concrete design pressure. |
+| `pragmatic-engineer` | Comparing options by reversibility, duplication, feedback, and risk. |
+| `system-designing` | Designing distributed services around traffic, storage, consistency, and failure. |
 
-Repository-owned skills link after the shared checkouts, so the local
+Repository-owned skills link after Superpowers, so the local
 `systematic-debugging` and `finishing-a-development-branch` forks take
-precedence. Other skills stay linked from their shared checkout.
+precedence. A same-name repository skill also wins a Superpowers collision.
 
 Each has a `SKILL.md` for agents, and a `README.md` aimed at a human. `jira-fu`
 and `search-fu` ship a script, and their `README.md` covers running it by hand.
 The rest are prose, so their `README.md` records where the skill came from
 instead. Add one by dropping a directory into `skills/` and adding its
-name to `LOCAL_SKILLS` in `scripts/lib.sh`; install, doctor, uninstall and the
-tests all read from that array.
+name to `LOCAL_SKILLS` in `scripts/lib.sh`; installation and the skill-name
+tests read from that array.
 
-`just install-skills` relinks them without re-cloning swe-skills.
+`just install-skills` relinks these repository-owned skills without a
+checkout refresh.
 
 ## Model ladder: `prime/anthropic.json` and `prime/openai.json`
 

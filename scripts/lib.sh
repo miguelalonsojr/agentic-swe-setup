@@ -6,17 +6,19 @@
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 SUPERPOWERS_REPO="https://github.com/obra/superpowers"
-SWE_SKILLS_REPO="https://github.com/mhihasan/swe-skills"
 
 PRIME_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite cross-checker)
 SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
              de-slop generating-design-doc pragmatic-engineer system-designing)
-# Skills that live in this repo rather than the shared swe-skills checkout.
+# Repository-owned skills override same-name Superpowers skills.
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu
               plain-technical-prose dispatching-parallel-agents
               subagent-driven-development using-git-worktrees
               agentic-manual-testing compound-step codebase-walkthrough
-              finishing-a-development-branch systematic-debugging)
+              finishing-a-development-branch systematic-debugging
+              confluence-diagrams de-slop generating-design-doc low-level-design
+              clean-architecture clean-coding ddd-expert design-patterns-expert
+              pragmatic-engineer system-designing)
 
 HARNESSES=(prime)
 
@@ -73,11 +75,6 @@ ensure_checkout() {
         log "cloning $name to $dir"
         git clone --depth 1 "$url" "$dir"
     fi
-}
-
-# ensure_swe_skills — clone or fast-forward the shared skills checkout.
-ensure_swe_skills() {
-    ensure_checkout swe-skills "$SWE_SKILLS_REPO" "$(swe_skills_dir)"
 }
 
 # ensure_superpowers — clone or fast-forward the Superpowers checkout. Prime
