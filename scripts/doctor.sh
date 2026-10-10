@@ -31,11 +31,6 @@ for c in prime-agent git jq; do
 done
 
 printf '\nshared\n'
-if [ -d "$(swe_skills_dir)/.git" ]; then
-    ok "swe-skills checkout at $(swe_skills_dir)"
-else
-    bad "no swe-skills checkout at $(swe_skills_dir)"
-fi
 # Prime Agent reads Superpowers from the checkout.
 if have prime-agent; then
     if [ -d "$(superpowers_dir)/.git" ]; then
@@ -89,13 +84,14 @@ if have prime-agent; then
         if [ -e "$pdir/skills/$s" ]; then ok "superpowers skill $s"
         else bad "superpowers skill $s missing"; fi
     done
-    for s in "${SKILL_NAMES[@]}"; do
-        if [ -e "$pdir/skills/$s" ]; then ok "skill $s"
-        else bad "skill $s missing"; fi
-    done
     for s in "${LOCAL_SKILLS[@]}"; do
-        if links_into_repo "$pdir/skills/$s"; then ok "local skill $s"
-        else bad "local skill $s not linked from this repo"; fi
+        if ! links_to "$pdir/skills/$s" "$REPO_ROOT/skills/$s"; then
+            bad "local skill $s not linked to $REPO_ROOT/skills/$s"
+        elif [ ! -f "$pdir/skills/$s/SKILL.md" ]; then
+            bad "local skill $s missing SKILL.md; restore the repository source"
+        else
+            ok "local skill $s"
+        fi
     done
     check_instructions "$pdir/AGENTS.md" "global AGENTS.md"
 else

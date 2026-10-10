@@ -21,7 +21,7 @@ assert_eq "$(find "$HOME" | sort | cksum)" "$before" "doctor changed nothing"
 # --- a fully installed sandbox reports green ---
 stub_cmd prime-agent
 stub_cmd git
-stub_swe_skills
+unset SWE_SKILLS_DIR
 stub_superpowers
 
 bash "$REPO_ROOT/scripts/install-prime.sh"    anthropic >/dev/null 2>&1
@@ -40,6 +40,44 @@ assert_contains "$out" " ${#PRIME_AGENTS[@]} managed subagent specs" \
     "doctor reports how many specs it actually found"
 assert_contains "$out" "[ok]   superpowers skill brainstorming" "prime superpowers ok"
 assert_not_contains "$out" "[warn] subagent spec" "no prime spec warnings"
+
+assert_not_contains "$out" "swe-skills checkout" "no obsolete checkout diagnosis"
+for s in "${LOCAL_SKILLS[@]}"; do
+    assert_contains "$out" "[ok]   local skill $s" "local skill $s healthy"
+done
+assert_not_contains "$out" "[warn]" "fully installed sandbox has no warnings"
+
+# Exact relative targets are healthy; outside and same-repo mappings are not.
+pdir=$(prime_dir)
+ln -sfn "$(realpath -ms --relative-to="$pdir/skills" "$REPO_ROOT/skills/confluence-diagrams")" \
+    "$pdir/skills/confluence-diagrams"
+out=$("$DOCTOR" 2>&1); status=$?
+assert_eq "$status" 0 "doctor exits 0 with a relative local target"
+assert_contains "$out" "[ok]   local skill confluence-diagrams" "relative exact target healthy"
+ln -sfn /etc/hostname "$pdir/skills/confluence-diagrams"
+ln -sfn "$REPO_ROOT/skills/search-fu" "$pdir/skills/clean-coding"
+out=$("$DOCTOR" 2>&1); status=$?
+assert_eq "$status" 0 "doctor exits 0 with foreign skills"
+for s in confluence-diagrams clean-coding; do
+    assert_contains "$out" "[warn] local skill $s" "foreign mapping $s warned"
+    assert_not_contains "$out" "[ok]   local skill $s" "foreign mapping $s not healthy"
+    ln -sfn "$REPO_ROOT/skills/$s" "$pdir/skills/$s"
+done
+assert_not_contains "$out" "swe-skills checkout" "foreign links need no old checkout"
+
+# Copy scripts to an isolated repo so missing source paths never touch real skills.
+fixture="$SANDBOX/fixture"
+mkdir -p "$fixture/scripts"
+cp "$REPO_ROOT/scripts/lib.sh" "$REPO_ROOT/scripts/doctor.sh" "$fixture/scripts/"
+ln -sfn "$fixture/skills/confluence-diagrams" "$pdir/skills/confluence-diagrams"
+out=$(bash "$fixture/scripts/doctor.sh" 2>&1); status=$?
+assert_eq "$status" 0 "doctor exits 0 with missing source intermediates"
+assert_contains "$out" "[warn] local skill confluence-diagrams" "missing source warned"
+mkdir -p "$fixture/skills/confluence-diagrams"
+out=$(bash "$fixture/scripts/doctor.sh" 2>&1)
+assert_contains "$out" "[warn] local skill confluence-diagrams" "missing SKILL.md warned"
+assert_not_contains "$out" "[ok]   local skill confluence-diagrams" "directory alone not healthy"
+ln -sfn "$REPO_ROOT/skills/confluence-diagrams" "$pdir/skills/confluence-diagrams"
 
 # --- a missing spec is counted, not papered over ---
 # The [ok] line above is only worth printing if it cannot appear when a spec

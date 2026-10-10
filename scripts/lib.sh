@@ -8,8 +8,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SUPERPOWERS_REPO="https://github.com/obra/superpowers"
 
 PRIME_AGENTS=(general explore implementer-light implementer implementer-strong reviewer reviewer-final reviewer-lite cross-checker)
-SKILL_NAMES=(clean-architecture clean-coding ddd-expert design-patterns-expert
-             de-slop generating-design-doc pragmatic-engineer system-designing)
 # Repository-owned skills override same-name Superpowers skills.
 LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu
               plain-technical-prose dispatching-parallel-agents
@@ -27,6 +25,7 @@ warn() { printf 'warning: %s\n' "$*" >&2; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Old-install link cleanup only; no checkout is required or refreshed.
 swe_skills_dir() { printf '%s\n' "${SWE_SKILLS_DIR:-$HOME/.swe-skills}"; }
 # PRIME_AGENT_CODING_AGENT_DIR is Prime Agent's own override for its config
 # root; honouring it keeps installs and the test sandbox on the same path.
@@ -57,6 +56,18 @@ links_into_repo() {
         "$REPO_ROOT"/*) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+# links_to PATH SOURCE — compare exact lexical targets, even if sources are gone.
+links_to() {
+    local p=$1 source=$2 target
+    [ -L "$p" ] || return 1
+    target=$(readlink "$p") || return 1
+    case "$target" in
+        /*) ;;
+        *) target="$(dirname "$p")/$target" ;;
+    esac
+    [ "$(realpath -ms -- "$target")" = "$(realpath -ms -- "$source")" ]
 }
 
 # ensure_checkout NAME URL DIR — clone or fast-forward a shared checkout.

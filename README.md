@@ -50,7 +50,11 @@ rendered instructions is authoritative.
 
 All 23 skills listed below live under this repository’s `skills/` directory and
 are symlinked into Prime Agent. The old `~/.swe-skills` checkout is not needed
-for installation or update:
+for installation or update. These commands do not clone or fetch `swe-skills`.
+
+The local-only branch `local/original-skill-bundle` must remain checked out
+while live skill links use this checkout. Switching branches or removing this
+checkout can break those links.
 
 | Skill | Use it when |
 |---|---|
@@ -156,5 +160,8 @@ warnings. The retirement uninstalls the Claude Code Superpowers plugin. It leave
 ## Uninstall
 
 `just uninstall` removes Prime-managed links, settings keys, and role specs.
-It leaves `~/.superpowers` and `~/.swe-skills` checkouts in place. It does not
-remove the Claude Superpowers plugin or change OpenCode configuration.
+It removes exact repository-owned skill links and matching old managed links,
+including dangling links. Foreign mappings and user skill directories stay.
+It leaves the Superpowers checkout in place and does not change an old
+`~/.swe-skills` checkout. It does not remove the Claude Superpowers plugin or
+change OpenCode configuration.

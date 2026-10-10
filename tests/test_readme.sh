@@ -33,8 +33,12 @@ assert_contains "$body" "harness_state.json" "README names the harness store"
 # trips shellcheck SC2088 for a path that is never expanded.
 assert_contains "$body" "/.superpowers" "README names the superpowers checkout"
 
-# What uninstall leaves behind, so nobody is surprised.
-assert_contains "$body" "swe-skills" "README mentions the shared skills checkout"
+# Local ownership has no install-time dependency on the old checkout.
+assert_contains "$body" "All 23 skills" "README states local ownership"
+assert_contains "$body" 'checkout is not needed' "README excludes old checkout dependency"
+assert_contains "$body" 'local-only branch' "README warns about the local branch"
+assert_contains "$body" 'must remain checked out' "README warns about live link targets"
+assert_not_contains "$body" 'It leaves `~/.superpowers` and `~/.swe-skills` checkouts' "README separates old checkout from installed dependencies"
 
 # Skills this repo ships itself must be listed by name.
 . "$REPO_ROOT/scripts/lib.sh"

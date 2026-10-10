@@ -145,12 +145,14 @@ contract, such as “this function is O(log n)” or “this operation is atomic
 under contention.” Otherwise, treat it as internal and avoid locking tests to
 it.
 
-## Craft skills (swe-agent-skills)
+## Craft skills (repository-owned)
 
-In addition to the Superpowers workflow skills, this environment has book-grounded
-craft skills installed: `ddd-expert`, `clean-architecture`, `design-patterns-expert`,
+In addition to the Superpowers workflow skills, this repository provides local
+craft guides: `ddd-expert`, `clean-architecture`, `design-patterns-expert`,
 `clean-coding`, `pragmatic-engineer`, `system-designing`, `de-slop`,
-`generating-design-doc`. Read each skill's `SKILL.md` at the phases below.
+`generating-design-doc`. These guides use independently written instructions;
+some include local book-grounded reference notes. They do not require the old
+`swe-skills` checkout. Read each skill's `SKILL.md` at the phases below.
 Call Python-backed skills through their documented module API in the Prime Agent REPL.
 They are advisory references, not workflows — the Superpowers process always
 governs sequencing, and YAGNI wins any conflict: never add layers, patterns, or

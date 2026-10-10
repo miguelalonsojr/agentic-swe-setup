@@ -10,7 +10,6 @@ assert_eq "$(swe_skills_dir)" "$SWE_SKILLS_DIR" "swe_skills_dir"
 
 # --- constants ---
 assert_eq "${#PRIME_AGENTS[@]}" 9 "managed agent count"
-assert_eq "${#SKILL_NAMES[@]}" 8 "legacy skill count"
 assert_eq "${#LOCAL_SKILLS[@]}" 23 "repository-owned skill count"
 [ ! "$(declare -F ensure_swe_skills)" ] || fail "legacy checkout helper remains"
 
