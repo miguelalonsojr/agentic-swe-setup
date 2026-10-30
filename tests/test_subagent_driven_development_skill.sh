@@ -222,6 +222,56 @@ if [ -x "$workspace" ]; then
     case "$(basename "$first")" in same-*) ;; *) fail "workspace keeps a readable plan basename" ;; esac
     first_again=$(cd "$repo" && "$workspace" "$repo/plans/one/../one/same.md")
     assert_eq "$first_again" "$first" "workspace identity uses the canonical plan path"
+    ignore="$repo/.superpowers/sdd/.gitignore"
+    assert_eq "$(cat "$ignore")" '*' "new workspace installs ignore-all policy"
+    assert_eq "$(wc -c < "$ignore" | tr -d ' ')" 2 "new workspace ignore policy has one newline"
+    printf 'custom policy\n!keep-this\n' > "$ignore"
+    custom_ignore=$(git -C "$repo" hash-object "$ignore")
+    (cd "$repo" && "$workspace" plans/one/same.md) >/dev/null
+    assert_eq "$(git -C "$repo" hash-object "$ignore")" "$custom_ignore" "existing custom ignore policy remains byte-identical"
+    : > "$ignore"
+    (cd "$repo" && "$workspace" plans/two/same.md) >/dev/null
+    assert_eq "$(wc -c < "$ignore" | tr -d ' ')" 0 "existing empty ignore policy remains empty"
+fi
+
+# A range must contain a descendant commit, and rejection must precede writes.
+review="$root/scripts/review-package"
+if [ -x "$review" ]; then
+    printf 'second change\n' > "$consumer/second.txt"
+    git -C "$consumer" add second.txt
+    git -C "$consumer" -c user.name=Test -c user.email=test@example.invalid commit -qm second
+    second_head=$(git -C "$consumer" rev-parse HEAD)
+    git -C "$consumer" branch divergent "$consumer_base"
+    git -C "$consumer" switch -q divergent
+    printf 'divergent change\n' > "$consumer/divergent.txt"
+    git -C "$consumer" add divergent.txt
+    git -C "$consumer" -c user.name=Test -c user.email=test@example.invalid commit -qm divergent
+    divergent_head=$(git -C "$consumer" rev-parse HEAD)
+    git -C "$consumer" switch -q -
+    for invalid_head in "$consumer_base" "$divergent_head"; do
+        invalid_base=$consumer_base
+        [ "$invalid_head" != "$divergent_head" ] || invalid_base=$consumer_head
+        absent="$consumer/absent-$invalid_head.diff"
+        output=$(cd "$consumer" && "$review" plans/consumer.md "$invalid_base" "$invalid_head" "$absent" 2>&1); status=$?
+        assert_eq "$status" 3 "invalid review range exits 3 without an output file"
+        [ ! -e "$absent" ] || fail "invalid review range created absent output: $absent"
+        existing="$consumer/existing.diff"
+        printf 'existing package bytes\n' > "$existing"
+        before=$(git -C "$consumer" hash-object "$existing")
+        output=$(cd "$consumer" && "$review" plans/consumer.md "$invalid_base" "$invalid_head" "$existing" 2>&1); status=$?
+        assert_eq "$status" 3 "invalid review range exits 3 with an existing output file"
+        assert_eq "$(git -C "$consumer" hash-object "$existing")" "$before" "invalid review range preserves existing output bytes"
+    done
+    valid="$consumer/valid.diff"
+    output=$(cd "$consumer" && "$review" plans/consumer.md "$consumer_base" "$second_head" "$valid" 2>&1); status=$?
+    assert_eq "$status" 0 "two-commit review range succeeds"
+    assert_contains "$output" '2 commit(s)' "two-commit review reports both commits"
+    if [ -f "$valid" ]; then
+        assert_contains "$(cat "$valid")" '+consumer-only change' "two-commit review includes first diff"
+        assert_contains "$(cat "$valid")" '+second change' "two-commit review includes second diff"
+    else
+        fail "two-commit review did not create output"
+    fi
 fi
 
 exit "$ASSERT_FAILURES"

@@ -34,5 +34,5 @@ path_hash=$(printf '%s' "$relative_plan" | git -C "$root" hash-object --stdin | 
 base="$root/.superpowers/sdd"
 dir="$base/$readable-$path_hash"
 mkdir -p "$dir"
-printf '*\n' > "$base/.gitignore"
+[ -e "$base/.gitignore" ] || printf '*\n' > "$base/.gitignore"
 cd "$dir" && pwd -P
