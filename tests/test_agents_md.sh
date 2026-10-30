@@ -28,6 +28,7 @@ assert_contains "$body" "Inspect the diff and run focused verification before re
 assert_contains "$body" "Classification can become heavier after work starts. It cannot become lighter during the same task."     "workflow upgrades are one-way"
 assert_contains "$body" $'2. Workflow classification and the rules for the selected path.\n3. Applicable Superpowers workflow skills.'     "precedence puts workflow classification immediately before applicable Superpowers skills"
 assert_contains "$body" "### Bounded path"     "AGENTS.md defines the bounded path"
+assert_contains "$body" 'In-chat approval replaces the upstream written-design gate on the bounded path; do not invoke `writing-plans`.'     "bounded path uses in-chat approval without writing-plans"
 assert_contains "$body" 'Use the short in-chat `brainstorming` flow and obtain approval before implementation.'     "bounded path requires approval"
 assert_contains "$body" "Do not write a design document or implementation-plan document."     "bounded path excludes design and implementation-plan documents"
 assert_contains "$body" "### Full path"     "AGENTS.md defines the full path"

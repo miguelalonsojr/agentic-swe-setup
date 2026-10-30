@@ -33,6 +33,11 @@ just doctor
 `openai-codex/...` model selectors. `just update` reads the installed provider
 from `~/.prime/agent/.agentic-swe-setup.json`.
 
+The workflow instructions are compatible with Superpowers v7.0.1: bounded-path
+in-chat approval replaces its written-design gate without changing the full path.
+`just update` also reapplies repository-managed Prime settings and role defaults;
+it does not refresh only skills.
+
 ## Installed files
 
 Superpowers skills link from `~/.superpowers/skills/`; repository-owned skills

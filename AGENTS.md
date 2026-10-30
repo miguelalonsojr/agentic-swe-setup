@@ -48,6 +48,7 @@ A failure whose root cause is unknown does not qualify for the fast path. Use th
 Use the bounded path for a localized change to an existing flow when the task fails a fast-path condition but has no architectural or listed high-risk effect.
 
 - Use the short in-chat `brainstorming` flow and obtain approval before implementation.
+- In-chat approval replaces the upstream written-design gate on the bounded path; do not invoke `writing-plans`.
 - Do not write a design document or implementation-plan document.
 - Work directly unless isolation or delegation has a concrete benefit.
 - Use tests and review in proportion to the change risk.

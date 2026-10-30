@@ -50,6 +50,7 @@ for h in "${HARNESSES[@]}"; do
         assert_contains "$body" "A task uses the fast path only when all of these conditions hold:"             "$h keeps the conjunctive fast-path gate"
         assert_contains "$body" $'2. Workflow classification and the rules for the selected path.\n3. Applicable Superpowers workflow skills.'             "$h puts workflow classification immediately before applicable Superpowers skills"
         assert_contains "$body" "### Bounded path"             "$h keeps the bounded path"
+        assert_contains "$body" 'In-chat approval replaces the upstream written-design gate on the bounded path; do not invoke `writing-plans`.'             "$h/$provider keeps the bounded approval mapping"
         assert_contains "$body" 'Use the short in-chat `brainstorming` flow and obtain approval before implementation.'             "$h keeps bounded-path approval"
         assert_contains "$body" "Do not write a design document or implementation-plan document."             "$h keeps bounded-path document exclusions"
         assert_contains "$body" "### Full path"             "$h keeps the full path"
