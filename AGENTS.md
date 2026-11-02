@@ -79,6 +79,18 @@ If fast-path work expands beyond two files or exposes new risk, stop direct impl
 
 An explicit user request for more process selects the heavier requested path. A request for less process can reduce optional ceremony but cannot remove a safety check required by a high-risk change.
 
+## Optional EGM design check
+
+The EGM design check runs only when the user explicitly requests it for the current feature or an existing named document.
+An EGM mention in an article or document, or skill installation alone, does not select the check.
+For a selected full-path feature, run the enhanced EGM builder check once at the existing pre-approval point instead of the ordinary builder check.
+On fast or bounded work, EGM selection does not create a design document or upgrade the workflow; offer a review of an existing document or an explicit full-path choice.
+A resumed ordinary workflow with no evidence of an EGM request stays unselected and does not require an EGM-selection question.
+If an explicit EGM request or a recovered earlier opt-in has ambiguous feature or target scope, ask instead of inferring consent.
+For a natural-language request, load the skill from the configured Prime skill root and report a missing installation rather than searching other copies.
+The direct `/skill:egm-design-check <document-path>` invocation checks only the named document and explicitly selected companions; neither form adds an implementation gate or changes the existing approval loop.
+Keep selection for the current feature in ordinary recovery context, not as a global preference.
+
 ## Coding Discipline
 
 These checks apply before and during code changes in Prime Agent.
