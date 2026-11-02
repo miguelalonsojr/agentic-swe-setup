@@ -53,7 +53,7 @@ rendered instructions is authoritative.
 
 ## Skills this repo ships
 
-All 24 skills listed below live under this repository’s `skills/` directory and
+All 25 skills listed below live under this repository’s `skills/` directory and
 are symlinked into Prime Agent. The old `~/.swe-skills` checkout is not needed
 for installation or update. These commands do not clone or fetch `swe-skills`.
 
@@ -87,6 +87,7 @@ checkout can break those links.
 | `design-patterns-expert` | Checking whether a named pattern fits a concrete design pressure. |
 | `pragmatic-engineer` | Comparing options by reversibility, duplication, feedback, and risk. |
 | `system-designing` | Designing distributed services around traffic, storage, consistency, and failure. |
+| `egm-design-check` | Running an EGM design check when the user explicitly requests it for the current full-path feature or a named existing document. |
 
 Repository-owned skills link after Superpowers, so the local
 `using-superpowers`, `systematic-debugging`, and
@@ -101,7 +102,10 @@ name to `LOCAL_SKILLS` in `scripts/lib.sh`; installation and the skill-name
 tests read from that array.
 
 `just install-skills` relinks these repository-owned skills without a
-checkout refresh.
+checkout refresh. It does not refresh the generated `AGENTS.md` instructions.
+Installing `egm-design-check` makes the manual skill available; it does not activate the check or install its natural-language routing policy.
+Full install and update still reapply managed Prime settings and role defaults.
+The installer refuses a foreign `egm-design-check` destination instead of replacing it.
 
 ## Model ladder: `prime/anthropic.json` and `prime/openai.json`
 

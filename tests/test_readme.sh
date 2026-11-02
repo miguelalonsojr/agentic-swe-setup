@@ -34,11 +34,15 @@ assert_contains "$body" "harness_state.json" "README names the harness store"
 assert_contains "$body" "/.superpowers" "README names the superpowers checkout"
 
 # Local ownership has no install-time dependency on the old checkout.
-assert_contains "$body" "All 24 skills" "README states local ownership"
+assert_contains "$body" "All 25 skills" "README states local ownership"
 assert_contains "$body" 'checkout is not needed' "README excludes old checkout dependency"
 assert_contains "$body" 'local-only branch' "README warns about the local branch"
 assert_contains "$body" 'must remain checked out' "README warns about live link targets"
 assert_not_contains "$body" 'It leaves `~/.superpowers` and `~/.swe-skills` checkouts' "README separates old checkout from installed dependencies"
+
+assert_contains "$body" 'does not refresh the generated `AGENTS.md`' 'skill-only install does not refresh policy'
+assert_contains "$body" 'does not activate the check' 'EGM availability is not activation'
+assert_contains "$body" 'still reapply managed Prime settings and role defaults' 'full install retains managed defaults'
 
 # Skills this repo ships itself must be listed by name.
 . "$REPO_ROOT/scripts/lib.sh"

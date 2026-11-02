@@ -35,6 +35,7 @@ unlink_ours "$(prime_dir)/AGENTS.md"
 for p in "$(prime_dir)"/skills/*; do
     [ -L "$p" ] || continue
     s=$(basename "$p")
+    [ "$s" != egm-design-check ] || continue
     unlink_skill "$p" "$(swe_skills_dir)/skills/$s"
     unlink_skill "$p" "$(swe_skills_dir)/book-skills/$s"
     unlink_skill "$p" "$(superpowers_dir)/skills/$s"

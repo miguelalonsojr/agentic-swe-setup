@@ -16,7 +16,7 @@ LOCAL_SKILLS=(jira-fu routing-model-tiers cross-checking-claims search-fu
               finishing-a-development-branch systematic-debugging
               confluence-diagrams de-slop generating-design-doc low-level-design
               clean-architecture clean-coding ddd-expert design-patterns-expert
-              pragmatic-engineer system-designing)
+              pragmatic-engineer system-designing egm-design-check)
 
 HARNESSES=(prime)
 
@@ -102,13 +102,28 @@ link_skill_tree() {
     mkdir -p "$dest_root"
     for d in "$src"/*/; do
         [ -f "$d/SKILL.md" ] || continue
+        [ "$(basename "$d")" != egm-design-check ] || continue
         link_into "${d%/}" "$dest_root/$(basename "$d")"
     done
+}
+
+# Refuse any destination except an absent path or this exact local skill link.
+guard_egm_skill_destination() {
+    local dest="$1/egm-design-check"
+    if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
+        return 0
+    fi
+    if links_to "$dest" "$REPO_ROOT/skills/egm-design-check"; then
+        return 0
+    fi
+    warn "occupied EGM skill destination: $dest"
+    return 1
 }
 
 # link_local_skills DIR — symlink this repo's skills into Prime skills.
 link_local_skills() {
     local dest_root=$1 s
+    guard_egm_skill_destination "$dest_root" || return 1
     for s in "${LOCAL_SKILLS[@]}"; do
         link_into "$REPO_ROOT/skills/$s" "$dest_root/$s"
     done

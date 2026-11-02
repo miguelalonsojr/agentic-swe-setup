@@ -19,6 +19,9 @@ if ! have jq; then
     exit 0
 fi
 
+# Refuse a foreign EGM destination before managed settings or links are written.
+guard_egm_skill_destination "$(prime_dir)/skills" || exit 1
+
 # Merge first: a tripped comment guard must abort before anything else is
 # touched, so a refused install leaves no half-configured state.
 "$REPO_ROOT/scripts/merge-prime.sh" "$provider"
